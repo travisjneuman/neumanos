@@ -1,0 +1,40 @@
+# Security headers for Cloudflare Pages
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 0
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  # Permissions Policy:
+  # - camera=(), microphone=(): Blocked (not needed)
+  # - geolocation=(self): Allowed with user prompt (WeatherMapWidget location detection)
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self)
+  # Cross-Origin Isolation for WebContainer (Phantom Shell)
+  # Using 'credentialless' instead of 'require-corp' to allow:
+  # - OpenStreetMap tiles (no CORP headers)
+  # - Other anonymous cross-origin resources
+  # While still enabling SharedArrayBuffer for WebContainers
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Opener-Policy: same-origin
+  # Content Security Policy
+  # - default-src 'self': Only allow resources from same origin by default
+  # - script-src: Allow self, inline (Vite/React), unsafe-eval (WebContainers*), unpkg.com (Leaflet), cloudflareinsights.com (analytics)
+  #   * unsafe-eval REQUIRED for Phantom Shell (WebContainers): WebContainers run Node.js/Vite in-browser
+  #     via WebAssembly. The bundled Vite uses eval() for HMR and dynamic code execution.
+  #     Removing unsafe-eval breaks Phantom Shell functionality entirely.
+  #     See: https://webcontainers.io/guides/configuring-headers
+  # - style-src: Allow self, inline (Tailwind), fonts.googleapis.com, unpkg.com (Leaflet CSS)
+  # - img-src: Allow self, data URIs, blobs, and various image sources (maps, Unsplash, GitHub)
+  # - connect-src: Allow self, AI providers, widget APIs, nominatim (geocoding), cloudflareinsights (analytics)
+  # - font-src: Allow self, data URIs, fonts.gstatic.com (Inter font)
+  # - worker-src: Allow self and blobs for web workers
+  # - frame-src: Disallow iframes (security)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://source.unsplash.com https://images.unsplash.com https://*.githubusercontent.com https://www.google.com https://upload.wikimedia.org; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.deepseek.com https://api.mistral.ai https://openrouter.ai https://api.x.ai https://generativelanguage.googleapis.com https://api.groq.com https://api-inference.huggingface.co https://api.together.xyz https://www.boredapi.com https://dev.to https://uselessfacts.jsph.pl https://ipapi.co https://www.producthunt.com https://en.wikipedia.org https://api.coingecko.com https://api.exchangerate-api.com https://hn.algolia.com https://www.reddit.com https://api.github.com https://api.quotable.io https://api.dictionaryapi.dev https://api.open-meteo.com https://air-quality-api.open-meteo.com https://nominatim.openstreetmap.org https://cloudflareinsights.com; worker-src 'self' blob:; frame-src 'none'
+
+# Cache static assets aggressively
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Don't cache HTML
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate

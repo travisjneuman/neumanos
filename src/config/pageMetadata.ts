@@ -1,0 +1,107 @@
+/**
+ * Page Metadata Registry
+ *
+ * Centralized configuration for page headers across the application.
+ * This ensures consistency and makes it easy to update headers in one place.
+ *
+ * Usage:
+ * - PageHeader component auto-detects current route and uses this registry
+ * - Pages can still override by passing explicit title/subtitle props
+ *
+ * Future extensions:
+ * - Page icons
+ * - Breadcrumbs
+ * - SEO meta tags
+ * - Page-specific actions
+ */
+
+export interface PageMetadata {
+  title: string;
+  subtitle?: string;
+  // Future: icon, breadcrumbs, actions, seoTitle, seoDescription
+}
+
+/**
+ * Registry of page metadata indexed by route path
+ *
+ * Note: Add new pages here when created. The PageHeader component
+ * will automatically pick up the correct title/subtitle.
+ */
+export const PAGE_METADATA: Record<string, PageMetadata> = {
+  '/': {
+    title: 'Dashboard',
+    subtitle: 'Your personal management overview',
+  },
+  '/today': {
+    title: 'Today',
+    subtitle: 'Plan your day with intention',
+  },
+  '/tasks': {
+    title: 'Task Management',
+    subtitle: 'Organize and track your tasks with Kanban board',
+  },
+  '/notes': {
+    title: 'Notes',
+    subtitle: 'Your brain for ideas, thoughts, and knowledge',
+  },
+  '/schedule': {
+    title: 'Time & Planning',
+    subtitle: 'Track your time, plan your events, and manage your schedule—all in one place.',
+  },
+  '/settings': {
+    title: 'Settings',
+    subtitle: 'Manage your data, backups, and preferences',
+  },
+  '/links': {
+    title: 'Link Library',
+    subtitle: 'Manage your bookmarks and collections',
+  },
+  '/habits': {
+    title: 'Habits',
+    subtitle: 'Build positive routines through daily tracking',
+  },
+  '/graph': {
+    title: 'Knowledge Graph',
+    subtitle: 'Visualize connections between your notes',
+  },
+  '/diagrams': {
+    title: 'Diagrams',
+    subtitle: 'Create visual diagrams and flowcharts',
+  },
+  '/forms': {
+    title: 'Forms',
+    subtitle: 'Build and manage custom forms',
+  },
+  '/focus': {
+    title: 'Focus Mode',
+    subtitle: 'Distraction-free work environment',
+  },
+  '/automations': {
+    title: 'Automations',
+    subtitle: 'Create rules to automate your workflow',
+  },
+  '/docs': {
+    title: 'Documents',
+    subtitle: 'Professional documents, spreadsheets, and presentations',
+  },
+};
+
+/**
+ * Get page metadata for a given pathname
+ *
+ * @param pathname - The current route path (e.g., '/', '/tasks')
+ * @returns PageMetadata or null if not found
+ */
+export function getPageMetadata(pathname: string): PageMetadata | null {
+  return PAGE_METADATA[pathname] || null;
+}
+
+/**
+ * Get page title for a given pathname (convenience function)
+ *
+ * @param pathname - The current route path
+ * @returns Page title or 'NeumanOS' as fallback
+ */
+export function getPageTitle(pathname: string): string {
+  return PAGE_METADATA[pathname]?.title || 'NeumanOS';
+}

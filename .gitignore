@@ -1,0 +1,62 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local development scripts
+scripts/
+
+# GIMP project files
+*.xcf
+
+# Auto Claude data directory
+.auto-claude/
+
+# Internal development files
+GEMINI.md
+.mcp.json
+debt-analysis.json
+MANUAL_TESTING_GUIDE.md
+tests/results/
+test-data/
+
+# AI development configuration
+CLAUDE.md
+**/CLAUDE.md
+.claude/
+
+# Internal docs
+docs/testing/
+docs/CHANGELOG.md
+
+# Internal workflow
+tasks/
+prompts/
+
+# Planning files
+.planning/
