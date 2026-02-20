@@ -13,8 +13,7 @@ class InvoicingDatabase extends Dexie {
   invoices!: Dexie.Table<Invoice, string>;
 
   constructor() {
-    // Historical name retained for data continuity — do not rename without migration
-    super('NeumanBrainInvoicing');
+    super('NeumanOSInvoicing');
 
     this.version(1).stores({
       invoices: 'id, invoiceNumber, clientName, invoiceDate, status, createdAt'

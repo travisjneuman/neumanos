@@ -15,7 +15,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTerminalStore } from '../stores/useTerminalStore';
 import { useNotesStore } from '../stores/useNotesStore';
 import { useFoldersStore } from '../stores/useFoldersStore';
-import { aiTerminalService } from '../services/aiTerminal';
 import { createDefaultRouter } from '../services/ai/providerRouter';
 import { ProviderSettings } from './ProviderSettings';
 import { ModelSelector } from './ModelSelector';
@@ -82,8 +81,6 @@ const sanitizeSchema = {
 export const AITerminal: React.FC = () => {
   const {
     isOpen,
-    apiKey, // Legacy Gemini key
-    // model is legacy and unused - destructured but not assigned to avoid TS error
     activeProvider,
     activeModel,
     providers,
@@ -357,13 +354,6 @@ export const AITerminal: React.FC = () => {
       inputRef.current?.focus();
     }
   }, [isOpen]);
-
-  // Initialize AI service with API key (legacy Gemini)
-  useEffect(() => {
-    if (apiKey) {
-      aiTerminalService.setApiKey(apiKey);
-    }
-  }, [apiKey]);
 
   // Configure router with active provider and model
   useEffect(() => {

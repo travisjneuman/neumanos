@@ -13,10 +13,9 @@ import { logger } from './logger';
 
 const log = logger.module('IndexedDB');
 
-// Historical name retained for data continuity — do not rename without migration
-const DB_NAME = 'neuman-brain-db';
+const DB_NAME = 'neumanos-db';
 const DB_VERSION = 1;
-const STORE_NAME = 'brain-data';
+const STORE_NAME = 'app-data';
 
 interface DBConnection {
   db: IDBDatabase | null;

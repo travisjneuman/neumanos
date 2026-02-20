@@ -143,10 +143,8 @@ interface TerminalState {
   isMessageSavedToNote: (noteId: string, messageId: string) => boolean;
   clearSavedMessagesForNote: (noteId: string) => void;
 
-  // Legacy Compatibility (for existing Gemini-only code)
-  apiKey: string | null; // Deprecated: use providers instead
+  // Legacy Compatibility
   model: string; // Deprecated: use activeModel instead
-  setApiKey: (key: string | null) => Promise<void>; // Deprecated (now async for WebCrypto)
   setModel: (model: string) => void; // Deprecated
 }
 
@@ -202,7 +200,6 @@ export const useTerminalStore = create<TerminalState>()(
       savedMessagesByNote: {}, // noteId -> messageIds[]
 
       // Legacy State (backward compatibility)
-      apiKey: null,
       model: 'gemini-1.5-flash',
 
       // UI Actions
@@ -374,31 +371,6 @@ export const useTerminalStore = create<TerminalState>()(
         }),
 
       // Legacy Actions (backward compatibility)
-      setApiKey: async (key) => {
-        set({ apiKey: key });
-        // Also set as gemini provider if key is provided
-        if (key) {
-          const password = get().encryptionPassword;
-          if (password) {
-            try {
-              const encryptedData = await encrypt(key, password);
-              set((state) => ({
-                providers: {
-                  ...state.providers,
-                  gemini: {
-                    providerId: 'gemini',
-                    encryptedApiKey: encryptedData,
-                    isConfigured: true,
-                    lastUsed: Date.now(),
-                  },
-                },
-              }));
-            } catch (error) {
-              log.error('Failed to encrypt legacy API key', { error });
-            }
-          }
-        }
-      },
       setModel: (model) => {
         set({ model, activeModel: model });
       },
@@ -445,7 +417,6 @@ export const useTerminalStore = create<TerminalState>()(
         savedMessagesByNote: state.savedMessagesByNote,
 
         // Legacy compatibility
-        apiKey: state.apiKey,
         model: state.model,
 
         // Don't persist:

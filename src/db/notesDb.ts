@@ -10,8 +10,7 @@ class NotesDatabase extends Dexie {
   notes!: Table<Note, string>;
 
   constructor() {
-    // Historical name retained for data continuity — do not rename without migration
-    super('NeumanBrainNotes');
+    super('NeumanOSNotes');
 
     // Schema version 1 with compound indexes for common query patterns
     this.version(1).stores({

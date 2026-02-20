@@ -6,11 +6,7 @@
  */
 
 import React from 'react';
-import { useTerminalStore } from '../../stores/useTerminalStore';
-
 export const AITerminalSettings: React.FC = () => {
-  const apiKey = useTerminalStore((state) => state.apiKey);
-
   return (
     <div className="bento-card p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -78,14 +74,6 @@ export const AITerminalSettings: React.FC = () => {
           </ul>
         </div>
 
-        {/* Legacy Gemini Note */}
-        {apiKey && (
-          <div className="p-4 bg-status-warning-bg dark:bg-status-warning-bg-dark border border-status-warning-border dark:border-status-warning-border-dark rounded-lg">
-            <p className="text-sm text-status-warning-text dark:text-status-warning-text-dark">
-              <strong>ℹ️ Legacy Gemini Key Detected:</strong> Your existing Gemini API key is still active. You can continue using it or configure additional providers for more options.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Features List */}

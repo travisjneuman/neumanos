@@ -10,8 +10,7 @@ class TasksDatabase extends Dexie {
   tasks!: Table<Task, string>;
 
   constructor() {
-    // Historical name retained for data continuity — do not rename without migration
-    super('NeumanBrainTasks');
+    super('NeumanOSTasks');
 
     // Schema version 1 with compound indexes for common query patterns
     this.version(1).stores({

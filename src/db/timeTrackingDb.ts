@@ -11,8 +11,7 @@ class TimeTrackingDatabase extends Dexie {
   projects!: Table<TimeTrackingProject, string>;
 
   constructor() {
-    // Historical name retained for data continuity — do not rename without migration
-    super('NeumanBrainTimeTracking');
+    super('NeumanOSTimeTracking');
 
     // Schema version 1 - Original schema
     this.version(1).stores({

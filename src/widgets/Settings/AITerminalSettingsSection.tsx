@@ -35,7 +35,6 @@ const AUTO_ARCHIVE_OPTIONS = [
  * Changes sync with AI Terminal since both use the same store.
  */
 export const AITerminalSettingsSection: React.FC = () => {
-  const apiKey = useTerminalStore((s) => s.apiKey);
   const providers = useTerminalStore((s) => s.providers);
   const activeProvider = useTerminalStore((s) => s.activeProvider);
   const activeModel = useTerminalStore((s) => s.activeModel);
@@ -243,14 +242,6 @@ export const AITerminalSettingsSection: React.FC = () => {
           </a>
         </div>
       </div>
-
-      {apiKey && (
-        <div className="mt-4 p-4 bg-status-warning-bg dark:bg-status-warning-bg-dark border border-status-warning-border dark:border-status-warning-border-dark rounded-lg">
-          <p className="text-sm text-status-warning-text dark:text-status-warning-text-dark">
-            <strong>ℹ️ Legacy Gemini Key Detected:</strong> Your existing Gemini API key is still active.
-          </p>
-        </div>
-      )}
 
       {/* Provider Settings Modal */}
       <ProviderSettings
