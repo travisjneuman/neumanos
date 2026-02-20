@@ -43,12 +43,14 @@ GEMINI.md
 debt-analysis.json
 MANUAL_TESTING_GUIDE.md
 tests/results/
+tests/reports/
 test-data/
 
 # AI development configuration
 CLAUDE.md
 **/CLAUDE.md
 .claude/
+.gemini/
 
 # Internal docs
 docs/testing/

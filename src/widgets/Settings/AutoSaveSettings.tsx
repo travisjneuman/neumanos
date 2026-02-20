@@ -309,7 +309,7 @@ export const AutoSaveSettings: React.FC<AutoSaveSettingsProps> = ({
                     type="text"
                     value={customFilename}
                     onChange={(e) => setCustomFilename(e.target.value)}
-                    placeholder="Neuman"
+                    placeholder="MyBackup"
                     className="flex-1 px-4 py-2 bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-lg text-text-light-primary dark:text-text-dark-primary focus:ring-2 focus:ring-accent-primary focus:border-transparent transition-all"
                   />
                   <span className="text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">.brain</span>

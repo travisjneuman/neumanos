@@ -295,7 +295,7 @@ export function BackupSettings() {
                 type="text"
                 value={getDisplayFileName()}
                 onChange={(e) => handleFileNameChange(e.target.value)}
-                placeholder="Neuman"
+                placeholder="MyBackup"
                 className="flex-1 px-3 py-2 text-sm rounded-button bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-text-light-primary dark:text-text-dark-primary focus:ring-2 focus:ring-accent-blue"
               />
               <span className="text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">.brain</span>

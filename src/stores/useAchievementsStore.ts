@@ -375,7 +375,9 @@ export const useAchievementsStore = create<AchievementsState>()(
           };
         });
 
-        console.log(`Achievement unlocked: ${id}`);
+        if (import.meta.env.DEV) {
+          console.log(`Achievement unlocked: ${id}`);
+        }
       },
 
       // Get all unlocked achievements

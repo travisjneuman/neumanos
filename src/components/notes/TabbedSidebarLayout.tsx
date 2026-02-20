@@ -13,6 +13,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { toast } from '../../stores/useToastStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
@@ -353,7 +354,7 @@ export const TabbedSidebarLayout: React.FC<TabbedSidebarLayoutProps> = ({
   }, []);
 
   const handleNoteExportPDF = useCallback((_note: Note) => {
-    alert('PDF export coming soon!');
+    toast.info('PDF export coming soon!');
   }, []);
 
   const handleNoteTogglePin = useCallback(

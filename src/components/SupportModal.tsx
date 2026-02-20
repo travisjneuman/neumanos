@@ -33,7 +33,7 @@ interface FAQ {
   answer: string;
 }
 
-const SUPPORT_EMAIL = 'support@neumanos.com';
+const SUPPORT_EMAIL = 'os@neuman.dev';
 
 const FAQS: FAQ[] = [
   // Getting Started

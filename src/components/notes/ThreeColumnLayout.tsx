@@ -14,6 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from '../../stores/useToastStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PanelLeftClose, PanelLeftOpen, Settings2 } from 'lucide-react';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -316,7 +317,7 @@ export const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
   }, []);
 
   const handleNoteExportPDF = useCallback((_note: Note) => {
-    alert('PDF export coming soon!');
+    toast.info('PDF export coming soon!');
   }, []);
 
   const handleNoteTogglePin = useCallback(
