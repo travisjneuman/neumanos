@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateTo, setupConsoleMonitor, assertNoConsoleErrors } from './helpers';
 
 /**
  * E2E Tests for Time Tracking
@@ -7,25 +8,10 @@ import { test, expect } from '@playwright/test';
  *         view monthly calendar, verify time calculations
  */
 
-// Helper to dismiss onboarding modals
-async function dismissModals(page: any) {
-  const skipButton = page.getByRole('button', { name: /skip for now/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
-    await skipButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-
-  const closeButton = page.getByRole('button', { name: /close modal/i });
-  if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await closeButton.click();
-    await closeButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-}
-
 test.describe('Time Tracking', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/schedule?tab=timer');
-    await dismissModals(page);
+    setupConsoleMonitor(page);
+    await navigateTo(page, '/schedule?tab=timer');
 
     // Ensure we're on Timer tab
     const timerTab = page.getByRole('button', { name: /timer/i });

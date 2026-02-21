@@ -1,20 +1,140 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-/* ==================== COMPONENT CLASSES ==================== */
-@layer components {
-  /* Bento card — used across Settings, Analytics, PM Dashboard, etc. */
-  .bento-card {
-    @apply bg-surface-light dark:bg-surface-dark-elevated;
-    @apply border border-border-light dark:border-border-dark;
-    @apply rounded-card shadow-card;
-    transition: box-shadow 200ms ease, transform 200ms ease;
-  }
+@custom-variant dark (&:is(.dark *));
 
-  .bento-card:hover {
-    @apply shadow-card-hover;
-    transform: translateY(-1px);
+/* ==================== TAILWIND V4 THEME TOKENS ==================== */
+/* Static design tokens only — colors are handled by runtime CSS variables below */
+@theme {
+  --font-sans:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+    sans-serif;
+
+  --text-xs: 10px;
+  --text-xs--line-height: 14px;
+  --text-sm: 12px;
+  --text-sm--line-height: 16px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-md: 16px;
+  --text-md--line-height: 24px;
+  --text-lg: 20px;
+  --text-lg--line-height: 28px;
+  --text-xl: 24px;
+  --text-xl--line-height: 32px;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+  --spacing-8pt: 8px;
+  --spacing-16pt: 16px;
+  --spacing-24pt: 24px;
+  --spacing-32pt: 32px;
+  --spacing-40pt: 40px;
+  --spacing-48pt: 48px;
+
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --radius-input: 8px;
+
+  --transition-duration-standard: 200ms;
+
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Color tokens used by Tailwind utilities (bg-surface-light, text-text-light-primary, etc.)
+     These reference the runtime CSS variables below, so themes can override them dynamically. */
+  --color-surface-light: var(--surface-light);
+  --color-surface-light-elevated: var(--surface-light-elevated);
+  --color-surface-dark: var(--surface-dark);
+  --color-surface-dark-elevated: var(--surface-dark-elevated);
+
+  --color-text-light-primary: var(--text-light-primary);
+  --color-text-light-secondary: var(--text-light-secondary);
+  --color-text-dark-primary: var(--text-dark-primary);
+  --color-text-dark-secondary: var(--text-dark-secondary);
+
+  --color-border-light: var(--border-light);
+  --color-border-dark: var(--border-dark);
+
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-blue-hover: var(--accent-blue-hover);
+  --color-accent-magenta: var(--accent-magenta);
+  --color-accent-magenta-hover: var(--accent-magenta-hover);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-cyan-hover: var(--accent-cyan-hover);
+  --color-accent-green: var(--accent-green);
+  --color-accent-green-hover: var(--accent-green-hover);
+  --color-accent-neon-green: var(--accent-neon-green);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-hover: var(--accent-purple-hover);
+  --color-accent-red: var(--accent-red);
+  --color-accent-red-hover: var(--accent-red-hover);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-yellow-hover: var(--accent-yellow-hover);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-orange-hover: var(--accent-orange-hover);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-primary-hover: var(--accent-primary-hover);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-secondary-hover: var(--accent-secondary-hover);
+
+  --color-status-success: var(--status-success);
+  --color-status-success-bg: #d1fae5;
+  --color-status-success-bg-dark: #064e3b;
+  --color-status-success-text: #065f46;
+  --color-status-success-text-dark: #6ee7b7;
+  --color-status-success-border: #a7f3d0;
+  --color-status-success-border-dark: #065f46;
+
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-bg: #fef3c7;
+  --color-status-warning-bg-dark: #78350f;
+  --color-status-warning-text: #92400e;
+  --color-status-warning-text-dark: #fcd34d;
+  --color-status-warning-border: #fde68a;
+  --color-status-warning-border-dark: #92400e;
+
+  --color-status-error: var(--status-error);
+  --color-status-error-bg: #fee2e2;
+  --color-status-error-bg-dark: #7f1d1d;
+  --color-status-error-text: #991b1b;
+  --color-status-error-text-dark: #fca5a5;
+  --color-status-error-border: #fecaca;
+  --color-status-error-border-dark: #991b1b;
+
+  --color-status-info: var(--status-info);
+  --color-status-info-bg: #dbeafe;
+  --color-status-info-bg-dark: #1e3a8a;
+  --color-status-info-text: #1e40af;
+  --color-status-info-text-dark: #93c5fd;
+  --color-status-info-border: #bfdbfe;
+  --color-status-info-border-dark: #1e40af;
+
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
   }
 }
 
@@ -75,22 +195,117 @@
   --status-info: #60A0E8;
 }
 
+/* ==================== COMPONENT CLASSES ==================== */
+@utility bento-card {
+  @apply bg-surface-light dark:bg-surface-dark-elevated;
+  @apply border border-border-light dark:border-border-dark;
+  @apply rounded-card shadow-card;
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms ease;
+
+  &:hover {
+    @apply shadow-card-hover;
+    transform: translateY(-1px);
+  }
+}
+
+/* ==================== CUSTOM UTILITY CLASSES ==================== */
+/* Only utilities that Tailwind v4 can't auto-generate from @theme */
+
+/* Neon pulse animation for status indicators */
+@utility animate-neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Gradient button backgrounds */
+@utility bg-gradient-button-primary {
+  background-image: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+}
+@utility bg-gradient-button-danger {
+  background-image: linear-gradient(to right, var(--accent-red), var(--accent-orange));
+}
+@utility bg-gradient-button-success {
+  background-image: linear-gradient(to right, var(--accent-green), var(--accent-cyan));
+}
+
+/* Scrollbar thin utility */
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border-light);
+    border-radius: 3px;
+  }
+  :is(.dark &)::-webkit-scrollbar-thumb {
+    background-color: var(--border-dark);
+  }
+}
+
+/* Dashboard grid layout — purely structural, layout applied via Tailwind classes in Dashboard.tsx */
+
+/* ==================== BACKGROUND CONTRAST UTILITIES ==================== */
+@utility dark-content {
+  & h1, & h2, & h3, & p,
+  & span:not([class*='text-white']):not([class*='bg-']) {
+    color: var(--text-light-primary) !important;
+  }
+  & .text-text-light-secondary,
+  & .text-text-dark-secondary {
+    color: var(--text-light-secondary) !important;
+  }
+  & .bg-surface-light-elevated {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+@utility light-content {
+  & h1, & h2, & h3, & p,
+  & span:not([class*='text-black']):not([class*='bg-']) {
+    color: var(--text-dark-primary) !important;
+  }
+  & .text-text-light-secondary,
+  & .text-text-dark-secondary {
+    color: var(--text-dark-secondary) !important;
+  }
+  & .bg-surface-light-elevated {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+  }
+}
+
+/* ==================== KEYFRAME ANIMATIONS ==================== */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px var(--accent-neon-green),
+                0 0 8px var(--accent-neon-green),
+                0 0 12px rgba(57, 255, 20, 0.4);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 2px var(--accent-neon-green),
+                0 0 4px var(--accent-neon-green),
+                0 0 6px rgba(57, 255, 20, 0.2);
+    opacity: 0.85;
+  }
+}
+
+/* ==================== BASE STYLES ==================== */
 @layer base {
   html, body {
-    overflow-x: hidden; /* Prevent horizontal scrollbar at root level */
+    overflow-x: hidden;
   }
 
-  /* ==================== THEME TRANSITION SYSTEM ==================== */
-  /* Smooth color transitions for dark/light mode switching */
-  /* Applied to html for maximum coverage, uses GPU-accelerated properties */
+  /* Theme transition system */
   html {
-    /* Only transition color-related properties for performance */
     transition-property: background-color, color;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Inherit transition on key elements for cascade effect */
   html.theme-transitioning,
   html.theme-transitioning *,
   html.theme-transitioning *::before,
@@ -100,7 +315,6 @@
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 
-  /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     html,
     html.theme-transitioning,
@@ -115,13 +329,13 @@
     margin: 0;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 16px; /* Increased from 14px for better readability */
-    line-height: 1.5; /* Professional line-height */
+    font-size: 16px;
+    line-height: 1.5;
     @apply bg-surface-light dark:bg-surface-dark;
     @apply text-text-light-primary dark:text-text-dark-primary;
   }
 
-  /* Professional Typography Hierarchy */
+  /* Typography Hierarchy */
   h1 {
     font-size: 32px;
     font-weight: 700;
@@ -155,16 +369,15 @@
   }
 
   p {
-    line-height: 1.6; /* Slightly taller for body text readability */
+    line-height: 1.6;
   }
 
-  /* Professional emphasis weights */
   strong, b {
-    font-weight: 600; /* Medium weight for emphasis */
+    font-weight: 600;
   }
 
   .font-emphasis {
-    font-weight: 500; /* Light emphasis */
+    font-weight: 500;
   }
 
   /* Focus styles for accessibility (WCAG 2.2 compliant) */
@@ -174,18 +387,15 @@
     border-radius: 4px;
   }
 
-  /* ==================== GLOBAL SCROLLBAR STYLING ==================== */
-  /* Match Firefox's clean overlay scrollbar aesthetic across all browsers */
-
-  /* Webkit/Chrome/Edge/Safari - Global thin scrollbars */
+  /* Global scrollbar styling */
   * {
-    scrollbar-width: thin; /* Firefox: thin scrollbar */
-    scrollbar-color: rgba(128, 128, 128, 0.4) transparent; /* Firefox: thumb track colors */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
   }
 
   *::-webkit-scrollbar {
-    width: 6px; /* Vertical scrollbar width */
-    height: 6px; /* Horizontal scrollbar height */
+    width: 6px;
+    height: 6px;
   }
 
   *::-webkit-scrollbar-track {
@@ -201,7 +411,6 @@
     background: rgba(128, 128, 128, 0.6);
   }
 
-  /* Dark mode scrollbar adjustments */
   .dark *::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
   }
@@ -214,32 +423,27 @@
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   }
 
-  /* Hide scrollbar when not needed (auto behavior) */
   *::-webkit-scrollbar-corner {
     background: transparent;
   }
 
-  /* Mobile optimizations (Phase 6) */
+  /* Mobile optimizations */
   button, a, input, textarea, select {
-    /* Prevent 300ms touch delay on mobile */
     touch-action: manipulation;
-    /* Remove tap highlight on mobile */
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Prevent zoom on input focus (iOS Safari) */
   input, textarea, select {
-    font-size: max(16px, 1em); /* Minimum 16px to prevent zoom */
+    font-size: max(16px, 1em);
   }
 
-  /* ==================== TEXT SELECTION ==================== */
+  /* Text selection */
   ::selection {
     background-color: var(--accent-primary);
     color: white;
   }
 
-  /* ==================== GLOBAL CHECKBOX STYLING ==================== */
-  /* Custom checkbox — uses theme CSS variables for brand-aware colors */
+  /* Global checkbox styling */
   input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
@@ -267,16 +471,12 @@
     outline-offset: 2px;
   }
 
-  /* Dark mode checkbox */
   .dark input[type="checkbox"] {
     background-color: var(--surface-dark-elevated);
     border-color: var(--border-dark);
   }
 
-  /* No .dark variant needed — theme defines --accent-primary per mode */
-
-  /* ==================== GLOBAL RADIO BUTTON STYLING ==================== */
-  /* Custom radio button — uses theme CSS variables for brand-aware colors */
+  /* Global radio button styling */
   input[type="radio"] {
     appearance: none;
     -webkit-appearance: none;
@@ -301,20 +501,17 @@
     outline-offset: 2px;
   }
 
-  /* Dark mode radio */
   .dark input[type="radio"] {
     background-color: var(--surface-dark-elevated);
     border-color: var(--border-dark);
   }
 
-  /* No .dark variant needed — theme defines --accent-primary per mode */
-
-  /* Dynamic viewport height for Mobile Safari (URL bar) */
+  /* Dynamic viewport height for Mobile Safari */
   .full-height {
-    height: 100dvh; /* Dynamic viewport height */
+    height: 100dvh;
   }
 
-  /* Wiki Link Styles - Notes backlinks and broken link detection */
+  /* Wiki Link Styles */
   .wiki-link {
     cursor: pointer;
     text-decoration: underline;
@@ -322,32 +519,32 @@
   }
 
   .wiki-link-valid {
-    @apply text-accent-cyan;
+    color: var(--accent-cyan);
     text-decoration: underline;
     text-decoration-style: solid;
   }
 
   .wiki-link-valid:hover {
-    @apply text-accent-cyan-hover;
+    color: var(--accent-cyan-hover);
   }
 
   .wiki-link-broken {
-    @apply text-accent-red;
+    color: var(--accent-red);
     text-decoration: underline;
     text-decoration-style: dashed;
   }
 
   .wiki-link-broken:hover {
-    @apply text-accent-red-hover;
+    color: var(--accent-red-hover);
   }
 
-  /* Hashtag Styles - Inline tagging syntax */
+  /* Hashtag Styles */
   .hashtag {
     cursor: pointer;
     font-weight: 500;
     @apply bg-accent-cyan/10 dark:bg-accent-cyan/20;
     @apply text-accent-cyan;
-    @apply rounded px-1;
+    @apply rounded-sm px-1;
     transition: all 0.15s ease;
   }
 
@@ -358,196 +555,8 @@
   }
 }
 
-/* Scrollbar styling for sidebar */
-@layer utilities {
-  /* Text color utilities for accent colors */
-  .text-accent-blue { color: var(--accent-blue); }
-  .text-accent-blue-hover { color: var(--accent-blue-hover); }
-  .text-accent-magenta { color: var(--accent-magenta); }
-  .text-accent-magenta-hover { color: var(--accent-magenta-hover); }
-  .text-accent-cyan { color: var(--accent-cyan); }
-  .text-accent-cyan-hover { color: var(--accent-cyan-hover); }
-  .text-accent-green { color: var(--accent-green); }
-  .text-accent-green-hover { color: var(--accent-green-hover); }
-  .text-accent-purple { color: var(--accent-purple); }
-  .text-accent-purple-hover { color: var(--accent-purple-hover); }
-  .text-accent-red { color: var(--accent-red); }
-  .text-accent-red-hover { color: var(--accent-red-hover); }
-  .text-accent-yellow { color: var(--accent-yellow); }
-  .text-accent-yellow-hover { color: var(--accent-yellow-hover); }
-  .text-accent-orange { color: var(--accent-orange); }
-  .text-accent-orange-hover { color: var(--accent-orange-hover); }
-
-  /* Background color utilities for accent colors */
-  /* These must be manually defined because Tailwind's JIT opacity syntax doesn't work with hex CSS variables */
-  .bg-accent-blue { background-color: var(--accent-blue); }
-  .bg-accent-blue-hover { background-color: var(--accent-blue-hover); }
-  .bg-accent-magenta { background-color: var(--accent-magenta); }
-  .bg-accent-magenta-hover { background-color: var(--accent-magenta-hover); }
-  .bg-accent-cyan { background-color: var(--accent-cyan); }
-  .bg-accent-cyan-hover { background-color: var(--accent-cyan-hover); }
-  .bg-accent-green { background-color: var(--accent-green); }
-  .bg-accent-green-hover { background-color: var(--accent-green-hover); }
-  .bg-accent-purple { background-color: var(--accent-purple); }
-  .bg-accent-purple-hover { background-color: var(--accent-purple-hover); }
-  .bg-accent-red { background-color: var(--accent-red); }
-  .bg-accent-red-hover { background-color: var(--accent-red-hover); }
-  .bg-accent-yellow { background-color: var(--accent-yellow); }
-  .bg-accent-yellow-hover { background-color: var(--accent-yellow-hover); }
-  .bg-accent-orange { background-color: var(--accent-orange); }
-  .bg-accent-orange-hover { background-color: var(--accent-orange-hover); }
-  .bg-accent-neon-green { background-color: var(--accent-neon-green); }
-
-  /* Semantic accent role utilities */
-  .text-accent-primary { color: var(--accent-primary); }
-  .text-accent-primary-hover { color: var(--accent-primary-hover); }
-  .text-accent-secondary { color: var(--accent-secondary); }
-  .text-accent-secondary-hover { color: var(--accent-secondary-hover); }
-  .bg-accent-primary { background-color: var(--accent-primary); }
-  .bg-accent-primary-hover { background-color: var(--accent-primary-hover); }
-  .bg-accent-secondary { background-color: var(--accent-secondary); }
-  .bg-accent-secondary-hover { background-color: var(--accent-secondary-hover); }
-
-  /* Status color utilities — text */
-  .text-status-success { color: var(--status-success); }
-  .text-status-warning { color: var(--status-warning); }
-  .text-status-error { color: var(--status-error); }
-  .text-status-info { color: var(--status-info); }
-
-  /* Status color utilities — background with opacity */
-  .bg-status-success { background-color: var(--status-success); }
-  .bg-status-warning { background-color: var(--status-warning); }
-  .bg-status-error { background-color: var(--status-error); }
-  .bg-status-info { background-color: var(--status-info); }
-  .bg-status-success\/10 { background-color: color-mix(in srgb, var(--status-success) 10%, transparent); }
-  .bg-status-error\/10 { background-color: color-mix(in srgb, var(--status-error) 10%, transparent); }
-  .bg-status-warning\/10 { background-color: color-mix(in srgb, var(--status-warning) 10%, transparent); }
-  .bg-status-info\/10 { background-color: color-mix(in srgb, var(--status-info) 10%, transparent); }
-
-  /* Status color utilities — border with opacity */
-  .border-status-success { border-color: var(--status-success); }
-  .border-status-warning { border-color: var(--status-warning); }
-  .border-status-error { border-color: var(--status-error); }
-  .border-status-info { border-color: var(--status-info); }
-  .border-status-warning\/30 { border-color: color-mix(in srgb, var(--status-warning) 30%, transparent); }
-  .border-status-error\/30 { border-color: color-mix(in srgb, var(--status-error) 30%, transparent); }
-
-  /* Hover variants for status backgrounds */
-  .hover\:bg-status-error\/10:hover { background-color: color-mix(in srgb, var(--status-error) 10%, transparent); }
-  .hover\:bg-status-success\/10:hover { background-color: color-mix(in srgb, var(--status-success) 10%, transparent); }
-  .hover\:bg-status-warning\/10:hover { background-color: color-mix(in srgb, var(--status-warning) 10%, transparent); }
-
-  /* Neon pulse animation for status indicators */
-  @keyframes neon-pulse {
-    0%, 100% {
-      box-shadow: 0 0 4px var(--accent-neon-green),
-                  0 0 8px var(--accent-neon-green),
-                  0 0 12px rgba(57, 255, 20, 0.4);
-      opacity: 1;
-    }
-    50% {
-      box-shadow: 0 0 2px var(--accent-neon-green),
-                  0 0 4px var(--accent-neon-green),
-                  0 0 6px rgba(57, 255, 20, 0.2);
-      opacity: 0.85;
-    }
-  }
-
-  .animate-neon-pulse {
-    animation: neon-pulse 2s ease-in-out infinite;
-  }
-
-  /* Gradient button backgrounds */
-  .bg-gradient-button-primary {
-    background-image: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
-  }
-  .bg-gradient-button-danger {
-    background-image: linear-gradient(to right, var(--accent-red), var(--accent-orange));
-  }
-  .bg-gradient-button-success {
-    background-image: linear-gradient(to right, var(--accent-green), var(--accent-cyan));
-  }
-
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-border-light;
-    border-radius: 3px;
-  }
-
-  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-border-dark;
-  }
-
-  /* Dashboard grid layout - CSS Grid supports native column spanning */
-  .dashboard-grid {
-    /* Grid is defined in Dashboard.tsx using Tailwind classes:
-       - Mobile: 1 column (grid-cols-1)
-       - Tablet: 2 columns (md:grid-cols-2)
-       - Desktop: 3 columns (lg:grid-cols-3)
-
-       Column spanning uses Tailwind's col-span utilities:
-       - 1x: (default, no class)
-       - 2x: lg:col-span-2
-       - 3x: lg:col-span-3 md:col-span-2
-    */
-  }
-
-  /* ==================== BACKGROUND CONTRAST UTILITIES ==================== */
-  /* Smart contrast detection for dashboard backgrounds */
-  /* Applied to .dashboard-page to override text colors when background conflicts with theme */
-
-  /* Dark content: Force dark text on light backgrounds (in dark mode) */
-  .dark-content h1,
-  .dark-content h2,
-  .dark-content h3,
-  .dark-content p,
-  .dark-content span:not([class*="text-white"]):not([class*="bg-"]) {
-    color: var(--text-light-primary) !important;
-  }
-
-  .dark-content .text-text-light-secondary,
-  .dark-content .text-text-dark-secondary {
-    color: var(--text-light-secondary) !important;
-  }
-
-  /* Ensure buttons and UI elements remain visible on light backgrounds */
-  .dark-content .bg-surface-light-elevated {
-    background-color: rgba(0, 0, 0, 0.1) !important;
-  }
-  .dark-content .dark\:bg-surface-dark-elevated {
-    background-color: rgba(0, 0, 0, 0.15) !important;
-  }
-
-  /* Light content: Force light text on dark backgrounds (in light mode) */
-  .light-content h1,
-  .light-content h2,
-  .light-content h3,
-  .light-content p,
-  .light-content span:not([class*="text-black"]):not([class*="bg-"]) {
-    color: var(--text-dark-primary) !important;
-  }
-
-  .light-content .text-text-light-secondary,
-  .light-content .text-text-dark-secondary {
-    color: var(--text-dark-secondary) !important;
-  }
-
-  /* Ensure buttons and UI elements remain visible on dark backgrounds */
-  .light-content .bg-surface-light-elevated {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-  }
-}
-
-/* Print Styles - Calendar Print View (Quick Win #6) */
+/* ==================== PRINT STYLES ==================== */
 @media print {
-  /* Hide all navigation, sidebars, buttons, and dashboard UI */
   header,
   nav,
   aside,
@@ -558,7 +567,6 @@
     display: none !important;
   }
 
-  /* Force white background, black text (ignore dark mode) */
   body,
   html {
     margin: 0;
@@ -569,14 +577,12 @@
     print-color-adjust: exact;
   }
 
-  /* Remove all dark mode colors */
   * {
     background: white !important;
     color: black !important;
     border-color: #333 !important;
   }
 
-  /* Calendar-specific print styles */
   .calendar-container,
   [class*="calendar"] {
     width: 100% !important;
@@ -586,7 +592,6 @@
     page-break-inside: avoid;
   }
 
-  /* Calendar grid */
   table,
   [class*="grid"] {
     width: 100%;
@@ -603,7 +608,6 @@
     page-break-inside: avoid;
   }
 
-  /* Events */
   [class*="event"],
   [class*="item"] {
     background: #f0f0f0 !important;
@@ -613,7 +617,6 @@
     font-size: 9pt !important;
   }
 
-  /* Landscape orientation for better calendar fit */
   @page {
     size: landscape;
     margin: 1cm;

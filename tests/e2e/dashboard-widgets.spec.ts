@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateTo, setupConsoleMonitor, assertNoConsoleErrors } from './helpers';
 
 /**
  * E2E Tests for Dashboard Widgets
@@ -7,25 +8,10 @@ import { test, expect } from '@playwright/test';
  *         verify widget data updates (TaskSummary, UpcomingEvents)
  */
 
-// Helper to dismiss onboarding modals
-async function dismissModals(page: any) {
-  const skipButton = page.getByRole('button', { name: /skip for now/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
-    await skipButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-
-  const closeButton = page.getByRole('button', { name: /close modal/i });
-  if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await closeButton.click();
-    await closeButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-}
-
 test.describe('Dashboard Widgets', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await dismissModals(page);
+    setupConsoleMonitor(page);
+    await navigateTo(page, '/');
   });
 
   test('can add a widget to dashboard', async ({ page }) => {
@@ -134,8 +120,7 @@ test.describe('Dashboard Widgets', () => {
 
   test('TaskSummary widget displays accurate task counts', async ({ page }) => {
     // Navigate to tasks page to create a task
-    await page.goto('/tasks');
-    await dismissModals(page);
+    await navigateTo(page, '/tasks');
 
     // Create a task
     const addButton = page.getByRole('button', { name: /add.*task|new.*task|create.*task/i }).first();
@@ -148,8 +133,7 @@ test.describe('Dashboard Widgets', () => {
     }
 
     // Navigate back to dashboard
-    await page.goto('/');
-    await dismissModals(page);
+    await navigateTo(page, '/');
 
     // Find TaskSummary widget
     const taskSummaryWidget = page.locator('[data-widget="task-summary"], [data-widget-type="TaskSummary"]').or(
@@ -169,8 +153,7 @@ test.describe('Dashboard Widgets', () => {
 
   test('UpcomingEvents widget displays events', async ({ page }) => {
     // Navigate to calendar to create an event
-    await page.goto('/schedule?tab=calendar');
-    await dismissModals(page);
+    await navigateTo(page, '/schedule?tab=calendar');
 
     // Create an event
     const addEventButton = page.getByRole('button', { name: /add.*event|new.*event|create.*event/i });
@@ -184,8 +167,7 @@ test.describe('Dashboard Widgets', () => {
     }
 
     // Navigate back to dashboard
-    await page.goto('/');
-    await dismissModals(page);
+    await navigateTo(page, '/');
 
     // Find UpcomingEvents widget
     const upcomingEventsWidget = page.locator('[data-widget="upcoming-events"], [data-widget-type="UpcomingEvents"]').or(
@@ -203,8 +185,7 @@ test.describe('Dashboard Widgets', () => {
     await page.waitForTimeout(500);
 
     // Open tasks page in new window/tab simulation by navigating
-    await page.goto('/tasks');
-    await dismissModals(page);
+    await navigateTo(page, '/tasks');
 
     // Create a task
     const addButton = page.getByRole('button', { name: /add.*task|new.*task|create.*task/i }).first();
@@ -217,8 +198,7 @@ test.describe('Dashboard Widgets', () => {
     }
 
     // Navigate back to dashboard
-    await page.goto('/');
-    await dismissModals(page);
+    await navigateTo(page, '/');
 
     // TaskSummary widget should show updated count
     const taskSummaryWidget = page.locator('[data-widget="task-summary"], [data-widget-type="TaskSummary"]').or(

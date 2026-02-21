@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateTo, setupConsoleMonitor, assertNoConsoleErrors, dismissOnboarding } from './helpers';
 
 /**
  * E2E Tests for Automation Rules (User-Facing Flows)
@@ -10,25 +11,10 @@ import { test, expect } from '@playwright/test';
  * lower-level engine behavior with fixtures.
  */
 
-// Helper to dismiss onboarding modals
-async function dismissModals(page: any) {
-  const skipButton = page.getByRole('button', { name: /skip for now/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
-    await skipButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-
-  const closeButton = page.getByRole('button', { name: /close modal/i });
-  if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await closeButton.click();
-    await closeButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-}
-
 test.describe('Automation Rules - User Flows', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/automations');
-    await dismissModals(page);
+    setupConsoleMonitor(page);
+    await navigateTo(page, '/automations');
   });
 
   test('can create a new automation rule', async ({ page }) => {
@@ -236,8 +222,7 @@ test.describe('Automation Rules - User Flows', () => {
     }
 
     // Navigate to tasks and create + complete a task
-    await page.goto('/tasks');
-    await dismissModals(page);
+    await navigateTo(page, '/tasks');
 
     const addButton = page.getByRole('button', { name: /add.*task|new.*task/i }).first();
     if (await addButton.isVisible({ timeout: 2000 }).catch(() => false)) {

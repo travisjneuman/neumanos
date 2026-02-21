@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateTo, setupConsoleMonitor, assertNoConsoleErrors } from './helpers';
 
 /**
  * E2E Tests for Tasks Gantt Timeline View
@@ -7,25 +8,10 @@ import { test, expect } from '@playwright/test';
  *         drag to reschedule, export (PNG/PDF/Excel)
  */
 
-// Helper to dismiss onboarding modals
-async function dismissModals(page: any) {
-  const skipButton = page.getByRole('button', { name: /skip for now/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
-    await skipButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-
-  const closeButton = page.getByRole('button', { name: /close modal/i });
-  if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await closeButton.click();
-    await closeButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-}
-
 test.describe('Tasks Gantt Timeline View', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tasks?view=gantt');
-    await dismissModals(page);
+    setupConsoleMonitor(page);
+    await navigateTo(page, '/tasks?view=gantt');
 
     // Ensure we're on Gantt view
     const ganttButton = page.getByRole('button', { name: /timeline|gantt/i });

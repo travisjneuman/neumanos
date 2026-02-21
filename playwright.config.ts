@@ -2,8 +2,15 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright E2E Test Configuration for NeumanOS
+ *
+ * Set TEST_BASE_URL to run tests against a remote deployment:
+ *   TEST_BASE_URL=https://migrate-tailwind4-eslint10.neumanos.pages.dev npx playwright test
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
+
+const remoteBaseURL = process.env.TEST_BASE_URL;
+
 export default defineConfig({
   // Test directory
   testDir: './tests/e2e',
@@ -31,8 +38,8 @@ export default defineConfig({
 
   // Shared settings for all projects
   use: {
-    // Base URL for navigation
-    baseURL: 'http://localhost:5173',
+    // Use remote URL if provided, otherwise local dev server
+    baseURL: remoteBaseURL || 'http://localhost:5173',
 
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
@@ -44,39 +51,48 @@ export default defineConfig({
     video: 'on-first-retry',
   },
 
-  // Configure projects for major browsers
+  // Configure projects for major browsers + mobile
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // Uncomment to add more browsers:
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 12'] },
+    },
   ],
 
-  // Run local dev server before starting tests
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  // Only start local dev server when not testing against a remote URL
+  ...(!remoteBaseURL && {
+    webServer: {
+      command: 'npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+  }),
 
   // Output directory for test artifacts
   outputDir: 'tests/results',
 
-  // Global timeout for each test
-  timeout: 30 * 1000,
+  // Global timeout for each test (longer for remote targets)
+  timeout: remoteBaseURL ? 60 * 1000 : 30 * 1000,
 
   // Expect timeout
   expect: {
-    timeout: 5 * 1000,
+    timeout: remoteBaseURL ? 10 * 1000 : 5 * 1000,
   },
 });

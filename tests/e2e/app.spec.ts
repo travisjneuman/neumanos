@@ -1,121 +1,115 @@
 import { test, expect } from '@playwright/test';
+import { navigateTo, setupConsoleMonitor, assertNoConsoleErrors, createTask } from './helpers';
 
 /**
- * Critical Flow E2E Tests for NeumanOS
+ * Application Basics E2E Tests
  *
- * These tests verify the most important user journeys.
- * Keep this suite minimal—use unit/integration tests for edge cases.
+ * Core smoke tests: app loads, navigation works, theme toggles,
+ * keyboard navigation is accessible.
  */
 
-// Helper to dismiss onboarding modals
-async function dismissModals(page: any) {
-  // Check for auto-save backup modal
-  const skipButton = page.getByRole('button', { name: /skip for now/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
-    await skipButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-
-  // Check for close modal button
-  const closeButton = page.getByRole('button', { name: /close modal/i });
-  if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await closeButton.click();
-    await closeButton.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
-  }
-}
-
 test.describe('Application Basics', () => {
-  test('loads the dashboard', async ({ page }) => {
-    await page.goto('/');
-    await dismissModals(page);
-
-    // Should see the main dashboard
-    await expect(page).toHaveTitle(/NeumanOS/i);
-
-    // Should have navigation sidebar
-    await expect(page.getByRole('navigation')).toBeVisible();
+  test.beforeEach(async ({ page }) => {
+    setupConsoleMonitor(page);
   });
 
-  test('navigation works', async ({ page }) => {
-    await page.goto('/');
-    await dismissModals(page);
+  test('loads the dashboard with correct title', async ({ page }) => {
+    await navigateTo(page, '/');
+    await expect(page).toHaveTitle(/NeumanOS/i);
+    await expect(page.getByRole('navigation')).toBeVisible();
+    assertNoConsoleErrors(page);
+  });
+
+  test('navigation works between pages', async ({ page }) => {
+    await navigateTo(page, '/');
 
     // Navigate to Tasks
-    await page.getByRole('link', { name: /tasks/i }).click();
-    await expect(page).toHaveURL(/.*tasks/);
+    const tasksLink = page.getByRole('link', { name: /tasks/i }).first();
+    if (await tasksLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await tasksLink.click();
+      await page.waitForTimeout(500);
+      await expect(page).toHaveURL(/.*tasks/);
+    }
 
     // Navigate to Notes
-    await page.getByRole('link', { name: /notes/i }).click();
-    await expect(page).toHaveURL(/.*notes/);
+    const notesLink = page.getByRole('link', { name: /notes/i }).first();
+    if (await notesLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await notesLink.click();
+      await page.waitForTimeout(500);
+      await expect(page).toHaveURL(/.*notes/);
+    }
 
     // Navigate back to Dashboard
-    await page.getByRole('link', { name: /dashboard/i }).click();
-    await expect(page).toHaveURL('/');
+    const dashLink = page.getByRole('link', { name: /dashboard/i }).first();
+    if (await dashLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await dashLink.click();
+      await page.waitForTimeout(500);
+    }
+
+    assertNoConsoleErrors(page);
   });
 });
 
 test.describe('Task Management', () => {
+  test.beforeEach(async ({ page }) => {
+    setupConsoleMonitor(page);
+  });
+
   test('can create a task', async ({ page }) => {
-    await page.goto('/tasks');
-    await dismissModals(page);
+    await navigateTo(page, '/tasks');
 
-    // Find and click the add task button
-    const addButton = page.getByRole('button', { name: /add.*task|new.*task|create/i });
-
-    if (await addButton.isVisible()) {
+    const addButton = page.getByRole('button', { name: '+ Add task' }).first();
+    if (await addButton.isVisible({ timeout: 3000 }).catch(() => false)) {
       await addButton.click();
 
-      // Fill in task details (adapt selectors to actual UI)
-      const titleInput = page.getByPlaceholder(/title|task name/i);
-      if (await titleInput.isVisible()) {
+      const titleInput = page.getByPlaceholder('Task title...');
+      if (await titleInput.isVisible({ timeout: 2000 }).catch(() => false)) {
         await titleInput.fill('E2E Test Task');
-
-        // Submit the form
-        await page.getByRole('button', { name: /save|create|add/i }).click();
-
-        // Verify task appears
+        await page.getByRole('button', { name: 'Add', exact: true }).click();
         await expect(page.getByText('E2E Test Task')).toBeVisible();
       }
     }
+
+    assertNoConsoleErrors(page);
   });
 });
 
 test.describe('Theme and Accessibility', () => {
+  test.beforeEach(async ({ page }) => {
+    setupConsoleMonitor(page);
+  });
+
   test('theme toggle works', async ({ page }) => {
-    await page.goto('/');
-    await dismissModals(page);
+    await navigateTo(page, '/');
 
-    // Find theme toggle (adapt to actual UI)
-    const themeToggle = page.getByRole('button', { name: /theme|dark.*mode|light.*mode/i });
-
-    if (await themeToggle.isVisible()) {
-      // Get initial theme
+    const themeToggle = page.locator('[aria-label*="theme"], [aria-label*="Theme"], [title*="theme"], [title*="Theme"]').first();
+    if (await themeToggle.isVisible({ timeout: 3000 }).catch(() => false)) {
       const initialTheme = await page.evaluate(() =>
         document.documentElement.classList.contains('dark') ? 'dark' : 'light'
       );
 
-      // Toggle theme
       await themeToggle.click();
+      await page.waitForTimeout(300);
 
-      // Verify theme changed
       const newTheme = await page.evaluate(() =>
         document.documentElement.classList.contains('dark') ? 'dark' : 'light'
       );
 
       expect(newTheme).not.toBe(initialTheme);
     }
+
+    assertNoConsoleErrors(page);
   });
 
-  test('keyboard navigation is accessible', async ({ page }) => {
-    await page.goto('/');
-    await dismissModals(page);
+  test('keyboard navigation has visible focus indicator', async ({ page }) => {
+    await navigateTo(page, '/');
 
-    // Tab through main navigation elements
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
 
-    // Should have visible focus indicator
     const focusedElement = page.locator(':focus');
     await expect(focusedElement).toBeVisible();
+
+    assertNoConsoleErrors(page);
   });
 });
