@@ -28,8 +28,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local development scripts
-scripts/
+# Local development scripts (keep ci.sh tracked)
+scripts/Start-Claude-Dev.*
+scripts/start-claude-dev.*
 
 # GIMP project files
 *.xcf

@@ -28,7 +28,8 @@
     "test:e2e:report": "playwright show-report",
     "type-check": "tsc -b --noEmit",
     "audit": "npm audit --audit-level=high",
-    "audit:fix": "npm audit fix"
+    "audit:fix": "npm audit fix",
+    "ci": "bash scripts/ci.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
