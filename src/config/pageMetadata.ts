@@ -84,6 +84,14 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     title: 'Documents',
     subtitle: 'Professional documents, spreadsheets, and presentations',
   },
+  '/create': {
+    title: 'Create',
+    subtitle: 'Documents, diagrams, and forms',
+  },
+  '/pm': {
+    title: 'Project Management',
+    subtitle: 'Track projects, milestones, and team progress',
+  },
 };
 
 /**

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { getPageMetadata } from '../config/pageMetadata';
 import { ProjectContextDropdown } from './ProjectContextDropdown';
+import { Breadcrumbs } from './Breadcrumbs';
+import { NavigationButtons } from './NavigationButtons';
 
 /**
  * PageHeader Component
@@ -116,8 +118,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title: titleProp, subtit
 
   return (
     <div className="flex items-start justify-between gap-4 mb-4 sm:mb-8">
-      {/* Left: Title, Subtitle, Actions */}
+      {/* Left: Navigation, Breadcrumbs, Title, Subtitle, Actions */}
       <div className="flex-1 min-w-0">
+        {/* Navigation bar: back/forward + breadcrumbs */}
+        <div className="flex items-center gap-2 mb-1">
+          <NavigationButtons />
+          <Breadcrumbs />
+        </div>
         <AnimatePresence mode="wait">
           <motion.h1
             key={`title-${location.pathname}`}

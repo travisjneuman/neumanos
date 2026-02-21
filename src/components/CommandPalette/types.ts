@@ -29,7 +29,10 @@ export type SearchResultType =
   | 'template'
   | 'project'
   | 'shortcut'
-  | 'command';
+  | 'command'
+  | 'recent'
+  | 'habit'
+  | 'document';
 
 /**
  * Search result item displayed in the command palette
@@ -282,6 +285,30 @@ export interface CommandPaletteState {
   results: SearchResult[];
   isLoading: boolean;
 }
+
+/**
+ * Type filter tabs for the command palette
+ * Allows users to filter results by category
+ */
+export type SearchFilterTab = 'all' | 'notes' | 'tasks' | 'events' | 'links' | 'docs' | 'other';
+
+export interface SearchFilterTabConfig {
+  id: SearchFilterTab;
+  label: string;
+  icon: string;
+  /** Which SearchResultTypes this tab includes */
+  types: SearchResultType[];
+}
+
+export const SEARCH_FILTER_TABS: SearchFilterTabConfig[] = [
+  { id: 'all', label: 'All', icon: '🔍', types: [] },
+  { id: 'notes', label: 'Notes', icon: '📝', types: ['note'] },
+  { id: 'tasks', label: 'Tasks', icon: '✅', types: ['task', 'project', 'template'] },
+  { id: 'events', label: 'Events', icon: '📅', types: ['event', 'time-entry'] },
+  { id: 'links', label: 'Links', icon: '🔗', types: ['bookmark'] },
+  { id: 'docs', label: 'Docs', icon: '📄', types: ['diagram', 'form', 'document'] },
+  { id: 'other', label: 'Other', icon: '⚡', types: ['page', 'action', 'setting', 'widget', 'automation', 'habit', 'faq', 'help', 'shortcut', 'command'] },
+];
 
 /**
  * Command palette input modes

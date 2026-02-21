@@ -20,6 +20,9 @@ import { useTemplateStore } from '../../stores/useTemplateStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { useSidebarStore } from '../../stores/useSidebarStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useHabitStore } from '../../stores/useHabitStore';
+import { useDocsStore } from '../../stores/useDocsStore';
+import { useRecentItemsStore } from '../../stores/useRecentItemsStore';
 import { WIDGET_REGISTRY } from '../../widgets/Dashboard/WidgetRegistry';
 import { aboutUsContent } from '../../content/aboutUs';
 
@@ -263,18 +266,20 @@ export function getNotesResults(navigate: (path: string) => void): SearchResult[
     type: 'note' as const,
     title: note.title || 'Untitled Note',
     subtitle: note.contentText?.slice(0, 100) || undefined,
-    icon: '📝',
+    icon: note.isPinned ? '📌' : note.isFavorite ? '⭐' : '📝',
     score: 0,
     keywords: note.tags || [],
     action: () => {
       useNotesStore.getState().setActiveNote(note.id);
       navigate('/notes');
     },
+    preview: note.contentText?.slice(0, 200) || undefined,
     metadata: {
       tags: note.tags,
       updatedAt: note.updatedAt,
       isPinned: note.isPinned,
       isFavorite: note.isFavorite,
+      contentText: note.contentText,
     },
   }));
 }
@@ -285,22 +290,30 @@ export function getNotesResults(navigate: (path: string) => void): SearchResult[
 export function getTasksResults(navigate: (path: string) => void): SearchResult[] {
   const tasks = useKanbanStore.getState().tasks;
 
-  return tasks.map((task) => ({
-    id: `task-${task.id}`,
-    type: 'task' as const,
-    title: task.title,
-    subtitle: task.description?.slice(0, 100) || `Status: ${task.status}`,
-    icon: task.status === 'done' ? '✅' : '📋',
-    score: 0,
-    keywords: task.tags || [],
-    action: () => navigate('/tasks'),
-    metadata: {
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-      tags: task.tags,
-    },
-  }));
+  return tasks.map((task) => {
+    const statusLabel = task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'To Do';
+    const dueDateLabel = task.dueDate ? ` · Due ${new Date(task.dueDate).toLocaleDateString()}` : '';
+    const priorityLabel = task.priority && task.priority !== 'medium' ? ` · ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority` : '';
+
+    return {
+      id: `task-${task.id}`,
+      type: 'task' as const,
+      title: task.title,
+      subtitle: `${statusLabel}${dueDateLabel}${priorityLabel}`,
+      icon: task.status === 'done' ? '✅' : task.priority === 'high' ? '🔴' : task.priority === 'low' ? '🔵' : '📋',
+      score: 0,
+      keywords: task.tags || [],
+      action: () => navigate('/tasks'),
+      preview: task.description?.slice(0, 200) || undefined,
+      metadata: {
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        tags: task.tags,
+        description: task.description,
+      },
+    };
+  });
 }
 
 /**
@@ -313,19 +326,26 @@ export function getEventsResults(navigate: (path: string) => void): SearchResult
   // Flatten events from all dates
   Object.entries(events).forEach(([dateKey, dateEvents]) => {
     dateEvents.forEach((event) => {
+      const timeStr = event.startTime
+        ? `${event.startTime}${event.endTime ? ' - ' + event.endTime : ''}`
+        : '';
+      const dateLabel = dateKey;
+
       results.push({
         id: `event-${event.id}`,
         type: 'event' as const,
         title: event.title,
-        subtitle: event.description || `Date: ${dateKey}`,
+        subtitle: `${dateLabel}${timeStr ? ' · ' + timeStr : ''}`,
         icon: '📅',
         score: 0,
         keywords: [],
         action: () => navigate('/schedule'),
+        preview: event.description || undefined,
         metadata: {
           dateKey,
           startTime: event.startTime,
           endTime: event.endTime,
+          description: event.description,
         },
       });
     });
@@ -885,6 +905,124 @@ export function getShortcutsResults(navigate: (path: string) => void): SearchRes
 }
 
 /**
+ * Get habits search results
+ */
+export function getHabitsResults(navigate: (path: string) => void): SearchResult[] {
+  const habits = useHabitStore.getState().habits;
+
+  return habits.map((habit) => ({
+    id: `habit-${habit.id}`,
+    type: 'habit' as const,
+    title: habit.title,
+    subtitle: `${habit.frequency} habit${habit.category ? ` · ${habit.category}` : ''}${habit.currentStreak > 0 ? ` · ${habit.currentStreak} day streak` : ''}`,
+    icon: habit.icon || '🎯',
+    score: 0,
+    keywords: ['habit', habit.frequency, habit.category || ''].filter(Boolean),
+    action: () => navigate('/tasks?tab=habits'),
+    metadata: {
+      frequency: habit.frequency,
+      category: habit.category,
+      streak: habit.currentStreak,
+    },
+  }));
+}
+
+/**
+ * Get documents search results (Docs/Spreadsheets/Presentations)
+ */
+export function getDocumentsResults(navigate: (path: string) => void): SearchResult[] {
+  const docs = useDocsStore.getState().docs;
+
+  return docs.map((doc) => ({
+    id: `document-${doc.id}`,
+    type: 'document' as const,
+    title: doc.title || 'Untitled Document',
+    subtitle: `${doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}${doc.updatedAt ? ` · Updated ${new Date(doc.updatedAt).toLocaleDateString()}` : ''}`,
+    icon: doc.type === 'sheet' ? '📊' : doc.type === 'slides' ? '📽️' : '📄',
+    score: 0,
+    keywords: ['document', 'doc', doc.type],
+    action: () => navigate(`/create/${doc.id}`),
+    metadata: {
+      docType: doc.type,
+      updatedAt: doc.updatedAt,
+    },
+  }));
+}
+
+/**
+ * Get recent items search results
+ * Displayed when the palette opens with no query
+ */
+export function getRecentItemResults(navigate: (path: string) => void): SearchResult[] {
+  const items = useRecentItemsStore.getState().getRecentItems();
+
+  return items.map((item) => {
+    const timeAgo = getTimeAgo(item.accessedAt);
+    return {
+      id: `recent-${item.id}`,
+      type: 'recent' as const,
+      title: item.title,
+      subtitle: `${timeAgo}${item.subtitle ? ` · ${item.subtitle}` : ''}`,
+      icon: item.icon,
+      score: 300, // High priority for recent items
+      keywords: [],
+      action: () => navigate(item.path),
+      metadata: {
+        originalType: item.type,
+        accessedAt: item.accessedAt,
+      },
+    };
+  });
+}
+
+/**
+ * Format a timestamp as relative time (e.g., "2 minutes ago")
+ */
+function getTimeAgo(isoString: string): string {
+  const now = Date.now();
+  const then = new Date(isoString).getTime();
+  const diffMs = now - then;
+
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+
+  return new Date(isoString).toLocaleDateString();
+}
+
+/**
+ * Generate a context snippet for a search result
+ * Shows surrounding text around the match
+ */
+export function getContextSnippet(text: string, query: string, maxLength: number = 120): string {
+  if (!text || !query) return text?.slice(0, maxLength) || '';
+
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const matchIndex = lowerText.indexOf(lowerQuery);
+
+  if (matchIndex === -1) return text.slice(0, maxLength);
+
+  // Calculate window around match
+  const halfWindow = Math.floor((maxLength - query.length) / 2);
+  const start = Math.max(0, matchIndex - halfWindow);
+  const end = Math.min(text.length, matchIndex + query.length + halfWindow);
+
+  let snippet = text.slice(start, end).trim();
+  if (start > 0) snippet = '...' + snippet;
+  if (end < text.length) snippet = snippet + '...';
+
+  return snippet;
+}
+
+/**
  * Get all search results from all sources
  */
 export function getAllResults(
@@ -906,6 +1044,9 @@ export function getAllResults(
     ...getAutomationResults(navigate),
     ...getTemplateResults(navigate),
     ...getProjectsResults(navigate),
+    // Habits and documents
+    ...getHabitsResults(navigate),
+    ...getDocumentsResults(navigate),
     // Platform features (static registry)
     ...getWidgetsResults(navigate),
     ...getSettingsResults(navigate, openModal),
@@ -993,6 +1134,9 @@ export function getTypeLabel(type: string): string {
     project: 'Projects',
     shortcut: 'Keyboard Shortcuts',
     command: 'Commands',
+    recent: 'Recent',
+    habit: 'Habits',
+    document: 'Documents',
   };
   return labels[type] || type;
 }

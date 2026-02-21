@@ -4,32 +4,46 @@
  * Quick-access search and navigation for NeumanOS, accessible via Ctrl+K (Win/Linux) or Cmd+K (Mac).
  * Named after synapses - the connection points in the brain where signals fire rapidly.
  * Provides instant access to notes, tasks, events, settings, and web search.
+ *
+ * Features:
+ * - Global search across all data types (notes, tasks, events, habits, docs, links)
+ * - Type filter tabs for focused searching
+ * - Recent items section with access timestamps
+ * - Context-rich search previews
+ * - Command mode (> prefix), help mode (? prefix), navigation mode (/ prefix)
  */
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, ExternalLink, ArrowRight, Settings } from 'lucide-react';
+import { Search, X, ExternalLink, ArrowRight, Settings, Clock } from 'lucide-react';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
-import { searchAll, groupResultsByType, getTypeLabel, detectMode, stripModePrefix, searchCommands, getQuickCreateResult, getRecentCommandResults } from './searchRegistry';
-import { SEARCH_ENGINES } from './types';
-import type { SearchResult, CommandPaletteMode } from './types';
+import {
+  searchAll,
+  groupResultsByType,
+  getTypeLabel,
+  detectMode,
+  stripModePrefix,
+  searchCommands,
+  getQuickCreateResult,
+  getRecentCommandResults,
+  getRecentItemResults,
+  getContextSnippet,
+} from './searchRegistry';
+import { SEARCH_ENGINES, SEARCH_FILTER_TABS } from './types';
+import type { SearchResult, CommandPaletteMode, SearchFilterTab } from './types';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { useRecentItemsStore } from '../../stores/useRecentItemsStore';
 import { CommandPaletteSettings } from './CommandPaletteSettings';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Callback to open the support modal with a specific tab */
   onOpenSupportModal?: (tab: 'report' | 'help' | 'docs') => void;
-  /** Callback to open other modals by ID (about, privacy, onboarding, etc.) */
   onOpenModal?: (modalId: string) => void;
 }
 
-/**
- * Type icons mapping
- */
 const TYPE_ICONS: Record<string, string> = {
   page: '🏠',
   note: '📝',
@@ -49,6 +63,9 @@ const TYPE_ICONS: Record<string, string> = {
   template: '📋',
   project: '📁',
   shortcut: '⌨️',
+  recent: '🕐',
+  habit: '🎯',
+  document: '📄',
 };
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onOpenSupportModal, onOpenModal }) => {
@@ -60,14 +77,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<SearchFilterTab>('all');
 
-  // Get preferred search engine from settings (default to Google)
   const preferredSearchEngine = useSettingsStore(
     (state) => state.commandPalette?.preferredSearchEngine ?? 'google'
   );
   const isDarkMode = useThemeStore((state) => state.mode === 'dark');
+  const trackAccess = useRecentItemsStore((state) => state.trackAccess);
 
-  // Handle escape key - close settings first, then palette
   useEscapeKey({
     enabled: isOpen,
     onEscape: () => {
@@ -80,85 +97,90 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     priority: 10000,
   });
 
-  // Detect mode from query
   const mode: CommandPaletteMode = useMemo(() => detectMode(query), [query]);
 
-  // Search results with memoization - handles different modes
+  // Get filter tab config for active filter
+  const activeFilterConfig = useMemo(
+    () => SEARCH_FILTER_TABS.find((t) => t.id === activeFilter),
+    [activeFilter]
+  );
+
+  // Search results with filtering
   const results = useMemo(() => {
     if (!isOpen) return [];
 
-    // Command mode: show only commands
     if (mode === 'command') {
-      const commandQuery = stripModePrefix(query);
-      return searchCommands(commandQuery, navigate, onOpenModal);
+      return searchCommands(stripModePrefix(query), navigate, onOpenModal);
     }
 
-    // Help mode: filter to FAQ/help results only
     if (mode === 'help') {
-      const helpQuery = stripModePrefix(query);
-      const allResults = searchAll(helpQuery, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
+      const allResults = searchAll(stripModePrefix(query), navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
       return allResults.filter(r => r.type === 'faq' || r.type === 'help' || r.type === 'shortcut');
     }
 
-    // Navigation mode: filter to pages only
     if (mode === 'navigation') {
-      const navQuery = stripModePrefix(query);
-      const allResults = searchAll(navQuery, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
+      const allResults = searchAll(stripModePrefix(query), navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
       return allResults.filter(r => r.type === 'page');
     }
 
     // Default search mode
     const searchResults = searchAll(query, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
 
-    // If query is empty, show recent commands at the top
+    // If query is empty, show recent items + recent commands
     if (!query.trim()) {
+      const recentItems = getRecentItemResults(navigate);
       const recentCommands = getRecentCommandResults(navigate, onOpenModal);
-      if (recentCommands.length > 0) {
-        // Put recent commands first, then regular results
-        return [...recentCommands, ...searchResults];
+      const combined = [...recentItems, ...recentCommands, ...searchResults];
+
+      // Apply filter
+      if (activeFilter !== 'all' && activeFilterConfig) {
+        return combined.filter(
+          (r) => r.type === 'recent' || activeFilterConfig.types.includes(r.type)
+        );
       }
+      return combined;
     }
 
-    // If no results and query is non-empty, add quick create option
-    if (searchResults.length === 0 && query.trim()) {
+    let filtered = searchResults;
+
+    // Apply type filter
+    if (activeFilter !== 'all' && activeFilterConfig) {
+      filtered = filtered.filter((r) =>
+        activeFilterConfig.types.includes(r.type) || r.type === 'external'
+      );
+    }
+
+    // Add quick create if few results
+    if (filtered.length === 0 && query.trim()) {
       const quickCreate = getQuickCreateResult(query);
-      if (quickCreate) {
-        return [quickCreate];
-      }
+      if (quickCreate) return [quickCreate];
     }
 
-    // If few results (< 3), add quick create as option
-    if (searchResults.length < 3 && query.trim()) {
+    if (filtered.length < 3 && query.trim()) {
       const quickCreate = getQuickCreateResult(query);
-      if (quickCreate) {
-        return [...searchResults, quickCreate];
-      }
+      if (quickCreate) return [...filtered, quickCreate];
     }
 
-    return searchResults;
-  }, [query, isOpen, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal, mode]);
+    return filtered;
+  }, [query, isOpen, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal, mode, activeFilter, activeFilterConfig]);
 
   // Group results by type
-  const groupedResults = useMemo(() => {
-    return groupResultsByType(results);
-  }, [results]);
+  const groupedResults = useMemo(() => groupResultsByType(results), [results]);
 
-  // Flatten grouped results for keyboard navigation
+  // Flatten for keyboard navigation
   const flatResults = useMemo(() => {
     const flat: SearchResult[] = [];
-    groupedResults.forEach((items) => {
-      flat.push(...items);
-    });
+    groupedResults.forEach((items) => flat.push(...items));
     return flat;
   }, [groupedResults]);
 
-  // Reset state when opening/closing
+  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setQuery('');
       setSelectedIndex(0);
       setShowSettings(false);
-      // Focus input after a short delay to ensure modal is rendered
+      setActiveFilter('all');
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
@@ -168,67 +190,87 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     selectedItemRef.current?.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
+  // Handle result selection - track access for recent items
+  const handleSelectResult = useCallback(
+    (result: SearchResult) => {
+      // Track this access for recent items (skip external, action, command types)
+      const trackableTypes = ['note', 'task', 'event', 'bookmark', 'diagram', 'form', 'page', 'document', 'habit'];
+      if (trackableTypes.includes(result.type)) {
+        const pathMap: Record<string, string> = {
+          note: '/notes',
+          task: '/tasks',
+          event: '/schedule',
+          bookmark: '/links',
+          diagram: '/diagrams',
+          form: '/forms',
+          page: '',
+          document: '/create',
+          habit: '/tasks?tab=habits',
+        };
+        trackAccess({
+          id: result.id,
+          title: result.title,
+          type: result.type,
+          icon: typeof result.icon === 'string' ? result.icon : TYPE_ICONS[result.type] || '📄',
+          path: pathMap[result.type] || '/',
+          subtitle: result.subtitle,
+        });
+      }
+      result.action();
+      onClose();
+    },
+    [onClose, trackAccess]
+  );
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev < flatResults.length - 1 ? prev + 1 : 0
-          );
+          setSelectedIndex((prev) => (prev < flatResults.length - 1 ? prev + 1 : 0));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : flatResults.length - 1
-          );
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : flatResults.length - 1));
           break;
         case 'Enter':
           e.preventDefault();
           if (flatResults[selectedIndex]) {
-            flatResults[selectedIndex].action();
-            onClose();
+            handleSelectResult(flatResults[selectedIndex]);
           }
           break;
         case 'Tab':
           e.preventDefault();
           if (e.shiftKey) {
-            setSelectedIndex((prev) =>
-              prev > 0 ? prev - 1 : flatResults.length - 1
-            );
+            setSelectedIndex((prev) => (prev > 0 ? prev - 1 : flatResults.length - 1));
           } else {
-            setSelectedIndex((prev) =>
-              prev < flatResults.length - 1 ? prev + 1 : 0
-            );
+            setSelectedIndex((prev) => (prev < flatResults.length - 1 ? prev + 1 : 0));
           }
           break;
       }
     },
-    [flatResults, selectedIndex, onClose]
-  );
-
-  // Handle result click
-  const handleResultClick = useCallback(
-    (result: SearchResult) => {
-      result.action();
-      onClose();
-    },
-    [onClose]
+    [flatResults, selectedIndex, handleSelectResult]
   );
 
   if (!isOpen) return null;
 
-  // Render result item
+  // Render a single result item with preview
   const renderResultItem = (result: SearchResult, index: number) => {
     const isSelected = index === selectedIndex;
     const isExternal = result.type === 'external';
+    const trimmedQuery = query.trim();
+
+    // Generate context snippet for selected item
+    const contextSnippet = isSelected && trimmedQuery && result.preview
+      ? getContextSnippet(result.preview, trimmedQuery)
+      : null;
 
     return (
       <button
         key={result.id}
         ref={isSelected ? selectedItemRef : undefined}
-        onClick={() => handleResultClick(result)}
+        onClick={() => handleSelectResult(result)}
         onMouseEnter={() => setSelectedIndex(index)}
         className={`
           w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors
@@ -240,12 +282,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
         role="option"
         aria-selected={isSelected}
       >
-        {/* Icon */}
         <span className="text-xl flex-shrink-0 w-8 text-center">
           {typeof result.icon === 'string' ? result.icon : TYPE_ICONS[result.type]}
         </span>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium text-text-light-primary dark:text-text-dark-primary truncate">
@@ -260,9 +300,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
               {result.subtitle}
             </span>
           )}
+          {contextSnippet && (
+            <span className="text-xs text-text-light-secondary/70 dark:text-text-dark-secondary/70 line-clamp-2 block mt-0.5 italic">
+              {contextSnippet}
+            </span>
+          )}
         </div>
 
-        {/* Action indicator */}
         {isSelected && (
           <ArrowRight className="w-4 h-4 text-accent-blue flex-shrink-0" />
         )}
@@ -270,7 +314,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     );
   };
 
-  // Track current flat index for rendering
   let currentFlatIndex = 0;
 
   return createPortal(
@@ -280,14 +323,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
       aria-modal="true"
       aria-label="Synapse search"
     >
-      {/* Backdrop - clicks here close the modal */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-pointer"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal */}
       <div
         className="relative w-full max-w-xl mx-4 bg-surface-light dark:bg-surface-dark rounded-xl shadow-2xl border border-border-light dark:border-border-dark overflow-hidden"
         style={{ maxHeight: '70vh' }}
@@ -333,12 +374,37 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           </button>
         </div>
 
+        {/* Type Filter Tabs - Only show in search mode */}
+        {mode === 'search' && (
+          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border-light dark:border-border-dark overflow-x-auto">
+            {SEARCH_FILTER_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveFilter(tab.id);
+                  setSelectedIndex(0);
+                }}
+                className={`
+                  flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors
+                  ${activeFilter === tab.id
+                    ? 'bg-accent-blue/20 text-accent-blue dark:bg-accent-blue/30'
+                    : 'text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
+                  }
+                `}
+              >
+                <span className="text-sm">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Results */}
         <div
           ref={listRef}
           id="command-palette-results"
           className="overflow-y-auto"
-          style={{ maxHeight: 'calc(70vh - 60px)' }}
+          style={{ maxHeight: mode === 'search' ? 'calc(70vh - 110px)' : 'calc(70vh - 60px)' }}
           role="listbox"
         >
           {flatResults.length === 0 && query.trim() === '' && (
@@ -366,6 +432,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                 </>
               ) : (
                 <>
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
                   <p className="text-sm">Type to search notes, tasks, events, bookmarks...</p>
                   <p className="text-xs mt-2 opacity-70">
                     Prefix with <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">&gt;</kbd> for commands,{' '}
@@ -379,7 +446,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
 
           {flatResults.length === 0 && query.trim() !== '' && (
             <div className="px-4 py-8 text-center text-text-light-secondary dark:text-text-dark-secondary">
-              <p className="text-sm">No results found for "{query}"</p>
+              <p className="text-sm">No results found for &ldquo;{query}&rdquo;</p>
               <p className="text-xs mt-2 opacity-70">Try a different search term or search the web</p>
             </div>
           )}
@@ -391,19 +458,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
 
             return (
               <div key={type} className="py-1">
-                {/* Category Header */}
                 <div className="px-4 py-1.5 text-xs font-semibold text-text-light-secondary dark:text-text-dark-secondary uppercase tracking-wider bg-surface-light dark:bg-surface-dark sticky top-0">
                   {getTypeLabel(type)}
                 </div>
-
-                {/* Results in category */}
                 {items.map((result, idx) => renderResultItem(result, startIndex + idx))}
               </div>
             );
           })}
         </div>
 
-        {/* Footer with keyboard hints and settings */}
+        {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-xs text-text-light-secondary dark:text-text-dark-secondary">
           <div className="flex items-center gap-4">
             <span>
@@ -445,7 +509,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           </div>
         </div>
 
-        {/* Settings Modal Overlay */}
         <CommandPaletteSettings
           isOpen={showSettings}
           onClose={() => setShowSettings(false)}
