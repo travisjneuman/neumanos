@@ -116,7 +116,7 @@ export function ResourceUtilizationChart({ height = 256 }: ResourceUtilizationCh
               borderRadius: '8px',
             }}
             formatter={(value) => [`${value ?? 0}%`, 'Utilization']}
-            labelFormatter={(label: string) => {
+            labelFormatter={(label) => {
               const resource = chartData.find((r) => r.name === label);
               if (!resource) return label;
               return `${label} (${resource.assignedHours}h / ${resource.capacity}h, ${resource.taskCount} task${resource.taskCount !== 1 ? 's' : ''})`;
