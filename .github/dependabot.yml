@@ -23,8 +23,8 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    # Limit open PRs
-    open-pull-requests-limit: 10
+    # Limit open PRs (5 keeps the queue manageable for solo maintainer)
+    open-pull-requests-limit: 5
     # Reviewers and labels
     labels:
       - "dependencies"

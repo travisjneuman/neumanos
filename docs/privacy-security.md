@@ -9,6 +9,7 @@ NeumanOS is built on a simple principle: your data belongs to you. This guide ex
 - [Where Your Data Lives](#where-your-data-lives)
 - [Privacy Guarantees](#privacy-guarantees)
 - [Analytics Disclosure](#analytics-disclosure)
+- [Dashboard Widgets & External Data](#dashboard-widgets--external-data)
 - [AI Terminal Security](#ai-terminal-security)
 - [Backing Up Your Data](#backing-up-your-data)
 - [Browser Security Tips](#browser-security-tips)
@@ -27,7 +28,7 @@ All your data -- notes, tasks, calendar events, time entries, settings, and widg
 - Nobody -- not even us -- can access your data remotely
 - If you clear your browser data, your NeumanOS data goes with it (so back up regularly)
 
-Your data never leaves your device unless you explicitly export it or set up auto-save to a cloud folder you control.
+Your data never leaves your device unless you explicitly export it, set up auto-save to a cloud folder you control, or use optional dashboard widgets that fetch data from external APIs (see [Dashboard Widgets & External Data](#dashboard-widgets--external-data) below).
 
 ---
 
@@ -37,7 +38,7 @@ Your data never leaves your device unless you explicitly export it or set up aut
 
 - No account creation or email addresses
 - No passwords (except your optional AI encryption password, stored in memory only)
-- No usage analytics or behavior tracking
+- No behavior tracking, user profiling, or advertising analytics
 - No crash reports or error telemetry
 - No cookies (except theme preference)
 - No fingerprinting
@@ -87,6 +88,30 @@ You can block Cloudflare Web Analytics with any standard ad blocker. The app wor
 
 ---
 
+## Dashboard Widgets & External Data
+
+Some optional dashboard widgets fetch data from third-party APIs to display real-time information. These requests only happen when you actively add the widget to your dashboard.
+
+### Widgets That Contact External Services
+
+| Widget | Service | Data Sent |
+|--------|---------|-----------|
+| **IP Info** | ipapi.co | Your IP address (sent automatically by the HTTP request) |
+| **Weather** | api.open-meteo.com | Approximate location coordinates |
+| **Air Quality** | air-quality-api.open-meteo.com | Approximate location coordinates |
+| **Sports Scores** | site.api.espn.com | No personal data (public scoreboard API) |
+| **News/Reddit/HN** | Various public APIs | No personal data |
+
+### How to Control This
+
+- **Widgets are opt-in** — no external requests are made until you add a widget to your dashboard
+- **Remove any widget at any time** to immediately stop those requests
+- **No accounts or tokens** are shared with these services (except your own AI API keys with AI providers)
+
+These external requests are the only exception to the "data never leaves your device" principle. All your notes, tasks, calendar events, and other content remain entirely local.
+
+---
+
 ## AI Terminal Security
 
 If you use the AI Terminal with your own API keys, those keys receive special protection.
@@ -112,6 +137,10 @@ If you use the AI Terminal with your own API keys, those keys receive special pr
 3. Your message is sent directly from your browser to the AI provider
 4. The AI provider responds directly to your browser
 5. NeumanOS never sees, stores, or relays your conversations
+
+### Chat History Storage
+
+AI conversation history is stored locally in your browser as plaintext (not encrypted). If your device or browser profile is compromised, conversation history could be read. You can clear chat history at any time from the AI Terminal settings.
 
 ### Password Expiry
 

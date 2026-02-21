@@ -13,6 +13,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:OpenRouter');
 
 /**
  * OpenRouter provider metadata
@@ -217,7 +220,7 @@ export class OpenRouterProvider implements AIProvider {
       await testClient.models.list();
       return true;
     } catch (error: unknown) {
-      console.error('OpenRouter API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

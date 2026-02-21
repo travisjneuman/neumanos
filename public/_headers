@@ -1,4 +1,13 @@
 # Security headers for Cloudflare Pages
+#
+# CSP Future Work:
+# - The unsafe-* directives in script-src are required for current functionality:
+#   * WebContainers (Phantom Shell) need code evaluation capabilities for in-browser
+#     Vite HMR. Future mitigation: isolate Phantom Shell on a separate subdomain
+#     (shell.os.neuman.dev) via iframe, scoping the permissive policy to that origin only.
+#   * Vite + Tailwind CSS on static hosting (Cloudflare Pages) need inline scripts.
+#     Future mitigation: Cloudflare Workers nonce injection or build-time CSP hash
+#     generation to replace inline permissions with specific hashes.
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff

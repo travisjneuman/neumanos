@@ -14,6 +14,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:DeepSeek');
 
 /**
  * DeepSeek provider metadata
@@ -150,7 +153,7 @@ export class DeepSeekProvider implements AIProvider {
       await testClient.models.list();
       return true;
     } catch (error) {
-      console.error('DeepSeek API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

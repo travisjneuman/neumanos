@@ -13,6 +13,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:Gemini');
 
 /**
  * Gemini provider metadata
@@ -137,7 +140,7 @@ export class GeminiProvider implements AIProvider {
       await model.generateContent('Hi');
       return true;
     } catch (error: unknown) {
-      console.error('Gemini API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

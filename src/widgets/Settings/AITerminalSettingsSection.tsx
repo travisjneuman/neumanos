@@ -3,6 +3,9 @@ import { useTerminalStore } from '../../stores/useTerminalStore';
 import type { QuickNoteMode } from '../../stores/useTerminalStore';
 import { ProviderSettings } from '../../components/ProviderSettings';
 import { createDefaultRouter, PROVIDER_METADATA } from '../../services/ai/providerRouter';
+import { logger } from '../../services/logger';
+
+const log = logger.module('AI:Settings');
 
 const QUICK_NOTE_MODES: { value: QuickNoteMode; label: string; description: string }[] = [
   {
@@ -68,7 +71,7 @@ export const AITerminalSettingsSection: React.FC = () => {
                 router.setProviderApiKey(providerId, decryptedKey);
               }
             } catch (error) {
-              console.error(`Failed to decrypt ${providerId} API key:`, error);
+              log.error(`Failed to decrypt ${providerId} API key`, { error });
             }
           }
         }
@@ -220,6 +223,13 @@ export const AITerminalSettingsSection: React.FC = () => {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Chat History Privacy Note */}
+      <div className="mb-6 p-4 bg-surface-light-elevated dark:bg-surface-dark-elevated rounded-lg border border-border-light dark:border-border-dark">
+        <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
+          <strong>Privacy note:</strong> Chat history is stored locally in plaintext. Clear history anytime from the AI Terminal.
+        </p>
       </div>
 
       {/* Free Provider Links */}

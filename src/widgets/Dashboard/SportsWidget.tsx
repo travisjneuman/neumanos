@@ -25,7 +25,7 @@ export const SportsWidget: React.FC = () => {
 
     try {
       // Using ESPN's public API endpoint (no auth required)
-      const response = await fetch('http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard');
+      const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard');
       if (!response.ok) throw new Error('Failed to fetch');
 
       const data = await response.json();

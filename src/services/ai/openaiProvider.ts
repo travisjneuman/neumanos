@@ -13,6 +13,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:OpenAI');
 
 /**
  * OpenAI provider metadata
@@ -165,7 +168,7 @@ export class OpenAIProvider implements AIProvider {
       await testClient.models.list();
       return true;
     } catch (error: unknown) {
-      console.error('OpenAI API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

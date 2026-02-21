@@ -1,0 +1,4 @@
+# NeumanOS — Single-page web application
+# All content is client-side rendered, no sensitive crawlable paths
+User-agent: *
+Allow: /

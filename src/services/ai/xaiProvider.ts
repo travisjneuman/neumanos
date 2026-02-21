@@ -14,6 +14,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:xAI');
 
 /**
  * xAI provider metadata
@@ -136,7 +139,7 @@ export class XAIProvider implements AIProvider {
       await testClient.models.list();
       return true;
     } catch (error: unknown) {
-      console.error('xAI API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

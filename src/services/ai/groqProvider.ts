@@ -13,6 +13,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:Groq');
 
 /**
  * Groq provider metadata
@@ -41,7 +44,7 @@ const METADATA: AIProviderMetadata = {
   },
 
   supportsCORS: false,
-  requiresProxy: true, // Groq doesn't support CORS, but we'll try direct for now
+  requiresProxy: false, // Uses dangerouslyAllowBrowser for direct browser access
   supportsStreaming: true,
 
   websiteUrl: 'https://groq.com',
@@ -167,7 +170,7 @@ export class GroqProvider implements AIProvider {
       await testClient.models.list();
       return true;
     } catch (error: unknown) {
-      console.error('Groq API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

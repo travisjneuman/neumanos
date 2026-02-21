@@ -14,6 +14,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:Anthropic');
 
 /**
  * Anthropic provider metadata
@@ -164,7 +167,7 @@ export class AnthropicProvider implements AIProvider {
 
       return true;
     } catch (error: unknown) {
-      console.error('Anthropic API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }

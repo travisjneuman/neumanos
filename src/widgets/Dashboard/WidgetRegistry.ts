@@ -538,7 +538,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     description: 'Live NBA scores and game status',
     icon: '🏀',
     category: 'news',
-    apiUrl: 'http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
+    apiUrl: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
     defaultEnabled: false,
   },
 

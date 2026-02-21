@@ -14,6 +14,9 @@ import type {
   AIResponse,
 } from './types';
 import { ProviderError, ProviderErrorType } from './types';
+import { logger } from '../logger';
+
+const log = logger.module('AI:Mistral');
 
 const MISTRAL_API_BASE = 'https://api.mistral.ai/v1';
 
@@ -189,7 +192,7 @@ export class MistralProvider implements AIProvider {
       });
       return response.ok;
     } catch (error) {
-      console.error('Mistral API key validation failed:', error);
+      log.error('API key validation failed', { error });
       return false;
     }
   }
