@@ -12,7 +12,7 @@
 
 import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
 import { List, Grid } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { AutoSizer } from 'react-virtualized-auto-sizer';
 import {
   DndContext,
   closestCenter,
@@ -992,8 +992,7 @@ export const LinkLibrary: React.FC = () => {
           {/* Virtualized Grid/List Container - relative parent for absolute AutoSizer */}
           <div className="flex-1 min-h-0 relative">
             <div className="absolute inset-0">
-              <AutoSizer>
-              {({ height, width }) => {
+              <AutoSizer renderProp={({ height, width }) => {
                 // Ensure we have valid dimensions
                 if (!height || !width || height < 100 || width < 100) {
                   return <div style={{ height, width }}>Loading...</div>;
@@ -1059,8 +1058,7 @@ export const LinkLibrary: React.FC = () => {
                     </div>
                   );
                 }
-              }}
-              </AutoSizer>
+              }} />
             </div>
           </div>
         </div>
