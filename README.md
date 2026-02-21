@@ -26,9 +26,9 @@
 
 ## What is NeumanOS?
 
-NeumanOS is an all-in-one productivity platform that lives entirely on your device. Notes, tasks, time tracking, calendar, bookmarks, and an AI terminal — unified in a single app, with no account required and no data leaving your machine.
+NeumanOS is an all-in-one productivity platform that lives entirely on your device. Notes, tasks, time tracking, calendar, documents, diagrams, forms, bookmarks, and an AI terminal — unified in a single app, with no account required and no data leaving your machine.
 
-Most productivity tools scatter your work across a stack of subscriptions you don't fully control. NeumanOS puts everything back in one place, under your ownership. Every note, task, and calendar event is stored in your browser's local storage — readable only by you, exportable at any time, and never touched by a server.
+Most productivity tools scatter your work across a stack of subscriptions you don't fully control. NeumanOS puts everything back in one place, under your ownership. Every note, task, and calendar event is stored in your browser's IndexedDB (50GB+ capacity) — readable only by you, exportable at any time, and never touched by a server.
 
 It's free, open source, and built on the principle that software that organizes your life should respect it.
 
@@ -42,7 +42,7 @@ Rich text editing, full markdown support, and wiki-style `[[links]]` between not
 
 ### Task & Project Management
 
-Kanban boards with drag-and-drop columns, task dependencies, subtasks, priority levels, and a timeline view for scheduling work across time. A daily habit tracker with streaks sits alongside your projects, so routines and goals live in the same place.
+Kanban boards with drag-and-drop columns, custom workflow stages, task dependencies (4 types with lag time), subtasks, priority levels, recurring tasks, and a Gantt timeline view with critical path highlighting. A PM dashboard provides burndown charts, resource utilization, and velocity tracking. Billable time tracking with invoice generation supports freelancers and agencies. A daily habit tracker with streaks sits alongside your projects, so routines and goals live in the same place.
 
 ### Time Tracking
 
@@ -63,6 +63,14 @@ Connect to 8+ AI providers — OpenAI, Anthropic Claude, Google Gemini, Groq, Mi
 ### Office Suite
 
 Create documents, spreadsheets, presentations, diagrams, and forms without leaving the platform. The spreadsheet engine supports 400+ Excel-compatible formulas. Presentations include a full canvas editor, 8 slide templates, animations, and presenter mode. Export to PDF, HTML, Markdown, CSV, or PPTX.
+
+### Focus & Daily Planning
+
+A distraction-free focus mode with a full-screen timer, current task display, and keyboard controls for deep work sessions. The Today page provides a Sunsama-inspired daily planning view — today's schedule, tasks, and time tracking in one focused layout.
+
+### Automations
+
+Rule-based automation engine for connecting actions across modules. Trigger workflows when tasks change status, events approach, or habits are completed.
 
 ### Link Library
 
@@ -90,6 +98,43 @@ No installation required. Visit the live app at:
 NeumanOS is a Progressive Web App. On supported browsers, you can install it to your home screen or desktop for a native-like experience with offline access. Look for the install prompt in your browser's address bar.
 
 In-app documentation is available directly inside NeumanOS. Open the app and navigate to the Docs section for guides on every feature.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 19 |
+| Language | TypeScript 5.9 (strict mode) |
+| Build | Vite 7 |
+| Styling | Tailwind CSS 4 |
+| State | Zustand 5 (persisted to IndexedDB via Dexie 4) |
+| Notes Editor | Lexical |
+| Documents | TipTap / ProseMirror |
+| Spreadsheets | HyperFormula (400+ formulas) |
+| Presentations | Konva canvas engine |
+| Charts | Recharts |
+| Knowledge Graph | D3 force-directed |
+| Diagrams | Konva |
+| Testing | Vitest + Playwright |
+| Linting | ESLint 10 |
+
+---
+
+## Self-Hosting
+
+NeumanOS is a static site with no backend. To run it yourself:
+
+```bash
+git clone https://github.com/travisjneuman/neumanos.git
+cd neumanos
+npm install
+npm run dev       # Development server on port 5173
+npm run build     # Production build to dist/
+```
+
+Deploy the `dist/` folder to any static host (Cloudflare Pages, Netlify, Vercel, Nginx, etc.). No environment variables or server configuration required.
 
 ---
 

@@ -9,7 +9,7 @@
 
 import { createEditor } from 'lexical';
 import type { SerializedEditorState } from 'lexical';
-import { $convertFromMarkdownString, TRANSFORMERS } from '@lexical/markdown';
+import { $convertFromMarkdownString, $convertToMarkdownString, TRANSFORMERS } from '@lexical/markdown';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { CodeNode, CodeHighlightNode } from '@lexical/code';
@@ -138,10 +138,6 @@ export function lexicalToMarkdown(lexicalJson: string): string {
     if (!lexicalJson || lexicalJson === '{}') {
       return '';
     }
-
-    // Import dynamically to avoid circular dependencies
-    const { $convertToMarkdownString } = require('@lexical/markdown');
-    const { TRANSFORMERS } = require('@lexical/markdown');
 
     const editor = createEditor({
       nodes: EDITOR_NODES,

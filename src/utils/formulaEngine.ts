@@ -92,7 +92,7 @@ function parseComp(expr: string): boolean {
 }
 
 function parseMath(expr: string): number {
-  let toks = expr.split(/([+\-*/])/).map(t => t.trim()).filter(t => t);
+  const toks = expr.split(/([+\-*/])/).map(t => t.trim()).filter(t => t);
   for (let i = 1; i < toks.length; i += 2) {
     if (toks[i] === '*' || toks[i] === '/') {
       const res = toks[i] === '*' ? Number(toks[i-1]) * Number(toks[i+1]) : Number(toks[i-1]) / Number(toks[i+1]);

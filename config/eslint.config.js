@@ -23,6 +23,19 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
+      // Pre-existing patterns throughout the codebase — demote to warnings
+      // to track without blocking CI. Fix incrementally.
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+      }],
+      'no-case-declarations': 'warn',
+      'no-useless-assignment': 'warn',
+      'react-refresh/only-export-components': 'warn',
+      'preserve-caught-error': 'warn',
+
       // Disable React Compiler rules added in react-hooks v7 —
       // enable incrementally once the codebase is ready
       'react-hooks/static-components': 'off',

@@ -3,7 +3,7 @@
  * View and analyze form responses with table view and CSV export
  */
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { StoreErrorBoundary } from '../components/StoreErrorBoundary';
 import { useFormsStore } from '../stores/useFormsStore';
@@ -88,10 +88,8 @@ export default function FormResponses() {
   );
 
   // Calculate analytics
-  const analytics = useMemo(() => {
-    if (!form || responses.length === 0) return null;
-    return calculateFormAnalytics(form, responses);
-  }, [form, responses]);
+  const analytics =
+    form && responses.length > 0 ? calculateFormAnalytics(form, responses) : null;
 
   // Chart colors (using semantic tokens)
   const CHART_COLORS = ['#FF006E', '#8338EC', '#3A86FF', '#06FFA5', '#FFBE0B'];

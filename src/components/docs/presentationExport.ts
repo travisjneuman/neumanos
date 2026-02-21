@@ -225,7 +225,7 @@ export async function exportToPPTX(
  * Add a slide element to PPTX slide
  * Using 'any' for slide parameter since pptxgenjs types are complex
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function addElementToPPTX(
   slide: any,
   element: SlideElement,

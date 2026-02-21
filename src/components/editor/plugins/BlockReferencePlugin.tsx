@@ -45,7 +45,7 @@ function scrollToBlock(blockId: string): void {
   if (!editorContainer) return;
 
   // Search for manual block ID (^block-id)
-  const blockIdPattern = new RegExp(`\^${blockId}\b`);
+  const blockIdPattern = new RegExp(`\\^${blockId}\\b`);
   const walker = document.createTreeWalker(
     editorContainer,
     NodeFilter.SHOW_TEXT,

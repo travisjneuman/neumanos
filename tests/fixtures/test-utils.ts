@@ -24,6 +24,7 @@ export const test = base.extend({
     });
 
     // Use the page in the test
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 });

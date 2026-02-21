@@ -108,7 +108,7 @@ export async function exportGanttToPDF(
     // Add timeline image (multi-page if needed)
     const headerHeight = 25; // Space for header
     const availableHeight = pageHeight - headerHeight - margin;
-    let yPosition = margin + headerHeight;
+    const yPosition = margin + headerHeight;
     let remainingHeight = imgHeight;
 
     // Add first page

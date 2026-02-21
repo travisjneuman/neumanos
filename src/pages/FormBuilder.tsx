@@ -3,7 +3,7 @@
  * Full-screen form editor with field management and live preview
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { StoreErrorBoundary } from '../components/StoreErrorBoundary';
 import { useFormsStore } from '../stores/useFormsStore';
@@ -84,11 +84,11 @@ export default function FormBuilder() {
     setEditingField(null);
   };
 
-  const handleDeleteField = useCallback((fieldId: string) => {
+  const handleDeleteField = (fieldId: string) => {
     setFieldToDelete(fieldId);
-  }, []);
+  };
 
-  const confirmDeleteField = useCallback(() => {
+  const confirmDeleteField = () => {
     if (!fieldToDelete || !form || !id) return;
 
     const updatedFields = form.fields
@@ -103,7 +103,7 @@ export default function FormBuilder() {
     setForm(updatedForm);
     updateForm(id, { fields: updatedForm.fields });
     setFieldToDelete(null);
-  }, [fieldToDelete, form, id, updateForm]);
+  };
 
   const handleDuplicateField = (field: FormField) => {
     const newField = {

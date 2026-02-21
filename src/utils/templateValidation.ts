@@ -127,6 +127,7 @@ export function sanitizeTemplateName(name: string): string {
   let sanitized = name;
 
   // Remove control characters
+  // eslint-disable-next-line no-control-regex
   sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
 
   // Normalize whitespace (replace multiple spaces/tabs/newlines with single space)

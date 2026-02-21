@@ -47,7 +47,7 @@ export const RepoStatsWidget: React.FC<RepoStatsWidgetProps> = ({ widgetId = 're
       const cleaned = url.trim().replace(/\/$/, '');
 
       // Try parsing as full URL (https://github.com/owner/repo or github.com/owner/repo)
-      const urlMatch = cleaned.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      const urlMatch = cleaned.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (urlMatch) {
         [, owner, repo] = urlMatch;
       }

@@ -561,5 +561,5 @@ export const useFolderTree = () =>
 export const useFolderPath = (folderId: string) =>
   useFoldersStore((state) => state.getPath(folderId));
 
-export const isFolderExpanded = (folderId: string) =>
+export const useIsFolderExpanded = (folderId: string) =>
   useFoldersStore((state) => state.expandedFolderIds.has(folderId));

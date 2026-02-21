@@ -632,5 +632,5 @@ export const useLinkFolderTree = () =>
 export const useLinkFolderPath = (folderId: string) =>
   useLinkFoldersStore((state) => state.getPath(folderId));
 
-export const isLinkFolderExpanded = (folderId: string) =>
+export const useIsLinkFolderExpanded = (folderId: string) =>
   useLinkFoldersStore((state) => state.expandedFolderIds.has(folderId));

@@ -85,7 +85,7 @@ function getCategory(filePath: string): string {
 function generateId(filePath: string): string {
   return filePath
     .replace(/\.md$/, '')
-    .replace(/[\/\\]/g, '-')
+    .replace(/[/\\]/g, '-')
     .replace(/^docs-/, '')
     .toLowerCase();
 }

@@ -550,7 +550,7 @@ export const autoSave = async (directoryHandle: FileSystemDirectoryHandle): Prom
     // 4. Auto-cleanup old versions
     try {
       const versions: { name: string; timestamp: number }[] = [];
-      // @ts-ignore - TypeScript doesn't have proper types for FileSystemDirectoryHandle iteration
+      // @ts-expect-error - TypeScript doesn't have proper types for FileSystemDirectoryHandle iteration
       for await (const entry of backupFolderHandle.values()) {
         if (entry.kind === 'file' && entry.name.startsWith('backup-') && entry.name.endsWith('.brain')) {
           // Extract timestamp from filename

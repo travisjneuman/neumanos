@@ -205,8 +205,8 @@ export const WeatherMap: React.FC = () => {
   useEffect(() => {
     if (!mapRef.current || leafletMapRef.current) return;
 
-    // @ts-ignore - Leaflet is loaded globally via CDN
-    const L = window.L;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet loaded globally via CDN
+    const L = (window as any).L;
     if (!L) {
       console.error('Leaflet not loaded');
       return;
@@ -239,12 +239,11 @@ export const WeatherMap: React.FC = () => {
   // Update map when coordinates change
   useEffect(() => {
     if (leafletMapRef.current) {
-      // @ts-ignore
-      const L = window.L;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet loaded globally via CDN
+      const L = (window as any).L;
       if (L) {
         leafletMapRef.current.setView([coords.lat, coords.lng], 10);
         leafletMapRef.current.eachLayer((layer) => {
-          // @ts-ignore
           if (layer instanceof L.Marker) {
             leafletMapRef.current?.removeLayer(layer);
           }

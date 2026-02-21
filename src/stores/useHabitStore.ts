@@ -55,14 +55,14 @@ function calculateStreakForHabit(
   today.setHours(0, 0, 0, 0);
 
   // Start from today and go backwards
-  let checkDate = new Date(today);
+  const checkDate = new Date(today);
   const completionSet = new Set(habitCompletions);
 
   // For times-per-week, we need different logic
   if (habit.frequency === 'times-per-week') {
     // Calculate weekly streaks
     let weeksStreak = 0;
-    let currentWeekStart = getWeekStart(today);
+    const currentWeekStart = getWeekStart(today);
 
     while (true) {
       const weekEnd = new Date(currentWeekStart);
