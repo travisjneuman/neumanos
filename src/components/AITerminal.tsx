@@ -104,7 +104,6 @@ export const AITerminal: React.FC = () => {
     setOpen,
     setActiveProvider,
     addMessage,
-    clearMessages,
     setStreaming,
     activeConversationId,
     createConversation,

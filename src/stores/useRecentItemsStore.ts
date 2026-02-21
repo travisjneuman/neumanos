@@ -69,7 +69,7 @@ export const useRecentItemsStore = create<RecentItemsState>()(
     }),
     {
       name: 'recent-items',
-      storage: createJSONStorage(() => createSyncedStorage('recent-items')),
+      storage: createJSONStorage(() => createSyncedStorage()),
       version: 1,
     }
   )

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
-import type { Habit, HabitCompletion, HabitAchievement, HabitCategory, HabitDifficulty } from '../types';
+import type { Habit, HabitCompletion, HabitAchievement, HabitDifficulty } from '../types';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';

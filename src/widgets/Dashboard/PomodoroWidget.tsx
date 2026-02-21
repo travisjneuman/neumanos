@@ -10,7 +10,7 @@ import { useWidgetStore } from '../../stores/useWidgetStore';
 
 export const PomodoroWidget: React.FC = () => {
   const settings = useWidgetStore((state) => state.getWidgetSettings('pomodoro'));
-  const [timeLeft, setTimeLeft] = useState(settings.duration * 60 || 25 * 60); // seconds
+  const [timeLeft, setTimeLeft] = useState((settings.duration ?? 25) * 60); // seconds
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
@@ -26,14 +26,14 @@ export const PomodoroWidget: React.FC = () => {
               body: 'Time for a break!',
             });
           }
-          return settings.duration * 60 || 25 * 60;
+          return (settings.duration ?? 25) * 60;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, settings.duration]);
+  }, [isRunning, settings?.duration]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -45,7 +45,7 @@ export const PomodoroWidget: React.FC = () => {
   const handlePause = () => setIsRunning(false);
   const handleReset = () => {
     setIsRunning(false);
-    setTimeLeft(settings.duration * 60 || 25 * 60);
+    setTimeLeft((settings.duration ?? 25) * 60);
   };
 
   const progress = ((timeLeft / ((settings.duration || 25) * 60)) * 100);

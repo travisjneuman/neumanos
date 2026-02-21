@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Palette, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 const ACCENT_STORAGE_KEY = 'custom-accent-color';
 

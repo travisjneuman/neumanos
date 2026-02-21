@@ -103,7 +103,7 @@ export const WeeklyPlanning: React.FC<WeeklyPlanningProps> = ({ today }) => {
   const totalCompleted = useMemo(() => days.reduce((s, d) => s + d.completedCount, 0), [days]);
 
   const handleMoveTask = useCallback(
-    (taskId: string, targetDateKey: string, targetDate: Date) => {
+    (taskId: string, _targetDateKey: string, targetDate: Date) => {
       updateTask(taskId, { dueDate: format(targetDate, 'yyyy-MM-dd') });
     },
     [updateTask]

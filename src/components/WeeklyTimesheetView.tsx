@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { formatDuration } from '../utils/timeFormatters';
 import { timeTrackingDb } from '../db/timeTrackingDb';
-import type { TimeEntry, TimeTrackingProject } from '../types';
+import type { TimeEntry } from '../types';
 
 interface TimesheetCell {
   projectId: string | null;

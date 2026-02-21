@@ -151,10 +151,11 @@ function getFolderPath(
   const path: Array<{ name: string; id: string }> = [];
   let currentId: string | null = folderId;
 
-  while (currentId && folders[currentId]) {
-    const folder = folders[currentId];
-    path.unshift({ name: folder.name, id: folder.id });
-    currentId = folder.parentId;
+  while (currentId) {
+    const f: { id: string; name: string; parentId: string | null } | undefined = folders[currentId];
+    if (!f) break;
+    path.unshift({ name: f.name, id: f.id });
+    currentId = f.parentId;
   }
 
   return path;

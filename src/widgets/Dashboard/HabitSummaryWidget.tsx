@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Target, Flame, Check } from 'lucide-react';
+import { Flame, Check } from 'lucide-react';
 import { useHabitStore } from '../../stores/useHabitStore';
 import { Link, useNavigate } from 'react-router-dom';
 import { WidgetEmptyState } from '../../components/WidgetEmptyState';

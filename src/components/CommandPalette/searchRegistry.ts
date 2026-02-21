@@ -428,7 +428,7 @@ export function getTasksResults(navigate: (path: string) => void): SearchResult[
   const tasks = useKanbanStore.getState().tasks;
 
   return tasks.map((task) => {
-    const statusLabel = task.status === 'done' ? 'Done' : task.status === 'in-progress' ? 'In Progress' : 'To Do';
+    const statusLabel = task.status === 'done' ? 'Done' : task.status === 'inprogress' ? 'In Progress' : 'To Do';
     const dueDateLabel = task.dueDate ? ` · Due ${new Date(task.dueDate).toLocaleDateString()}` : '';
     const priorityLabel = task.priority && task.priority !== 'medium' ? ` · ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority` : '';
 

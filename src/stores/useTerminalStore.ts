@@ -417,7 +417,7 @@ export const useTerminalStore = create<TerminalState>()(
         const now = Date.now();
 
         // Save current conversation before creating new one
-        const { activeConversationId, messages, customSystemPrompt } = get();
+        const { activeConversationId, messages } = get();
         if (activeConversationId && messages.length > 0) {
           get().saveCurrentConversation();
         }

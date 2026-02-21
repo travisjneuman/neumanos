@@ -3,7 +3,7 @@
  * Exports AI Terminal conversations to Markdown, JSON, or plain text
  */
 
-import type { Message, Conversation } from '../stores/useTerminalStore';
+import type { Message } from '../stores/useTerminalStore';
 
 /**
  * Export format options

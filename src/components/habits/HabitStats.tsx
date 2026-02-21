@@ -9,10 +9,6 @@ interface HabitStatsProps {
   onClose: () => void;
 }
 
-function getDateKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-}
-
 /** Build 7-day rolling average data for trend chart */
 function buildTrendData(
   completions: Array<{ date: string; completed: boolean }>,
@@ -155,7 +151,7 @@ export function HabitStats({ habit, onClose }: HabitStatsProps) {
                       width={40}
                     />
                     <Tooltip
-                      formatter={(value: number) => [`${value}%`, 'Completion Rate']}
+                      formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Completion Rate']}
                       contentStyle={{
                         backgroundColor: 'var(--color-surface-dark, #1f2937)',
                         border: '1px solid var(--color-border-dark, #374151)',

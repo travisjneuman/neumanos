@@ -26,6 +26,11 @@ export interface WidgetSettings {
   packageNames?: string[]; // NPM stats widget
   gridSize?: number; // Pixel art widget
   accentColor?: string; // Custom accent/border color (hex)
+  events?: Array<{ id: string; name: string; date: string }>; // Countdown widget
+  repoUrl?: string; // Repo stats widget
+  tabs?: Array<{ name: string; url: string }>; // Tab manager widget
+  streamers?: string[]; // Twitch widget
+  channels?: string[]; // YouTube widget
 }
 
 export interface WidgetState {

@@ -204,7 +204,7 @@ export function AdvancedReports() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(e) => `${e.tag}: ${formatHours(e.totalHours)}`}
+                  label={(e: any) => `${e.tag}: ${formatHours(e.totalHours as number)}`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="totalHours"

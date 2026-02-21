@@ -6,9 +6,7 @@ import { PresetManager } from '../components/PresetManager';
 import { BackgroundCustomizer, type BackgroundSettings } from '../components/BackgroundCustomizer';
 import { SortableWidget } from '../components/SortableWidget';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
-import { EmptyState } from '../components/EmptyState';
 import { DashboardTemplatePicker } from '../components/DashboardTemplatePicker';
-import { LayoutGrid } from 'lucide-react';
 // Masonry removed - using CSS Grid for proper column spanning support
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';

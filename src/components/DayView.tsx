@@ -167,7 +167,7 @@ export const DayView: React.FC<DayViewProps> = ({
   date,
   events,
   onEventClick,
-  onTimeSlotClick,
+  onTimeSlotClick: _onTimeSlotClick,
   onEventTimeChange,
   enableTimeBlocking = false,
 }) => {

@@ -1,4 +1,3 @@
-import { BookOpen, Dumbbell, Droplets, Brain, PenTool, Smartphone, Coffee, Heart } from 'lucide-react';
 import type { HabitFrequency, HabitCategory } from '../../types';
 
 export interface HabitTemplate {
