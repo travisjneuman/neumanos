@@ -3,6 +3,13 @@
  *
  * A focused view of today's schedule, tasks, and time tracking.
  * Inspired by Sunsama's intentional daily planning approach.
+ *
+ * Features:
+ * - Daily goals/intentions (1-3 per day)
+ * - Task timeboxing with duration estimates
+ * - Timeline with calendar events inline
+ * - Tomorrow planning
+ * - End-of-day review
  */
 
 import React, { useMemo, useRef, useEffect, useCallback } from 'react';
@@ -19,6 +26,11 @@ import {
   CloudSun,
 } from 'lucide-react';
 import { DayView } from '../components/DayView';
+import { TodayFocus } from '../components/today/TodayFocus';
+import { TimeboxSelector } from '../components/today/TimeboxSelector';
+import { TimeboxSummary } from '../components/today/TimeboxSummary';
+import { DailyReview } from '../components/today/DailyReview';
+import { TomorrowPlanning } from '../components/today/TomorrowPlanning';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { useKanbanStore } from '../stores/useKanbanStore';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
@@ -36,9 +48,10 @@ const TodayMetrics: React.FC<{
   tasksDue: number;
   hoursTracked: number;
   eventsCount: number;
-}> = ({ tasksCompleted, tasksDue, hoursTracked, eventsCount }) => {
+  dateKey: string;
+}> = ({ tasksCompleted, tasksDue, hoursTracked, eventsCount, dateKey }) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
       <div className="bg-surface-light-elevated dark:bg-surface-dark-elevated rounded-lg p-3 border border-border-light dark:border-border-dark">
         <div className="flex items-center gap-2 text-accent-green mb-1">
           <CheckCircle2 className="w-4 h-4" />
@@ -90,6 +103,9 @@ const TodayMetrics: React.FC<{
           </span>
         </div>
       </div>
+
+      {/* Timebox summary as 5th metric card */}
+      <TimeboxSummary dateKey={dateKey} />
     </div>
   );
 };
@@ -137,7 +153,7 @@ const TodayWeather: React.FC<{
       </div>
       {weatherData.precipProbability > 0 && (
         <span className="text-xs px-1.5 py-0.5 bg-accent-primary/10 text-accent-primary rounded">
-          💧 {weatherData.precipProbability}%
+          {weatherData.precipProbability}%
         </span>
       )}
     </div>
@@ -145,12 +161,13 @@ const TodayWeather: React.FC<{
 };
 
 /**
- * TodayTasks - Quick list of today's tasks
+ * TodayTasks - Quick list of today's tasks with timeboxing
  */
 const TodayTasks: React.FC<{
   tasks: Array<{ id: string; title: string; status: string; priority: 'low' | 'medium' | 'high' }>;
   onTaskClick: (taskId: string) => void;
-}> = ({ tasks, onTaskClick }) => {
+  dateKey: string;
+}> = ({ tasks, onTaskClick, dateKey }) => {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-text-light-secondary dark:text-text-dark-secondary">
@@ -164,33 +181,41 @@ const TodayTasks: React.FC<{
   return (
     <div className="space-y-1">
       {tasks.map((task) => (
-        <button
+        <div
           key={task.id}
-          onClick={() => onTaskClick(task.id)}
           className={`
-            w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left
+            flex items-center gap-2 px-3 py-2 rounded-lg
             hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated
             transition-colors group
             ${task.status === 'done' ? 'opacity-60' : ''}
           `}
         >
-          <div
-            className={`
-              w-3 h-3 rounded-full flex-shrink-0
-              ${task.priority === 'high' ? 'bg-accent-red' :
-                task.priority === 'medium' ? 'bg-accent-yellow' : 'bg-accent-green'}
-            `}
-          />
-          <span
-            className={`
-              flex-1 text-sm text-text-light-primary dark:text-text-dark-primary truncate
-              ${task.status === 'done' ? 'line-through' : ''}
-            `}
+          <button
+            onClick={() => onTaskClick(task.id)}
+            className="flex items-center gap-2 flex-1 min-w-0 text-left"
           >
-            {task.title}
-          </span>
-          <ChevronRight className="w-4 h-4 text-text-light-secondary dark:text-text-dark-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
-        </button>
+            <div
+              className={`
+                w-3 h-3 rounded-full flex-shrink-0
+                ${task.priority === 'high' ? 'bg-accent-red' :
+                  task.priority === 'medium' ? 'bg-accent-yellow' : 'bg-accent-green'}
+              `}
+            />
+            <span
+              className={`
+                flex-1 text-sm text-text-light-primary dark:text-text-dark-primary truncate
+                ${task.status === 'done' ? 'line-through' : ''}
+              `}
+            >
+              {task.title}
+            </span>
+          </button>
+
+          {/* Timebox selector */}
+          <TimeboxSelector dateKey={dateKey} taskId={task.id} />
+
+          <ChevronRight className="w-4 h-4 text-text-light-secondary dark:text-text-dark-secondary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        </div>
       ))}
     </div>
   );
@@ -208,7 +233,6 @@ export const Today: React.FC = () => {
   const todayKey = format(today, 'yyyy-M-d'); // Non-padded for store compatibility
 
   // Get data from stores
-  // events is Record<string, CalendarEvent[]> keyed by dateKey
   const eventsMap = useCalendarStore((state) => state.events);
   const updateEventTime = useCalendarStore((state) => state.updateEventTime);
   const tasks = useKanbanStore((state) => state.tasks);
@@ -270,13 +294,11 @@ export const Today: React.FC = () => {
 
   // Handle event click - navigate to schedule with the event selected
   const handleEventClick = useCallback((_event: CalendarEvent, _dateKey: string) => {
-    // Navigate to schedule page - event editing is handled there
     navigate(`/schedule?date=${format(today, 'yyyy-MM-dd')}`);
   }, [navigate, today]);
 
   // Handle time slot click - quick add event
   const handleTimeSlotClick = useCallback((hour: number) => {
-    // Navigate to schedule with time pre-selected
     navigate(`/schedule?date=${format(today, 'yyyy-MM-dd')}&hour=${hour}`);
   }, [navigate, today]);
 
@@ -330,37 +352,55 @@ export const Today: React.FC = () => {
         </button>
       </div>
 
+      {/* Daily Focus / Goals */}
+      <TodayFocus dateKey={todayKey} />
+
       {/* Metrics */}
-      <TodayMetrics {...metrics} />
+      <TodayMetrics {...metrics} dateKey={todayKey} />
 
       {/* Main content: Tasks + Timeline */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
         {/* Tasks sidebar */}
-        <div className="lg:col-span-1 bg-surface-light dark:bg-surface-dark rounded-lg border border-border-light dark:border-border-dark overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark">
-            <h3 className="font-semibold text-text-light-primary dark:text-text-dark-primary">
-              Today's Tasks
-            </h3>
-            <button
-              onClick={() => navigate('/tasks')}
-              className="p-1.5 rounded hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors"
-              title="Add task"
-              aria-label="Add task"
-            >
-              <Plus className="w-4 h-4 text-text-light-secondary dark:text-text-dark-secondary" />
-            </button>
+        <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
+          {/* Tasks list */}
+          <div className="bg-surface-light dark:bg-surface-dark rounded-lg border border-border-light dark:border-border-dark overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark">
+              <h3 className="font-semibold text-text-light-primary dark:text-text-dark-primary">
+                Today's Tasks
+              </h3>
+              <button
+                onClick={() => navigate('/tasks')}
+                className="p-1.5 rounded hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors"
+                title="Add task"
+                aria-label="Add task"
+              >
+                <Plus className="w-4 h-4 text-text-light-secondary dark:text-text-dark-secondary" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              <TodayTasks
+                tasks={todayTasks.map((t) => ({
+                  id: t.id,
+                  title: t.title,
+                  status: t.status,
+                  priority: t.priority,
+                }))}
+                onTaskClick={handleTaskClick}
+                dateKey={todayKey}
+              />
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            <TodayTasks
-              tasks={todayTasks.map((t) => ({
-                id: t.id,
-                title: t.title,
-                status: t.status,
-                priority: t.priority,
-              }))}
-              onTaskClick={handleTaskClick}
-            />
-          </div>
+
+          {/* Tomorrow Planning */}
+          <TomorrowPlanning today={today} />
+
+          {/* Daily Review */}
+          <DailyReview
+            dateKey={todayKey}
+            tasksCompleted={metrics.tasksCompleted}
+            tasksDue={metrics.tasksDue}
+            hoursTracked={metrics.hoursTracked}
+          />
         </div>
 
         {/* Timeline */}
