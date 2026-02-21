@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { ProjectSelector } from './ProjectSelector';
+import { TagInput } from './TagInput';
 import type { TimeEntry } from '../types';
 
 interface EditTimeEntryModalProps {
@@ -21,6 +22,7 @@ export function EditTimeEntryModal({ entry, onClose }: EditTimeEntryModalProps) 
   const [endTime, setEndTime] = useState('');
   const [projectId, setProjectId] = useState<string | null>(entry.projectId || null);
   const [notes, setNotes] = useState(entry.notes || '');
+  const [entryTags, setEntryTags] = useState<string[]>(entry.tags || []);
   const [billable, setBillable] = useState(entry.billable || false);
   const [hourlyRate, setHourlyRate] = useState(entry.hourlyRate?.toString() || '');
   const [saving, setSaving] = useState(false);
@@ -78,6 +80,7 @@ export function EditTimeEntryModal({ entry, onClose }: EditTimeEntryModalProps) 
         duration: newDuration,
         projectId: projectId || undefined,
         notes: notes.trim() || undefined,
+        tags: entryTags,
         billable,
         hourlyRate: hourlyRate ? parseFloat(hourlyRate) : undefined
       });
@@ -215,6 +218,16 @@ export function EditTimeEntryModal({ entry, onClose }: EditTimeEntryModalProps) 
               className="w-full px-2.5 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary placeholder-text-light-secondary dark:placeholder-text-dark-secondary resize-none"
               placeholder="Add additional details about this time entry..."
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label
+              className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-1.5"
+            >
+              Tags
+            </label>
+            <TagInput tags={entryTags} onChange={setEntryTags} compact />
           </div>
 
           {/* Billable Toggle */}

@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Pencil, Trash2, Download, Upload, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { Pencil, Trash2, Download, Upload, Search, ArrowUp, ArrowDown, Copy } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useUndoStore } from '../stores/useUndoStore';
 import { formatDuration, formatTime } from '../utils/timeFormatters';
 import { ProjectSelector } from './ProjectSelector';
+import { TagChips } from './TagInput';
 import { BulkActionsBar } from './BulkActionsBar';
 import { TimeEntryImportModal } from './TimeEntryImportModal';
 import { timeTrackingDb } from '../db/timeTrackingDb';
@@ -33,7 +34,8 @@ export function TimeEntryList({ onEditEntry }: TimeEntryListProps) {
     bulkUpdateEntries,
     filters,
     setFilters,
-    exportToCSV
+    exportToCSV,
+    duplicateEntry,
   } = useTimeTrackingStore();
 
   const { timeFormat } = useSettingsStore();
@@ -567,6 +569,11 @@ export function TimeEntryList({ onEditEntry }: TimeEntryListProps) {
                             </span>
                           )}
                         </div>
+                        {entry.tags && entry.tags.length > 0 && (
+                          <div className="mt-1">
+                            <TagChips tags={entry.tags} compact />
+                          </div>
+                        )}
                         {entry.notes && (
                           <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary mt-1">
                             {entry.notes}
@@ -599,19 +606,30 @@ export function TimeEntryList({ onEditEntry }: TimeEntryListProps) {
                         {formatDuration(entry.duration, { showSeconds: false })}
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => onEditEntry?.(entry)}
-                            className="p-2 rounded-buttonhover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-blue dark:hover:text-accent-blue-hover transition-all duration-standard ease-smooth"
+                            className="p-2 rounded-button hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-blue dark:hover:text-accent-blue-hover transition-all duration-standard ease-smooth"
                             title="Edit entry"
                             aria-label="Edit entry"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => {
+                              duplicateEntry(entry.id);
+                              toast.success('Entry duplicated');
+                            }}
+                            className="p-2 rounded-button hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-primary transition-all duration-standard ease-smooth"
+                            title="Duplicate entry (copy with today's date)"
+                            aria-label="Duplicate entry"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDelete(entry.id)}
                             disabled={deletingId === entry.id}
-                            className="p-2 rounded-buttonhover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:text-status-error transition-all duration-standard ease-smooth disabled:opacity-50"
+                            className="p-2 rounded-button hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:text-status-error transition-all duration-standard ease-smooth disabled:opacity-50"
                             title="Delete entry"
                             aria-label="Delete entry"
                           >

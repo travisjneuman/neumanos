@@ -131,6 +131,19 @@ export function calculateDuration(start: Date, end: Date = new Date()): number {
 }
 
 /**
+ * Round duration in seconds to the nearest interval
+ * @param seconds - Duration in seconds
+ * @param roundingMinutes - Rounding interval in minutes (0 = no rounding)
+ * @returns Rounded duration in seconds
+ */
+export function roundDuration(seconds: number, roundingMinutes: 0 | 5 | 15 | 30): number {
+  if (roundingMinutes === 0) return seconds;
+
+  const roundingSeconds = roundingMinutes * 60;
+  return Math.round(seconds / roundingSeconds) * roundingSeconds;
+}
+
+/**
  * Parse duration string to seconds
  * Supports formats like "2h 30m", "1.5h", "90m", "30"
  * @param input - Duration string

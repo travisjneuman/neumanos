@@ -6,9 +6,11 @@ import {
   filterEntries,
   calculateTimeByProject,
   calculateTimeByDate,
+  calculateTimeByTag,
   calculateBillableVsNonBillable,
   calculateRateAnalysis,
   calculateTrends,
+  getAllTags,
   formatHours,
   type ReportType,
   type ReportFilters,
@@ -28,6 +30,7 @@ import {
 const REPORT_TYPES: { value: ReportType; label: string }[] = [
   { value: 'time-by-project', label: 'Time by Project' },
   { value: 'time-by-date', label: 'Time by Date' },
+  { value: 'time-by-tag', label: 'Time by Tag' },
   { value: 'billable-vs-nonbillable', label: 'Billable vs Non-Billable' },
   { value: 'rate-analysis', label: 'Rate Analysis' },
   { value: 'trends', label: 'Trends' }
@@ -43,9 +46,13 @@ export function AdvancedReports() {
     startDate: '',
     endDate: '',
     projectIds: [],
+    tags: [],
     billableOnly: false,
     groupBy: 'day'
   });
+
+  // Get all available tags from entries
+  const availableTags = useMemo(() => getAllTags(entries), [entries]);
 
   // Set default date range (last 30 days)
   useState(() => {
@@ -74,6 +81,9 @@ export function AdvancedReports() {
 
       case 'time-by-date':
         return calculateTimeByDate(filteredEntries, projects, filters.groupBy || 'day');
+
+      case 'time-by-tag':
+        return calculateTimeByTag(filteredEntries);
 
       case 'billable-vs-nonbillable':
         return calculateBillableVsNonBillable(filteredEntries, projects);
@@ -104,6 +114,11 @@ export function AdvancedReports() {
       csv = 'Date,Hours,Amount,Entries\n';
       (reportData as ReturnType<typeof calculateTimeByDate>).forEach(item => {
         csv += `${item.date},${item.totalHours},${item.totalAmount},${item.entryCount}\n`;
+      });
+    } else if (reportType === 'time-by-tag') {
+      csv = 'Tag,Hours,Entries,Percentage\n';
+      (reportData as ReturnType<typeof calculateTimeByTag>).forEach(item => {
+        csv += `"${item.tag}",${item.totalHours},${item.entryCount},${item.percentage.toFixed(2)}%\n`;
       });
     } else if (reportType === 'billable-vs-nonbillable') {
       const data = reportData as ReturnType<typeof calculateBillableVsNonBillable>;
@@ -175,6 +190,51 @@ export function AdvancedReports() {
               <Line type="monotone" dataKey="totalAmount" stroke="#06B6D4" name="Amount ($)" />
             </LineChart>
           </ResponsiveContainer>
+        );
+      }
+
+      case 'time-by-tag': {
+        const data = reportData as ReturnType<typeof calculateTimeByTag>;
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(e) => `${e.tag}: ${formatHours(e.totalHours)}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="totalHours"
+                  nameKey="tag"
+                >
+                  {data.map((item, index) => (
+                    <Cell key={`cell-${index}`} fill={item.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis type="number" stroke="#9CA3AF" />
+                <YAxis dataKey="tag" type="category" stroke="#9CA3AF" width={100} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                  labelStyle={{ color: '#F3F4F6' }}
+                />
+                <Bar dataKey="totalHours" name="Hours">
+                  {data.map((item, index) => (
+                    <Cell key={`cell-${index}`} fill={item.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         );
       }
 
@@ -370,6 +430,48 @@ export function AdvancedReports() {
                 <option value="week">Week</option>
                 <option value="month">Month</option>
               </select>
+            </div>
+          )}
+
+          {/* Tag Filter */}
+          {availableTags.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-1">
+                Tags
+              </label>
+              <select
+                value=""
+                onChange={(e) => {
+                  const tag = e.target.value;
+                  if (tag && !filters.tags?.includes(tag)) {
+                    setFilters({ ...filters, tags: [...(filters.tags || []), tag] });
+                  }
+                }}
+                className="w-full rounded-md border border-border-light dark:border-border-dark bg-surface-light-elevated dark:bg-surface-dark-elevated px-3 py-2 text-sm text-text-light-primary dark:text-text-dark-primary focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
+              >
+                <option value="">All tags</option>
+                {availableTags.map(tag => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+              {filters.tags && filters.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {filters.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-accent-primary/20 text-accent-primary"
+                    >
+                      {tag}
+                      <button
+                        onClick={() => setFilters({ ...filters, tags: filters.tags?.filter(t => t !== tag) })}
+                        className="hover:bg-accent-primary/20 rounded-full p-0.5"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

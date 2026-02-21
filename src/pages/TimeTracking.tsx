@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Clock,
   Activity,
+  Grid3X3,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import { TimeEntryList } from '../components/TimeEntryList';
@@ -23,7 +24,9 @@ import { InvoiceBuilder } from '../components/InvoiceBuilder';
 import { AdvancedReports } from '../components/AdvancedReports';
 import { PomodoroTimer } from '../components/PomodoroTimer';
 import { ActivityTimeline } from '../components/ActivityTimeline';
+import { WeeklyTimesheetView } from '../components/WeeklyTimesheetView';
 import { AutoTrackingSettings } from '../components/AutoTrackingSettings';
+import { TimeRoundingSettings } from '../components/TimeRoundingSettings';
 import { BillableRateSettings } from '../components/BillableRateSettings';
 import { ProjectBillingSummary } from '../components/ProjectBillingSummary';
 import { ExportTimeEntriesModal } from '../components/ExportTimeEntriesModal';
@@ -35,10 +38,10 @@ import { PageContent } from '../components/PageContent';
 type MainTabType = 'calendar' | 'timer' | 'pomodoro';
 
 // Timer sub-sections (shown as sidebar when timer tab is active)
-type TimerSectionType = 'timer' | 'entries' | 'summary' | 'projects' | 'invoices' | 'reports' | 'timeline' | 'settings';
+type TimerSectionType = 'timer' | 'entries' | 'timesheet' | 'summary' | 'projects' | 'invoices' | 'reports' | 'timeline' | 'settings';
 
 const VALID_MAIN_TABS: MainTabType[] = ['calendar', 'timer', 'pomodoro'];
-const VALID_TIMER_SECTIONS: TimerSectionType[] = ['timer', 'entries', 'summary', 'projects', 'invoices', 'reports', 'timeline', 'settings'];
+const VALID_TIMER_SECTIONS: TimerSectionType[] = ['timer', 'entries', 'timesheet', 'summary', 'projects', 'invoices', 'reports', 'timeline', 'settings'];
 
 // Main tab configuration
 const SCHEDULE_TABS: Tab[] = [
@@ -51,6 +54,7 @@ const SCHEDULE_TABS: Tab[] = [
 const TIMER_SECTIONS = [
   { id: 'timer', label: 'Timer', icon: Timer },
   { id: 'entries', label: 'Entries', icon: List },
+  { id: 'timesheet', label: 'Timesheet', icon: Grid3X3 },
   { id: 'summary', label: 'Summary', icon: BarChart3 },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'invoices', label: 'Invoices', icon: FileText },
@@ -210,6 +214,7 @@ export function TimeTracking() {
                   <TimeEntryList onEditEntry={(entry) => setEditingEntry(entry)} />
                 </div>
               )}
+              {timerSection === 'timesheet' && <WeeklyTimesheetView />}
               {timerSection === 'summary' && (
                 <div className="space-y-6">
                   <ProjectBillingSummary />
@@ -223,6 +228,9 @@ export function TimeTracking() {
               {timerSection === 'settings' && (
                 <div className="space-y-8">
                   <BillableRateSettings />
+                  <div className="border-t border-border-light dark:border-border-dark pt-8">
+                    <TimeRoundingSettings />
+                  </div>
                   <div className="border-t border-border-light dark:border-border-dark pt-8">
                     <AutoTrackingSettings />
                   </div>

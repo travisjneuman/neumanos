@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { TimeEntry, TimeTrackingProject, EntryFilters, TimeViewMode, TimeTrackingState, DailySummary, WeeklySummary, MonthlyReport, ProjectSummary } from '../types';
 import { timeTrackingDb } from '../db/timeTrackingDb';
 import { logger } from '../services/logger';
+import { roundDuration } from '../utils/timeFormatters';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 
 const log = logger.module('TimeTracking');
@@ -443,13 +444,14 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
       },
 
       stopTimer: async () => {
-        const { activeEntry, entries } = get();
+        const { activeEntry, entries, roundingMinutes } = get();
         if (!activeEntry) return;
 
         const endTime = new Date().toISOString();
-        const duration = Math.floor(
+        const rawDuration = Math.floor(
           (new Date(endTime).getTime() - new Date(activeEntry.startTime).getTime()) / 1000
         );
+        const duration = roundDuration(rawDuration, roundingMinutes);
 
         const completedEntry: TimeEntry = {
           ...activeEntry,

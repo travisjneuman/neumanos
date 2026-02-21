@@ -3,7 +3,8 @@ import { X, AlertTriangle } from 'lucide-react';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { REMINDER_OPTIONS } from '../services/eventReminders';
 import { detectConflicts, formatConflictMessage, getConflictDetails } from '../utils/conflictDetection';
-import type { CalendarEvent } from '../types';
+import { EVENT_COLOR_CATEGORIES } from '../utils/eventColors';
+import type { CalendarEvent, EventColorCategory } from '../types';
 
 interface EventCreateModalProps {
   dateKey: string;
@@ -47,6 +48,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
   const [recurrenceEndType, setRecurrenceEndType] = useState<'never' | 'after' | 'until'>('never');
   const [recurrenceEndCount, setRecurrenceEndCount] = useState(10);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [colorCategory, setColorCategory] = useState<EventColorCategory>('default');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [conflicts, setConflicts] = useState<CalendarEvent[]>([]);
@@ -63,6 +65,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
       setEndDate(event.endDate || '');
       setLocation(event.location || '');
       setReminders(event.reminders || []);
+      setColorCategory(event.colorCategory || 'default');
 
       if (event.recurrence) {
         setRecurrenceType(event.recurrence.frequency);
@@ -126,6 +129,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
         endDate: endDate || undefined,
         location: location.trim() || undefined,
         reminders: reminders.length > 0 ? reminders : undefined,
+        colorCategory: colorCategory !== 'default' ? colorCategory : undefined,
       };
 
       // Add recurrence if configured
@@ -261,6 +265,31 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
               placeholder="Meeting with team, Conference, etc."
               autoFocus
             />
+          </div>
+
+          {/* Color Category */}
+          <div>
+            <label className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-1.5">
+              Color Category
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {EVENT_COLOR_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setColorCategory(cat.id)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-button text-xs transition-all duration-standard ease-smooth ${
+                    colorCategory === cat.id
+                      ? 'ring-2 ring-offset-1 ring-text-light-primary dark:ring-text-dark-primary'
+                      : 'hover:opacity-80'
+                  }`}
+                  style={{ backgroundColor: cat.hex, color: '#fff' }}
+                  title={cat.label}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Description */}

@@ -4,6 +4,7 @@ import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useTimeTrackingPanelStore } from '../stores/useTimeTrackingPanelStore';
 import { formatDuration, formatTime } from '../utils/timeFormatters';
 import { ProjectSelector } from './ProjectSelector';
+import { TagInput, TagChips } from './TagInput';
 import { ManualTimeEntryModal } from './ManualTimeEntryModal';
 import { IdlePrompt } from './IdlePrompt';
 import { useIdleDetection, getIdleDetectionSettings } from '../hooks/useIdleDetection';
@@ -52,6 +53,7 @@ export function TimeTrackingTimer() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [description, setDescription] = useState(currentDescription || '');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(currentProjectId || null);
+  const [timerTags, setTimerTags] = useState<string[]>([]);
   const [isBillable, setIsBillable] = useState(() => {
     // Load billable default from localStorage (default: true for freelance use)
     const saved = localStorage.getItem('timeTracking:billableDefault');
@@ -143,6 +145,11 @@ export function TimeTrackingTimer() {
       projectId: selectedProjectId || undefined,
       billable: isBillable,
     });
+
+    // Apply tags to the newly created active entry
+    if (timerTags.length > 0) {
+      updateActiveEntry({ tags: timerTags });
+    }
   };
 
   const handleBillableChange = (billable: boolean) => {
@@ -155,6 +162,7 @@ export function TimeTrackingTimer() {
     await stopTimer();
     setDescription('');
     setSelectedProjectId(null);
+    setTimerTags([]);
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,6 +270,18 @@ export function TimeTrackingTimer() {
                 onChange={handleProjectChange}
                 placeholder="Select a project (optional)"
                 showNoProject={true}
+              />
+
+              {/* Tags */}
+              <TagInput
+                tags={timerTags}
+                onChange={(newTags) => {
+                  setTimerTags(newTags);
+                  if (activeEntry) {
+                    updateActiveEntry({ tags: newTags });
+                  }
+                }}
+                placeholder="Add tags (e.g., meeting, coding, review)"
               />
 
               {/* Billable Toggle */}
@@ -453,6 +473,11 @@ export function TimeTrackingTimer() {
                           <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary truncate">
                             {project.name}
                           </span>
+                        </div>
+                      )}
+                      {entry.tags && entry.tags.length > 0 && (
+                        <div className="mt-1">
+                          <TagChips tags={entry.tags} compact />
                         </div>
                       )}
                     </div>

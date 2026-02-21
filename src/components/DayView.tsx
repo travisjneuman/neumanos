@@ -20,6 +20,9 @@ import type { DragStartEvent, DragEndEvent, Modifier } from '@dnd-kit/core';
 import { GripVertical } from 'lucide-react';
 import type { CalendarEvent } from '../types';
 import { format } from 'date-fns';
+import { getColorCategory } from '../utils/eventColors';
+import { calculateEventLayout } from '../utils/eventLayout';
+import { QuickEventCreate } from './QuickEventCreate';
 
 interface DayViewProps {
   date: Date;
@@ -78,14 +81,16 @@ const DraggableEvent: React.FC<DraggableEventProps> = ({
       }
     : style;
 
+  const eventColor = getColorCategory(event.colorCategory).hex;
+
   return (
     <div
       ref={setNodeRef}
-      className={`absolute left-0 right-1 px-2 py-1 rounded text-left overflow-hidden bg-accent-primary text-white text-sm shadow-sm transition-all duration-standard ease-smooth group
-        ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-accent-primary' : 'hover:bg-accent-primary-hover'}
+      className={`absolute left-0 right-1 px-2 py-1 rounded text-left overflow-hidden text-white text-sm shadow-sm transition-all duration-standard ease-smooth group
+        ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-accent-primary' : 'hover:opacity-90'}
         ${enableDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
       `}
-      style={dragStyle}
+      style={{ ...dragStyle, backgroundColor: eventColor }}
       onClick={(e) => {
         if (!transform) {
           e.stopPropagation();
@@ -172,6 +177,7 @@ export const DayView: React.FC<DayViewProps> = ({
 
   // Track dragging state for overlay
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+  const [quickCreate, setQuickCreate] = useState<{ hour: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Configure pointer sensor with activation constraint
@@ -299,7 +305,9 @@ export const DayView: React.FC<DayViewProps> = ({
             key={hour}
             className="relative border-b border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all duration-standard ease-smooth cursor-pointer"
             style={{ height: '60px' }}
-            onClick={() => onTimeSlotClick?.(hour)}
+            onClick={() => {
+              setQuickCreate({ hour });
+            }}
           >
             {/* Hour label */}
             <div className="absolute -top-3 left-0 text-xs text-text-light-secondary dark:text-text-dark-secondary w-12 text-right pr-2">
@@ -323,24 +331,52 @@ export const DayView: React.FC<DayViewProps> = ({
           ))
         )}
 
-        {/* Timed events */}
+        {/* Timed events (with overlap stacking) */}
         <div className="absolute top-0 left-14 right-0 bottom-0">
-          {timedEvents.map((event) => {
-            const style = getEventStyle(event);
-            if (!style) return null;
+          {(() => {
+            const layout = calculateEventLayout(timedEvents);
+            return timedEvents.map((event) => {
+              const style = getEventStyle(event);
+              if (!style) return null;
 
-            return (
-              <DraggableEvent
-                key={event.id}
-                event={event}
-                style={style}
-                dateKey={dateKey}
-                onEventClick={onEventClick}
-                isDragging={activeEvent?.id === event.id}
-                enableDrag={enableTimeBlocking}
-              />
-            );
-          })}
+              const layoutInfo = layout.get(event.id);
+              const col = layoutInfo?.column ?? 0;
+              const totalCols = layoutInfo?.totalColumns ?? 1;
+              const widthPercent = 100 / totalCols;
+              const leftPercent = col * widthPercent;
+
+              const positionedStyle: React.CSSProperties = {
+                ...style,
+                left: `${leftPercent}%`,
+                width: `${widthPercent}%`,
+              };
+
+              return (
+                <DraggableEvent
+                  key={event.id}
+                  event={event}
+                  style={positionedStyle}
+                  dateKey={dateKey}
+                  onEventClick={onEventClick}
+                  isDragging={activeEvent?.id === event.id}
+                  enableDrag={enableTimeBlocking}
+                />
+              );
+            });
+          })()}
+
+          {/* Quick event creation */}
+          {quickCreate !== null && (
+            <QuickEventCreate
+              dateKey={dateKey}
+              startTime={`${quickCreate.hour.toString().padStart(2, '0')}:00`}
+              onClose={() => setQuickCreate(null)}
+              style={{
+                top: `${(quickCreate.hour / 24) * 100}%`,
+                height: `${(1 / 24) * 100}%`,
+              }}
+            />
+          )}
         </div>
       </div>
     </>
@@ -378,7 +414,8 @@ export const DayView: React.FC<DayViewProps> = ({
               <button
                 key={event.id}
                 onClick={() => onEventClick?.(event, dateKey)}
-                className="w-full text-left px-2 py-1 rounded bg-accent-blue text-white text-sm hover:bg-accent-blue-hover transition-all duration-standard ease-smooth"
+                className="w-full text-left px-2 py-1 rounded text-white text-sm hover:opacity-90 transition-all duration-standard ease-smooth"
+                style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
               >
                 {event.title}
               </button>

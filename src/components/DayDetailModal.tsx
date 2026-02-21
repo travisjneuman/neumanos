@@ -1,6 +1,7 @@
 import { X, Plus, Calendar, CheckSquare, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDuration, formatTime } from '../utils/timeFormatters';
+import { getColorCategory } from '../utils/eventColors';
 import type { CalendarEvent, Task, TimeEntry } from '../types';
 
 interface DayDetailModalProps {
@@ -119,7 +120,11 @@ export function DayDetailModal({
                   <button
                     key={event.id}
                     onClick={() => handleEventClick(event)}
-                    className="w-full text-left p-2 rounded-button bg-accent-primary/10 border border-accent-primary/20 hover:bg-accent-primary/20 transition-all duration-standard ease-smooth"
+                    className="w-full text-left p-2 rounded-button border hover:opacity-80 transition-all duration-standard ease-smooth"
+                    style={{
+                      backgroundColor: `${getColorCategory(event.colorCategory).hex}15`,
+                      borderColor: `${getColorCategory(event.colorCategory).hex}40`,
+                    }}
                   >
                     <div className="font-medium text-xs text-text-light-primary dark:text-text-dark-primary">
                       {event.recurrence && '🔁 '}{event.title}

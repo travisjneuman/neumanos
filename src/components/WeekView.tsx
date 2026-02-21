@@ -5,9 +5,12 @@
  * Features: time slots (hourly), timed events, all-day events, task bars
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { CalendarEvent, Task } from '../types';
 import { getLegacyDateKey, isToday, isDateBetween } from '../utils/dateUtils';
+import { getColorCategory } from '../utils/eventColors';
+import { calculateEventLayout } from '../utils/eventLayout';
+import { QuickEventCreate } from './QuickEventCreate';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -26,6 +29,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onEventClick,
   showTimeSlots = true,
 }) => {
+  const [quickCreate, setQuickCreate] = useState<{ dateKey: string; hour: number } | null>(null);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = showTimeSlots ? Array.from({ length: 24 }, (_, i) => i) : [];
 
@@ -121,7 +125,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
                       e.stopPropagation();
                       onEventClick?.(event, dateKey);
                     }}
-                    className="w-full text-left text-xs px-2 py-1 rounded-button bg-accent-primary text-white hover:bg-accent-primary-hover transition-all duration-standard ease-smooth truncate"
+                    className="w-full text-left text-xs px-2 py-1 rounded-button text-white hover:opacity-90 transition-all duration-standard ease-smooth truncate"
+                    style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
                   >
                     {event.startTime && `${event.startTime} `}
                     {event.title}
@@ -230,38 +235,52 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     key={hour}
                     className="border-b border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all duration-standard ease-smooth cursor-pointer"
                     style={{ height: '60px' }}
-                    onClick={() => onDayClick(dateKey)}
+                    onClick={() => setQuickCreate({ dateKey, hour })}
                   >
                     {/* 30-minute half line */}
                     <div className="absolute top-1/2 left-0 right-0 h-px bg-border-light dark:bg-border-dark opacity-30" />
                   </div>
                 ))}
 
-                {/* Timed events */}
-                {timedEvents.map((event) => {
-                  const style = getEventStyle(event);
-                  if (!style) return null;
+                {/* Timed events (with overlap stacking) */}
+                {(() => {
+                  const layout = calculateEventLayout(timedEvents);
+                  return timedEvents.map((event) => {
+                    const style = getEventStyle(event);
+                    if (!style) return null;
 
-                  return (
-                    <button
-                      key={event.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick?.(event, dateKey);
-                      }}
-                      className="absolute left-1 right-1 px-2 py-1 rounded-button text-left overflow-hidden bg-accent-primary text-white text-xs hover:bg-accent-primary-hover transition-all duration-standard ease-smooth shadow-sm z-20"
-                      style={style}
-                      title={`${event.startTime} - ${event.endTime || ''}: ${event.title}`}
-                    >
-                      <div className="font-medium truncate">{event.title}</div>
-                      {event.startTime && (
-                        <div className="text-xs opacity-90">
-                          {event.startTime} {event.endTime && `- ${event.endTime}`}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+                    const layoutInfo = layout.get(event.id);
+                    const col = layoutInfo?.column ?? 0;
+                    const totalCols = layoutInfo?.totalColumns ?? 1;
+                    const widthPercent = 100 / totalCols;
+                    const leftPercent = col * widthPercent;
+
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick?.(event, dateKey);
+                        }}
+                        className="absolute px-1 py-0.5 rounded-button text-left overflow-hidden text-white text-xs hover:opacity-90 transition-all duration-standard ease-smooth shadow-sm z-20"
+                        style={{
+                          ...style,
+                          left: `${leftPercent}%`,
+                          width: `${widthPercent}%`,
+                          backgroundColor: getColorCategory(event.colorCategory).hex,
+                        }}
+                        title={`${event.startTime} - ${event.endTime || ''}: ${event.title}`}
+                      >
+                        <div className="font-medium truncate">{event.title}</div>
+                        {event.startTime && (
+                          <div className="text-xs opacity-90">
+                            {event.startTime} {event.endTime && `- ${event.endTime}`}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  });
+                })()}
 
                 {/* All-day events (floating at top) */}
                 {allDayEvents.length > 0 && (
@@ -273,12 +292,26 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           e.stopPropagation();
                           onEventClick?.(event, dateKey);
                         }}
-                        className="w-full text-left text-xs px-2 py-1 rounded-button bg-accent-blue text-white hover:bg-accent-blue-hover transition-all duration-standard ease-smooth truncate"
+                        className="w-full text-left text-xs px-2 py-1 rounded-button text-white hover:opacity-90 transition-all duration-standard ease-smooth truncate"
+                        style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
                       >
                         {event.title}
                       </button>
                     ))}
                   </div>
+                )}
+
+                {/* Quick event creation */}
+                {quickCreate?.dateKey === dateKey && (
+                  <QuickEventCreate
+                    dateKey={dateKey}
+                    startTime={`${quickCreate.hour.toString().padStart(2, '0')}:00`}
+                    onClose={() => setQuickCreate(null)}
+                    style={{
+                      top: `${(quickCreate.hour / 24) * 100}%`,
+                      height: `${(1 / 24) * 100}%`,
+                    }}
+                  />
                 )}
               </div>
             );

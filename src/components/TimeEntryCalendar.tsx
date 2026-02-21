@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Clock } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useCalendarStore } from '../stores/useCalendarStore';
@@ -11,9 +11,11 @@ import { WeekView } from './WeekView';
 import { DayView } from './DayView';
 import { AgendaView } from './AgendaView';
 import { DayDetailModal } from './DayDetailModal';
+import { MiniCalendar } from './MiniCalendar';
 import { MonthlyCalendarGrid } from './shared/MonthlyCalendarGrid';
 import { CalendarHeader } from './shared/CalendarHeader';
-import type { TimeEntry, CalendarEvent, ViewMode, Task } from '../types';
+import { EVENT_COLOR_CATEGORIES } from '../utils/eventColors';
+import type { TimeEntry, CalendarEvent, ViewMode, Task, EventColorCategory } from '../types';
 
 interface TimeEntryCalendarProps {
   onEditEntry?: (entry: TimeEntry) => void;
@@ -37,6 +39,10 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [importStatus, setImportStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [dayDetailModal, setDayDetailModal] = useState<{ dateKey: string; events: CalendarEvent[]; tasks: Task[]; timeEntries: TimeEntry[]; totalDuration: number } | null>(null);
+  const [showMiniCalendar, setShowMiniCalendar] = useState(false);
+  const miniCalendarRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategories, setActiveCategories] = useState<Set<EventColorCategory>>(new Set());
 
   // Group tasks by their due date (convert ISO date to standard date key)
   const tasksByDate = useMemo(() => {
@@ -221,6 +227,37 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
     return result;
   }, [events, year, month]);
 
+  // Apply search and category filters to expanded events
+  const filteredEvents = useMemo(() => {
+    const hasSearch = searchQuery.trim().length > 0;
+    const hasCategories = activeCategories.size > 0;
+
+    if (!hasSearch && !hasCategories) return expandedEvents;
+
+    const lowerSearch = searchQuery.trim().toLowerCase();
+    const result: Record<string, CalendarEvent[]> = {};
+
+    Object.entries(expandedEvents).forEach(([dateKey, dayEvents]) => {
+      const filtered = dayEvents.filter((event) => {
+        // Search filter
+        if (hasSearch && !event.title.toLowerCase().includes(lowerSearch)) {
+          return false;
+        }
+        // Category filter
+        if (hasCategories) {
+          const eventCat = event.colorCategory || 'default';
+          if (!activeCategories.has(eventCat)) return false;
+        }
+        return true;
+      });
+      if (filtered.length > 0) {
+        result[dateKey] = filtered;
+      }
+    });
+
+    return result;
+  }, [expandedEvents, searchQuery, activeCategories]);
+
   // Group entries by date (ISO format for time entry lookups)
   // NOTE: Must be called before early return to maintain consistent hook order
   const entriesByDate = useMemo(() => {
@@ -278,7 +315,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
 
   const handleDayClick = (dateKey: string) => {
     // Click on a day opens the DayDetailModal
-    const dayEvents = expandedEvents[dateKey] || [];
+    const dayEvents = filteredEvents[dateKey] || [];
     const dayTasks = tasksByDate[dateKey] || [];
 
     // Get time entries for this day (need to convert dateKey to ISO format)
@@ -331,6 +368,85 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
         )}
       />
 
+      {/* Search, Filter & Mini Calendar Row */}
+      <div className="flex items-center gap-3 flex-wrap bg-surface-light dark:bg-surface-dark rounded-button border border-border-light dark:border-border-dark px-4 py-3">
+        {/* Mini Calendar Toggle */}
+        <div className="relative" ref={miniCalendarRef}>
+          <button
+            onClick={() => setShowMiniCalendar(!showMiniCalendar)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-button border transition-all duration-standard ease-smooth ${
+              showMiniCalendar
+                ? 'bg-accent-primary text-white border-accent-primary'
+                : 'bg-surface-light-elevated dark:bg-surface-dark-elevated border-border-light dark:border-border-dark text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+            }`}
+          >
+            Mini Cal
+          </button>
+          {showMiniCalendar && (
+            <div className="absolute top-full left-0 mt-1 z-40">
+              <MiniCalendar
+                currentDate={currentDate}
+                onDateSelect={(date) => {
+                  setCurrentDate(date);
+                  setShowMiniCalendar(false);
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        <div className="flex-1 min-w-[160px] max-w-xs">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search events..."
+            className="w-full px-3 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary placeholder-text-light-tertiary dark:placeholder-text-dark-tertiary"
+          />
+        </div>
+
+        {/* Category Filter Buttons */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {EVENT_COLOR_CATEGORIES.map((cat) => {
+            const isActive = activeCategories.has(cat.id);
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setActiveCategories((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(cat.id)) {
+                      next.delete(cat.id);
+                    } else {
+                      next.add(cat.id);
+                    }
+                    return next;
+                  });
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded-full transition-all duration-standard ease-smooth ${
+                  isActive
+                    ? 'text-white ring-1 ring-offset-1 ring-white/50'
+                    : 'opacity-40 hover:opacity-70'
+                }`}
+                style={{ backgroundColor: cat.hex, color: '#fff' }}
+                title={`${isActive ? 'Hide' : 'Show'} ${cat.label} events`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+          {activeCategories.size > 0 && (
+            <button
+              onClick={() => setActiveCategories(new Set())}
+              className="px-2 py-0.5 text-[10px] font-medium text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* View Content */}
       {viewMode === 'monthly' ? (
         /* Monthly View - Using shared MonthlyCalendarGrid component */
@@ -340,7 +456,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
           onDayClick={handleDayClick}
           renderDayContent={({ dateKey, isoDateKey }) => {
             const dayEntries = entriesByDate.get(isoDateKey) || [];
-            const dayEvents = expandedEvents[dateKey] || [];
+            const dayEvents = filteredEvents[dateKey] || [];
             const dayTasks = tasksByDate[dateKey] || [];
             const totalDuration = dayEntries.reduce((sum, entry) => sum + entry.duration, 0);
             const hasContent = dayEntries.length > 0 || dayEvents.length > 0 || dayTasks.length > 0;
@@ -391,7 +507,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
         /* Weekly View */
         <WeekView
           currentDate={currentDate}
-          events={expandedEvents}
+          events={filteredEvents}
           tasks={[]} // No tasks in time tracking context
           onDayClick={handleDayClick}
           onEventClick={handleEventClick}
@@ -401,7 +517,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
         /* Daily View */
         <DayView
           date={currentDate}
-          events={expandedEvents[getStandardDateKey(currentDate)] || []}
+          events={filteredEvents[getStandardDateKey(currentDate)] || []}
           onEventClick={handleEventClick}
           onTimeSlotClick={() => {
             const dateKey = getStandardDateKey(currentDate);
@@ -411,7 +527,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
       ) : (
         /* Agenda/List View */
         <AgendaView
-          events={expandedEvents}
+          events={filteredEvents}
           currentDate={currentDate}
           daysToShow={14}
           onEventClick={handleEventClick}

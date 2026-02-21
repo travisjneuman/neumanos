@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { CalendarEvent } from '../types';
 import { format, parse, isAfter, addDays, startOfDay, isSameDay } from 'date-fns';
+import { getColorCategory } from '../utils/eventColors';
 
 interface AgendaViewProps {
   events: Record<string, CalendarEvent[]>; // Expanded events (including recurring instances)
@@ -130,6 +131,11 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                     `}
                   >
                     <div className="flex items-start gap-3">
+                      {/* Color indicator */}
+                      <div
+                        className="flex-shrink-0 w-1 rounded-full self-stretch"
+                        style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
+                      />
                       {/* Time */}
                       <div className="flex-shrink-0 w-24 text-right">
                         <div className="text-sm font-medium text-accent-primary">

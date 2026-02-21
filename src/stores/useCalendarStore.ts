@@ -260,6 +260,7 @@ export const useCalendarStore = create<CalendarStore>()(
               endDate: event.endDate,
               location: event.location,
               reminders: event.reminders,
+              colorCategory: event.colorCategory,
               projectIds: event.projectIds ?? [],
             };
 

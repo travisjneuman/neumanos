@@ -10,6 +10,7 @@ import type { TimeEntry, TimeTrackingProject } from '../types';
 export type ReportType =
   | 'time-by-project'
   | 'time-by-date'
+  | 'time-by-tag'
   | 'billable-vs-nonbillable'
   | 'rate-analysis'
   | 'trends';
@@ -20,8 +21,17 @@ export interface ReportFilters {
   startDate?: string;         // ISO date
   endDate?: string;           // ISO date
   projectIds: string[];       // Filter by specific projects
+  tags?: string[];            // Filter by tags
   billableOnly?: boolean;     // Only billable entries
   groupBy?: GroupByPeriod;    // Grouping period
+}
+
+export interface TimeByTagData {
+  tag: string;
+  totalHours: number;
+  entryCount: number;
+  percentage: number;
+  color: string;
 }
 
 export interface TimeByProjectData {
@@ -122,6 +132,12 @@ export function filterEntries(
 
   if (filters.projectIds.length > 0) {
     filtered = filtered.filter(e => e.projectId && filters.projectIds.includes(e.projectId));
+  }
+
+  if (filters.tags && filters.tags.length > 0) {
+    filtered = filtered.filter(e =>
+      e.tags?.some(tag => filters.tags!.includes(tag))
+    );
   }
 
   if (filters.billableOnly) {
@@ -426,4 +442,72 @@ export function calculateTrends(
   });
 
   return data;
+}
+
+// Consistent tag colors (same as TagInput)
+const TAG_COLORS: Record<string, string> = {
+  meeting: '#F59E0B',
+  coding: '#06B6D4',
+  review: '#8B5CF6',
+  design: '#EC4899',
+  research: '#10B981',
+  planning: '#3B82F6',
+  testing: '#EF4444',
+  documentation: '#F97316',
+  deployment: '#14B8A6',
+  support: '#A855F7',
+  admin: '#6B7280',
+  learning: '#84CC16',
+};
+
+function getTagColor(tag: string): string {
+  const lower = tag.toLowerCase();
+  if (TAG_COLORS[lower]) return TAG_COLORS[lower];
+  let hash = 0;
+  for (let i = 0; i < lower.length; i++) {
+    hash = lower.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 60%, 55%)`;
+}
+
+/**
+ * Calculate Time by Tag report
+ */
+export function calculateTimeByTag(entries: TimeEntry[]): TimeByTagData[] {
+  const tagMap = new Map<string, { seconds: number; count: number }>();
+  const totalSeconds = entries.reduce((sum, e) => sum + e.duration, 0);
+
+  entries.forEach(entry => {
+    const entryTags = entry.tags?.length ? entry.tags : ['Untagged'];
+    entryTags.forEach(tag => {
+      const existing = tagMap.get(tag) || { seconds: 0, count: 0 };
+      existing.seconds += entry.duration;
+      existing.count += 1;
+      tagMap.set(tag, existing);
+    });
+  });
+
+  const totalHours = secondsToHours(totalSeconds);
+
+  return Array.from(tagMap.entries())
+    .map(([tag, data]) => ({
+      tag,
+      totalHours: secondsToHours(data.seconds),
+      entryCount: data.count,
+      percentage: totalHours > 0 ? (secondsToHours(data.seconds) / totalHours) * 100 : 0,
+      color: getTagColor(tag),
+    }))
+    .sort((a, b) => b.totalHours - a.totalHours);
+}
+
+/**
+ * Get all unique tags from entries
+ */
+export function getAllTags(entries: TimeEntry[]): string[] {
+  const tagSet = new Set<string>();
+  entries.forEach(entry => {
+    entry.tags?.forEach(tag => tagSet.add(tag));
+  });
+  return Array.from(tagSet).sort();
 }
