@@ -43,6 +43,9 @@ import { TabNavigation, type Tab } from '../components/TabNavigation';
 import { DiagramsContent } from './Diagrams';
 import { FormsContent } from './Forms';
 
+// Lazy load RecentDocsList
+const RecentDocsList = lazy(() => import('../components/docs/RecentDocsList'));
+
 // Lazy load DocViewer, DocumentEditor, SpreadsheetEditor, PresentationEditor, and TemplatePicker for code splitting
 const DocViewer = lazy(() => import('../components/docs/DocViewer'));
 const DocumentEditor = lazy(() => import('../components/docs/DocumentEditor'));
@@ -867,21 +870,29 @@ export function Docs() {
                     </div>
                   </div>
                 ) : (
-                  // Empty state - no document selected
-                  <div className="h-full flex items-center justify-center">
-                    <div className="text-center p-8 max-w-lg">
-                      <div className="flex justify-center gap-4 mb-6">
-                        <FileText className="w-12 h-12 text-accent-primary opacity-80" />
-                        <Table2 className="w-12 h-12 text-accent-secondary opacity-80" />
-                        <Presentation className="w-12 h-12 text-accent-purple opacity-80" />
+                  // Empty state - no document selected (with recent docs)
+                  <div className="h-full overflow-auto p-6">
+                    {/* Recent Documents */}
+                    <Suspense fallback={null}>
+                      <RecentDocsList onDocClick={handleDocClick} />
+                    </Suspense>
+
+                    {/* Welcome message */}
+                    <div className="flex items-center justify-center min-h-[300px]">
+                      <div className="text-center p-8 max-w-lg">
+                        <div className="flex justify-center gap-4 mb-6">
+                          <FileText className="w-12 h-12 text-accent-primary opacity-80" />
+                          <Table2 className="w-12 h-12 text-accent-secondary opacity-80" />
+                          <Presentation className="w-12 h-12 text-accent-purple opacity-80" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary mb-3">
+                          Documents, Spreadsheets & Presentations
+                        </h2>
+                        <p className="text-text-light-secondary dark:text-text-dark-secondary">
+                          Create professional documents, analyze data with spreadsheets, and
+                          build stunning presentations - all stored locally with full privacy.
+                        </p>
                       </div>
-                      <h2 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary mb-3">
-                        Documents, Spreadsheets & Presentations
-                      </h2>
-                      <p className="text-text-light-secondary dark:text-text-dark-secondary">
-                        Create professional documents, analyze data with spreadsheets, and
-                        build stunning presentations - all stored locally with full privacy.
-                      </p>
                     </div>
                   </div>
                 )}

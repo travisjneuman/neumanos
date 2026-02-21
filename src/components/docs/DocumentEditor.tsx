@@ -34,6 +34,7 @@ import Color from '@tiptap/extension-color';
 import Typography from '@tiptap/extension-typography';
 import { useDebouncedCallback } from 'use-debounce';
 import { DocumentToolbar } from './DocumentToolbar';
+import { FindReplaceBar } from './FindReplaceBar';
 import { FileText, Scroll } from 'lucide-react';
 
 /** Page size presets (width x height in pixels at 96 DPI) */
@@ -74,6 +75,8 @@ export function DocumentEditor({
   // Track view mode toggle
   const [isPageView, setIsPageView] = useState(pageView);
   const [currentPageSize, setCurrentPageSize] = useState<PageSize>(pageSize);
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findReplaceMode, setFindReplaceMode] = useState<'find' | 'replace'>('find');
   const pageDimensions = PAGE_SIZES[currentPageSize];
 
   // Parse initial content
@@ -201,6 +204,25 @@ export function DocumentEditor({
       .run();
   }, [editor]);
 
+  // Keyboard shortcuts for Find & Replace
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setFindReplaceMode('find');
+        setShowFindReplace(true);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        setFindReplaceMode('replace');
+        setShowFindReplace(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -213,10 +235,10 @@ export function DocumentEditor({
 
   return (
     <div className={`document-editor flex flex-col h-full ${className}`}>
-      {/* Toolbar */}
+      {/* Sticky Toolbar */}
       {!readOnly && (
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
+        <div className="sticky top-0 z-20 flex items-center gap-2 bg-surface-light dark:bg-surface-dark">
+          <div className="flex-1 min-w-0">
             <DocumentToolbar
               editor={editor}
               documentTitle={title}
@@ -227,7 +249,7 @@ export function DocumentEditor({
           </div>
 
           {/* View mode toggle */}
-          <div className="flex items-center gap-1 px-2 py-1.5 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg">
+          <div className="flex items-center gap-1 px-2 py-1.5 shrink-0 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg">
             <button
               onClick={() => setIsPageView(false)}
               title="Continuous scroll"
@@ -269,6 +291,17 @@ export function DocumentEditor({
               </select>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Find & Replace Bar */}
+      {showFindReplace && editor && (
+        <div className="sticky top-[48px] z-20 px-4 py-2 bg-surface-light dark:bg-surface-dark">
+          <FindReplaceBar
+            editor={editor}
+            showReplace={findReplaceMode === 'replace'}
+            onClose={() => setShowFindReplace(false)}
+          />
         </div>
       )}
 

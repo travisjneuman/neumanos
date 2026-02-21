@@ -14,111 +14,252 @@ import type { Editor } from '@tiptap/react';
 import DOMPurify from 'dompurify';
 import { toast } from '../../stores/useToastStore';
 
+/** PDF print stylesheet with proper pagination and formatting */
+const PDF_STYLES = `
+  @page {
+    size: letter;
+    margin: 0.75in 1in;
+  }
+  @media print {
+    body { margin: 0; padding: 0; }
+    .print-preview-controls { display: none !important; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.75in 1in;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #fff;
+  }
+  /* Title styling */
+  .doc-title {
+    font-size: 28pt;
+    font-weight: 700;
+    margin: 0 0 8pt;
+    line-height: 1.2;
+    color: #111;
+    border-bottom: 2pt solid #333;
+    padding-bottom: 12pt;
+  }
+  .doc-meta {
+    font-size: 10pt;
+    color: #666;
+    margin-bottom: 24pt;
+  }
+  /* Headings */
+  h1 { font-size: 22pt; margin: 24pt 0 10pt; font-weight: 700; color: #111; }
+  h2 { font-size: 16pt; margin: 20pt 0 8pt; font-weight: 600; color: #222; }
+  h3 { font-size: 13pt; margin: 16pt 0 6pt; font-weight: 600; color: #333; }
+  h4 { font-size: 12pt; margin: 14pt 0 6pt; font-weight: 600; color: #444; }
+  h5, h6 { font-size: 11pt; margin: 12pt 0 4pt; font-weight: 600; color: #555; }
+  /* Prevent orphaned headings */
+  h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
+  /* Text */
+  p { margin: 6pt 0; orphans: 3; widows: 3; }
+  strong, b { font-weight: 700; }
+  em, i { font-style: italic; }
+  u { text-decoration: underline; }
+  s, del, strike { text-decoration: line-through; }
+  /* Links */
+  a { color: #1a56db; text-decoration: underline; }
+  /* Lists */
+  ul, ol { margin: 8pt 0; padding-left: 28pt; }
+  li { margin: 3pt 0; }
+  li > ul, li > ol { margin: 2pt 0; }
+  /* Blockquotes */
+  blockquote {
+    margin: 12pt 0;
+    padding: 8pt 16pt;
+    border-left: 3pt solid #999;
+    color: #555;
+    font-style: italic;
+    background: #fafafa;
+    page-break-inside: avoid;
+  }
+  /* Code */
+  pre {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9.5pt;
+    background: #f4f4f4;
+    border: 1pt solid #ddd;
+    border-radius: 4pt;
+    padding: 10pt;
+    margin: 10pt 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    page-break-inside: avoid;
+  }
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 10pt;
+    background: #f0f0f0;
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+  }
+  pre code { background: none; padding: 0; border-radius: 0; }
+  /* Tables */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12pt 0;
+    page-break-inside: auto;
+  }
+  tr { page-break-inside: avoid; }
+  th, td {
+    border: 1pt solid #bbb;
+    padding: 6pt 8pt;
+    text-align: left;
+    font-size: 11pt;
+  }
+  th {
+    background: #f0f0f0;
+    font-weight: 600;
+    border-bottom: 2pt solid #999;
+  }
+  /* Images */
+  img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+    margin: 8pt 0;
+  }
+  /* Horizontal rules */
+  hr {
+    border: none;
+    border-top: 1pt solid #ccc;
+    margin: 20pt 0;
+  }
+  /* Highlights (remove background for print) */
+  mark { background: #fef08a; padding: 0 2pt; }
+  /* Text alignment */
+  [style*="text-align: center"] { text-align: center; }
+  [style*="text-align: right"] { text-align: right; }
+  [style*="text-align: justify"] { text-align: justify; }
+  /* Print preview controls */
+  .print-preview-controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #333;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .print-preview-controls button {
+    background: #fff;
+    color: #333;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .print-preview-controls button:hover { background: #eee; }
+  .print-preview-controls button.primary {
+    background: #3b82f6;
+    color: #fff;
+  }
+  .print-preview-controls button.primary:hover { background: #2563eb; }
+  .print-preview-body { margin-top: 52px; }
+`;
+
 /**
- * Export document as PDF using browser print
- * Opens print dialog where user can save as PDF
+ * Export document as PDF with print preview.
+ * Opens a formatted preview window with a toolbar to trigger print.
  */
 export function exportToPDF(editor: Editor, title: string): void {
   const html = editor.getHTML();
   const sanitizedHtml = DOMPurify.sanitize(html);
 
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  const printWindow = window.open('', '_blank', 'width=900,height=700');
   if (!printWindow) {
     toast.error('Please allow popups to export PDF');
     return;
   }
 
-  // Build the document using DOM manipulation
   const doc = printWindow.document;
 
-  // Create head
+  // Build head
   const head = doc.createElement('head');
-
   const titleEl = doc.createElement('title');
-  titleEl.textContent = title;
+  titleEl.textContent = `Print Preview - ${title}`;
   head.appendChild(titleEl);
 
   const style = doc.createElement('style');
-  style.textContent = `
-    @media print {
-      body {
-        margin: 0.5in;
-        font-family: 'Times New Roman', serif;
-        font-size: 12pt;
-        line-height: 1.5;
-        color: #000;
-      }
-    }
-    body {
-      max-width: 8.5in;
-      margin: 0.5in auto;
-      font-family: 'Times New Roman', serif;
-      font-size: 12pt;
-      line-height: 1.5;
-      color: #000;
-    }
-    h1 { font-size: 24pt; margin-top: 0; margin-bottom: 12pt; }
-    h2 { font-size: 18pt; margin-top: 18pt; margin-bottom: 8pt; }
-    h3 { font-size: 14pt; margin-top: 14pt; margin-bottom: 6pt; }
-    p { margin: 8pt 0; }
-    ul, ol { margin: 8pt 0; padding-left: 24pt; }
-    li { margin: 4pt 0; }
-    blockquote {
-      margin: 12pt 0;
-      padding: 8pt 16pt;
-      border-left: 3pt solid #666;
-      font-style: italic;
-    }
-    pre {
-      font-family: 'Courier New', monospace;
-      font-size: 10pt;
-      background: #f5f5f5;
-      padding: 8pt;
-      margin: 8pt 0;
-      overflow-x: auto;
-    }
-    code {
-      font-family: 'Courier New', monospace;
-      background: #f0f0f0;
-      padding: 1pt 3pt;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 12pt 0;
-    }
-    th, td {
-      border: 1pt solid #000;
-      padding: 6pt;
-      text-align: left;
-    }
-    th { background: #f0f0f0; font-weight: bold; }
-    img { max-width: 100%; height: auto; }
-    hr { border: none; border-top: 1pt solid #666; margin: 16pt 0; }
-  `;
+  style.textContent = PDF_STYLES;
   head.appendChild(style);
 
-  // Create body
+  // Build body
   const body = doc.createElement('body');
 
-  const titleHeader = doc.createElement('h1');
-  titleHeader.textContent = title;
-  body.appendChild(titleHeader);
+  // Print preview controls bar
+  const controls = doc.createElement('div');
+  controls.className = 'print-preview-controls';
 
-  // Use DOMPurify to safely set content
+  const leftGroup = doc.createElement('div');
+  leftGroup.textContent = `Print Preview: ${title}`;
+  controls.appendChild(leftGroup);
+
+  const rightGroup = doc.createElement('div');
+  rightGroup.style.display = 'flex';
+  rightGroup.style.gap = '8px';
+
+  const closeBtn = doc.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.addEventListener('click', () => printWindow.close());
+  rightGroup.appendChild(closeBtn);
+
+  const printBtn = doc.createElement('button');
+  printBtn.className = 'primary';
+  printBtn.textContent = 'Print / Save as PDF';
+  printBtn.addEventListener('click', () => printWindow.print());
+  rightGroup.appendChild(printBtn);
+
+  controls.appendChild(rightGroup);
+  body.appendChild(controls);
+
+  // Document content wrapper
+  const wrapper = doc.createElement('div');
+  wrapper.className = 'print-preview-body';
+
+  const docTitle = doc.createElement('div');
+  docTitle.className = 'doc-title';
+  docTitle.textContent = title;
+  wrapper.appendChild(docTitle);
+
+  const meta = doc.createElement('div');
+  meta.className = 'doc-meta';
+  meta.textContent = `Exported on ${new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })}`;
+  wrapper.appendChild(meta);
+
   const contentDiv = doc.createElement('div');
-  contentDiv.appendChild(DOMPurify.sanitize(sanitizedHtml, { RETURN_DOM_FRAGMENT: true, RETURN_DOM: true }));
-  body.appendChild(contentDiv);
+  contentDiv.appendChild(
+    DOMPurify.sanitize(sanitizedHtml, { RETURN_DOM_FRAGMENT: true, RETURN_DOM: true })
+  );
+  wrapper.appendChild(contentDiv);
 
-  // Append to document
+  body.appendChild(wrapper);
+
   doc.documentElement.appendChild(head);
   doc.documentElement.appendChild(body);
-
-  // Wait for content to load, then print
-  setTimeout(() => {
-    printWindow.print();
-  }, 250);
 }
 
 /**
@@ -303,6 +444,8 @@ function htmlToMarkdown(html: string): string {
       }
       case 'hr':
         return '\n---\n\n';
+      case 'mark':
+        return `==${children}==`;
       case 'table':
         return processTable(el);
       default:

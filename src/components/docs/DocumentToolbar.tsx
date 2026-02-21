@@ -142,7 +142,7 @@ export function DocumentToolbar({
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 p-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-t-lg mb-[-1px]">
+    <div className="flex flex-wrap items-center gap-0.5 p-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-t-lg mb-[-1px] overflow-x-auto scrollbar-thin">
       {/* Undo/Redo */}
       <ToolbarButton
         onClick={() => editor.chain().focus().undo().run()}

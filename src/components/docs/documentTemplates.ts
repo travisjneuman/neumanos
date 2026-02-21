@@ -151,6 +151,55 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     },
   },
 
+  {
+    id: 'weekly-report',
+    name: 'Weekly Report',
+    description: 'Summarize weekly accomplishments and upcoming plans',
+    category: 'report',
+    icon: 'BarChart2',
+    content: {
+      type: 'doc',
+      content: [
+        h(1, 'Weekly Report'),
+        p('Week of: [Start Date] - [End Date]'),
+        p(''),
+        h(2, 'Summary'),
+        p('[Brief overview of the week. Highlight key wins, blockers, and focus areas.]'),
+        p(''),
+        h(2, 'Accomplishments'),
+        ul([
+          'Completed [task/feature/milestone]',
+          'Resolved [issue/bug/blocker]',
+          'Delivered [deliverable]',
+        ]),
+        p(''),
+        h(2, 'In Progress'),
+        ul([
+          '[Task] - [Progress %] - [Expected completion]',
+          '[Task] - [Progress %] - [Expected completion]',
+        ]),
+        p(''),
+        h(2, 'Blockers & Risks'),
+        ul(['[Blocker] - [Impact] - [Mitigation]']),
+        p(''),
+        h(2, 'Key Metrics'),
+        p('Tasks completed: [X]'),
+        p('Tasks remaining: [Y]'),
+        p('Sprint/milestone progress: [Z%]'),
+        p(''),
+        h(2, 'Next Week Plan'),
+        ol([
+          'Priority 1: [Description]',
+          'Priority 2: [Description]',
+          'Priority 3: [Description]',
+        ]),
+        p(''),
+        hr(),
+        p('Prepared by: [Your name]'),
+      ],
+    },
+  },
+
   // Proposal Templates
   {
     id: 'project-proposal',

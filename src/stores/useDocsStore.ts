@@ -101,6 +101,10 @@ interface DocsStoreState {
   // Project context filtering
   getFilteredDocs: () => Doc[];
 
+  // Recent docs
+  trackDocAccess: (id: string) => void;
+  getRecentDocs: (limit?: number) => Doc[];
+
   // Getters
   getDocById: (id: string) => Doc | undefined;
   getFolderById: (id: string) => DocFolder | undefined;
@@ -309,6 +313,10 @@ export const useDocsStore = create<DocsStoreState>()(
       // Navigation
       setActiveDoc: (id) => {
         set({ activeDocId: id });
+        // Track document access for recent docs list
+        if (id) {
+          get().trackDocAccess(id);
+        }
       },
 
       setActiveFolder: (id) => {
@@ -339,6 +347,36 @@ export const useDocsStore = create<DocsStoreState>()(
             d.source === 'user' &&
             matchesProjectFilter(d.projectIds, activeProjectIds)
         );
+      },
+
+      // Recent docs
+      trackDocAccess: (id) => {
+        set((state) => ({
+          docs: state.docs.map((doc) =>
+            doc.id === id
+              ? { ...doc, lastAccessedAt: new Date().toISOString() } as Doc
+              : doc
+          ),
+        }));
+      },
+
+      getRecentDocs: (limit = 10) => {
+        const { docs } = get();
+        const { activeProjectIds } = useProjectContextStore.getState();
+
+        return docs
+          .filter(
+            (d) =>
+              d.source === 'user' &&
+              d.lastAccessedAt &&
+              matchesProjectFilter(d.projectIds, activeProjectIds)
+          )
+          .sort((a, b) => {
+            const aTime = a.lastAccessedAt || a.updatedAt;
+            const bTime = b.lastAccessedAt || b.updatedAt;
+            return bTime.localeCompare(aTime);
+          })
+          .slice(0, limit);
       },
 
       // Getters

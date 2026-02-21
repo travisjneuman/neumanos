@@ -522,6 +522,13 @@ export type HabitCategory =
   | 'finance'
   | 'uncategorized';
 
+export type HabitDifficulty = 'trivial' | 'easy' | 'medium' | 'hard';
+
+export interface HabitReminder {
+  enabled: boolean;
+  time: string;                     // "HH:MM" 24-hour format
+}
+
 export interface Habit {
   id: string;
   title: string;
@@ -529,16 +536,24 @@ export interface Habit {
   icon?: string;                    // Emoji or Lucide icon name
   color: string;                    // Hex color for visual identity
   category: HabitCategory;          // Grouping category
+  difficulty: HabitDifficulty;      // XP multiplier: trivial=1, easy=2, medium=3, hard=4
 
   // Frequency configuration
   frequency: HabitFrequency;
   targetDays?: number[];            // 0-6 for specific-days (0=Sun)
   timesPerWeek?: number;            // For times-per-week frequency
 
+  // Reminders
+  reminder?: HabitReminder;         // Optional daily reminder
+
+  // Dependencies
+  requiredHabitIds?: string[];      // Must complete these today before this unlocks
+
   // Progress tracking
   currentStreak: number;
   longestStreak: number;
   totalCompletions: number;
+  totalXp: number;                  // Accumulated experience points
 
   // Metadata
   projectIds: string[];             // Project context support
