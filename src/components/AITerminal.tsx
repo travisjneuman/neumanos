@@ -25,7 +25,19 @@ import { usePhantomShellStore } from '../stores/usePhantomShellStore';
 import { runCommand, createShellContext, setRouter as setAICommandRouter } from '../services/phantomShell';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { SaveToNotesButton, SaveConversationModal, AI_TERMINAL_MODAL_ROOT_ID } from './terminal';
+import {
+  SaveToNotesButton,
+  SaveConversationModal,
+  AI_TERMINAL_MODAL_ROOT_ID,
+  ConversationPanel,
+  SystemPromptPanel,
+  CodeBlock,
+  TokenUsageBar,
+  MessageTokenBadge,
+  ConversationExportButton,
+} from './terminal';
+import { getDefaultSystemPrompt } from '../services/systemPrompts';
+import { MessageSquare, Settings2, BookOpen } from 'lucide-react';
 import {
   AI_TERMINAL_FOLDER_NAME,
   getOrCreateQuickNote,
@@ -94,6 +106,11 @@ export const AITerminal: React.FC = () => {
     addMessage,
     clearMessages,
     setStreaming,
+    activeConversationId,
+    createConversation,
+    saveCurrentConversation,
+    customSystemPrompt,
+    recordTokenUsage,
   } = useTerminalStore();
 
   const [input, setInput] = useState('');
@@ -103,6 +120,8 @@ export const AITerminal: React.FC = () => {
   const [showUsageTracker, setShowUsageTracker] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showSaveConversation, setShowSaveConversation] = useState(false);
+  const [showConversationPanel, setShowConversationPanel] = useState(false);
+  const [showSystemPromptPanel, setShowSystemPromptPanel] = useState(false);
   const [fallbackNotification, setFallbackNotification] = useState<string | null>(null);
   const [terminalMode, setTerminalMode] = useState<TerminalMode>('chat');
   const [configuredProviderCount, setConfiguredProviderCount] = useState(0);
@@ -525,18 +544,38 @@ export const AITerminal: React.FC = () => {
     setStreamingContent('');
 
     try {
+      // Auto-create conversation if none is active
+      if (!activeConversationId) {
+        createConversation(userMessage.substring(0, 50));
+      }
+
       // Send message using router (with automatic fallback)
+      const systemPrompt = customSystemPrompt || getDefaultSystemPrompt();
       const response = await router.sendMessage({
         prompt: userMessage,
         conversationHistory: messages.map((msg) => ({
           role: msg.role as 'user' | 'assistant' | 'system',
           content: msg.content,
         })),
+        systemPrompt,
         stream: true,
         onChunk: (chunk) => {
           setStreamingContent((prev) => prev + chunk);
         },
       });
+
+      // Build token usage info from response
+      const tokenUsage = response.usage ? {
+        promptTokens: response.usage.promptTokens,
+        completionTokens: response.usage.completionTokens,
+        totalTokens: response.usage.totalTokens,
+        estimatedCost: response.usage.totalTokens * 0.000002, // Rough estimate
+      } : undefined;
+
+      // Track cumulative usage
+      if (tokenUsage) {
+        recordTokenUsage(tokenUsage, response.provider || activeProvider);
+      }
 
       // Add complete assistant message with provider/model metadata
       addMessage({
@@ -544,7 +583,11 @@ export const AITerminal: React.FC = () => {
         content: response.content,
         provider: response.provider || activeProvider,
         model: response.model || activeModel,
+        tokenUsage,
       });
+
+      // Auto-save conversation
+      saveCurrentConversation();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       addMessage({
@@ -658,6 +701,39 @@ export const AITerminal: React.FC = () => {
 
           {/* Right: Action buttons */}
           <div className="flex items-center gap-0.5">
+            {/* Conversation History - Chat only */}
+            {terminalMode === 'chat' && (
+              <button
+                onClick={() => { setShowConversationPanel(!showConversationPanel); setShowSystemPromptPanel(false); }}
+                className={`p-1.5 hover:bg-surface-dark-elevated rounded transition-all ${
+                  showConversationPanel ? 'text-accent-green bg-accent-green/10' : 'text-text-dark-secondary hover:text-accent-green'
+                }`}
+                title="Conversation History"
+                aria-label="View conversation history"
+              >
+                <MessageSquare size={14} />
+              </button>
+            )}
+
+            {/* System Prompt - Chat only */}
+            {terminalMode === 'chat' && (
+              <button
+                onClick={() => { setShowSystemPromptPanel(!showSystemPromptPanel); setShowConversationPanel(false); }}
+                className={`p-1.5 hover:bg-surface-dark-elevated rounded transition-all ${
+                  showSystemPromptPanel ? 'text-accent-blue bg-accent-blue/10' : customSystemPrompt ? 'text-accent-blue' : 'text-text-dark-secondary hover:text-accent-blue'
+                }`}
+                title={customSystemPrompt ? 'System Prompt (active)' : 'System Prompt'}
+                aria-label="Configure system prompt"
+              >
+                <BookOpen size={14} />
+              </button>
+            )}
+
+            {/* Export - Chat only, when messages exist */}
+            {terminalMode === 'chat' && (
+              <ConversationExportButton />
+            )}
+
             {/* Usage Tracker - Chat only */}
             {terminalMode === 'chat' && (
               <button
@@ -702,7 +778,7 @@ export const AITerminal: React.FC = () => {
                 title="Provider Settings"
                 aria-label="Open provider settings"
               >
-                ⚙️
+                <Settings2 size={14} />
               </button>
             )}
 
@@ -845,7 +921,26 @@ export const AITerminal: React.FC = () => {
                   >
                     {message.role === 'assistant' ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-accent-orange dark:prose-headings:text-accent-green prose-code:text-accent-orange dark:prose-code:text-accent-green">
-                        <ReactMarkdown rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}>
+                        <ReactMarkdown
+                          rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+                          components={{
+                            pre: ({ children }) => <>{children}</>,
+                            code: (codeProps) => {
+                              const { className: codeClassName, children: codeChildren, ...rest } = codeProps;
+                              const langMatch = /language-(\w+)/.exec(codeClassName || '');
+                              const codeStr = String(codeChildren).replace(/\n$/, '');
+                              const isBlock = langMatch || codeStr.includes('\n');
+                              if (isBlock) {
+                                return (
+                                  <CodeBlock language={langMatch?.[1]} className={codeClassName}>
+                                    {codeStr}
+                                  </CodeBlock>
+                                );
+                              }
+                              return <code className={codeClassName} {...rest}>{codeChildren}</code>;
+                            },
+                          }}
+                        >
                           {message.content}
                         </ReactMarkdown>
                       </div>
@@ -860,6 +955,12 @@ export const AITerminal: React.FC = () => {
                           <span className="font-medium" title="Provider and model used">
                             {message.provider} • {message.model}
                           </span>
+                        </>
+                      )}
+                      {message.tokenUsage && (
+                        <>
+                          <span>•</span>
+                          <MessageTokenBadge usage={message.tokenUsage} />
                         </>
                       )}
                     </div>
@@ -897,7 +998,26 @@ export const AITerminal: React.FC = () => {
                 </div>
                 <div className="max-w-[80%] rounded-button px-4 py-2 font-mono bg-surface-light-elevated dark:bg-surface-dark-elevated text-accent-orange dark:text-accent-green">
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-accent-orange dark:prose-headings:text-accent-green prose-code:text-accent-orange dark:prose-code:text-accent-green">
-                    <ReactMarkdown rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}>{streamingContent}</ReactMarkdown>
+                    <ReactMarkdown
+                      rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+                      components={{
+                        pre: ({ children }) => <>{children}</>,
+                        code: (codeProps) => {
+                          const { className: codeClassName, children: codeChildren, ...rest } = codeProps;
+                          const langMatch = /language-(\w+)/.exec(codeClassName || '');
+                          const codeStr = String(codeChildren).replace(/\n$/, '');
+                          const isBlock = langMatch || codeStr.includes('\n');
+                          if (isBlock) {
+                            return (
+                              <CodeBlock language={langMatch?.[1]} className={codeClassName}>
+                                {codeStr}
+                              </CodeBlock>
+                            );
+                          }
+                          return <code className={codeClassName} {...rest}>{codeChildren}</code>;
+                        },
+                      }}
+                    >{streamingContent}</ReactMarkdown>
                   </div>
                   <div className="flex items-center gap-1 text-xs opacity-60 mt-1">
                     <div className="w-1 h-1 bg-current rounded-full animate-pulse" />
@@ -910,6 +1030,9 @@ export const AITerminal: React.FC = () => {
 
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Token Usage Bar */}
+          <TokenUsageBar />
 
           {/* Input Area */}
           <div className="border-t border-border-light dark:border-border-dark p-3 bg-surface-light dark:bg-black flex-shrink-0">
@@ -938,11 +1061,14 @@ export const AITerminal: React.FC = () => {
               {messages.length > 0 && (
                 <button
                   type="button"
-                  onClick={clearMessages}
+                  onClick={() => {
+                    saveCurrentConversation();
+                    createConversation();
+                  }}
                   className="px-3 py-2 bg-surface-light-elevated dark:bg-surface-dark hover:bg-surface-light dark:hover:bg-surface-dark-elevated text-text-light-primary dark:text-text-dark-primary rounded-button text-sm transition-all duration-standard ease-smooth"
-                  title="Clear chat"
+                  title="New conversation"
                 >
-                  🗑️
+                  +
                 </button>
               )}
             </form>
@@ -1230,6 +1356,20 @@ export const AITerminal: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Conversation History Panel */}
+      {showConversationPanel && terminalMode === 'chat' && (
+        <div className="absolute top-12 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm z-40 flex flex-col">
+          <ConversationPanel onClose={() => setShowConversationPanel(false)} />
+        </div>
+      )}
+
+      {/* System Prompt Panel */}
+      {showSystemPromptPanel && terminalMode === 'chat' && (
+        <div className="absolute top-12 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm z-40 flex flex-col">
+          <SystemPromptPanel onClose={() => setShowSystemPromptPanel(false)} />
+        </div>
+      )}
 
       {/* Provider Settings Modal */}
       <ProviderSettings

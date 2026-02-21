@@ -29,6 +29,8 @@ import {
   getRecentCommandResults,
   getRecentItemResults,
   getContextSnippet,
+  parseSearchQuery,
+  applySearchFilters,
 } from './searchRegistry';
 import { SEARCH_ENGINES, SEARCH_FILTER_TABS } from './types';
 import type { SearchResult, CommandPaletteMode, SearchFilterTab } from './types';
@@ -105,6 +107,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     [activeFilter]
   );
 
+  // Parse search query for tag: and date: modifiers
+  const parsedQuery = useMemo(() => parseSearchQuery(query), [query]);
+  const hasActiveModifiers = parsedQuery.tags.length > 0 || parsedQuery.dateFilter !== null;
+
   // Search results with filtering
   const results = useMemo(() => {
     if (!isOpen) return [];
@@ -123,16 +129,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
       return allResults.filter(r => r.type === 'page');
     }
 
-    // Default search mode
-    const searchResults = searchAll(query, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
+    // Use parsed text (without modifiers) for the actual search
+    const searchQuery = hasActiveModifiers ? parsedQuery.text : query;
+    const searchResults = searchAll(searchQuery, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal);
 
-    // If query is empty, show recent items + recent commands
+    // If query is empty (no text, no modifiers), show recent items + recent commands
     if (!query.trim()) {
       const recentItems = getRecentItemResults(navigate);
       const recentCommands = getRecentCommandResults(navigate, onOpenModal);
       const combined = [...recentItems, ...recentCommands, ...searchResults];
 
-      // Apply filter
       if (activeFilter !== 'all' && activeFilterConfig) {
         return combined.filter(
           (r) => r.type === 'recent' || activeFilterConfig.types.includes(r.type)
@@ -141,9 +147,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
       return combined;
     }
 
-    let filtered = searchResults;
+    // Apply tag and date filters
+    let filtered = hasActiveModifiers
+      ? applySearchFilters(searchResults, parsedQuery)
+      : searchResults;
 
-    // Apply type filter
+    // Apply type filter tab
     if (activeFilter !== 'all' && activeFilterConfig) {
       filtered = filtered.filter((r) =>
         activeFilterConfig.types.includes(r.type) || r.type === 'external'
@@ -151,18 +160,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     }
 
     // Add quick create if few results
-    if (filtered.length === 0 && query.trim()) {
-      const quickCreate = getQuickCreateResult(query);
+    if (filtered.length === 0 && parsedQuery.text) {
+      const quickCreate = getQuickCreateResult(parsedQuery.text);
       if (quickCreate) return [quickCreate];
     }
 
-    if (filtered.length < 3 && query.trim()) {
-      const quickCreate = getQuickCreateResult(query);
+    if (filtered.length < 3 && parsedQuery.text) {
+      const quickCreate = getQuickCreateResult(parsedQuery.text);
       if (quickCreate) return [...filtered, quickCreate];
     }
 
     return filtered;
-  }, [query, isOpen, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal, mode, activeFilter, activeFilterConfig]);
+  }, [query, parsedQuery, hasActiveModifiers, isOpen, navigate, preferredSearchEngine, onOpenSupportModal, onOpenModal, mode, activeFilter, activeFilterConfig]);
 
   // Group results by type
   const groupedResults = useMemo(() => groupResultsByType(results), [results]);
@@ -396,6 +405,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                 {tab.label}
               </button>
             ))}
+            {/* Active modifier badges */}
+            {hasActiveModifiers && (
+              <div className="flex items-center gap-1 ml-auto pl-2 border-l border-border-light dark:border-border-dark">
+                {parsedQuery.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-accent-primary/20 text-accent-primary"
+                  >
+                    tag:{tag}
+                  </span>
+                ))}
+                {parsedQuery.dateFilter && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-accent-blue/20 text-accent-blue">
+                    date:{parsedQuery.dateFilter}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -435,9 +462,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                   <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
                   <p className="text-sm">Type to search notes, tasks, events, bookmarks...</p>
                   <p className="text-xs mt-2 opacity-70">
-                    Prefix with <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">&gt;</kbd> for commands,{' '}
-                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">?</kbd> for help,{' '}
-                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">/</kbd> for navigation
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">&gt;</kbd> commands{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">?</kbd> help{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">/</kbd> navigate
+                  </p>
+                  <p className="text-xs mt-1 opacity-50">
+                    Filter: <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">tag:name</kbd>{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">date:today</kbd>{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">date:this-week</kbd>
                   </p>
                 </>
               )}
@@ -469,7 +501,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
 
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-xs text-text-light-secondary dark:text-text-dark-secondary">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span>
               <kbd className="px-1.5 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated">↑↓</kbd> Navigate
             </span>
@@ -479,6 +511,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             <span>
               <kbd className="px-1.5 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated">Esc</kbd> Close
             </span>
+            {flatResults.length > 0 && (
+              <span className="opacity-60">{flatResults.length} result{flatResults.length !== 1 ? 's' : ''}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="opacity-70">Web:</span>

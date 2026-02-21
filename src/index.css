@@ -622,3 +622,89 @@
     margin: 1cm;
   }
 }
+
+/* ==================== LEXICAL EDITOR: CHECKLIST STYLES ==================== */
+
+.editor-checklist {
+  list-style-type: none !important;
+  padding-left: 0 !important;
+}
+
+.editor-checklist-item {
+  position: relative;
+  padding-left: 28px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.editor-checklist-item::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-radius: 4px;
+  background: transparent;
+  transition: all 150ms ease;
+}
+
+:is(.dark *) .editor-checklist-item::before {
+  border-color: var(--border-dark);
+}
+
+.editor-checklist-item--checked::before {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.editor-checklist-item--checked {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.editor-checklist-item:hover::before {
+  border-color: var(--accent-primary);
+}
+
+/* ==================== AI TERMINAL: CODE BLOCK SYNTAX HIGHLIGHTING ==================== */
+
+.code-block-wrapper .token-keyword {
+  color: #c678dd;
+  font-weight: 600;
+}
+
+.code-block-wrapper .token-string {
+  color: #98c379;
+}
+
+.code-block-wrapper .token-comment {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.code-block-wrapper .token-number {
+  color: #d19a66;
+}
+
+.code-block-wrapper .token-function {
+  color: #61afef;
+}
+
+.code-block-wrapper .token-operator {
+  color: #56b6c2;
+}
+
+.code-block-wrapper .token-type {
+  color: #e5c07b;
+  font-style: italic;
+}
+
+.code-block-wrapper .token-property {
+  color: #e06c75;
+}

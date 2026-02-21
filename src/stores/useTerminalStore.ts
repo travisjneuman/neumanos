@@ -20,6 +20,48 @@ export interface Message {
   timestamp: number;
   provider?: string; // Which provider was used
   model?: string; // Which model was used
+  tokenUsage?: TokenUsage; // Token usage for this message
+}
+
+/**
+ * Token usage for a single message exchange
+ */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCost?: number; // Estimated cost in USD
+}
+
+/**
+ * Conversation with history persistence
+ */
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  systemPrompt: string | null;
+  systemPromptPreset: SystemPromptPreset | null;
+  createdAt: number;
+  updatedAt: number;
+  totalTokens: number;
+  totalCost: number;
+}
+
+/**
+ * System prompt presets
+ */
+export type SystemPromptPreset = 'general' | 'code' | 'writing' | 'data';
+
+/**
+ * Cumulative usage statistics
+ */
+export interface CumulativeUsage {
+  totalTokens: number;
+  totalCost: number;
+  totalMessages: number;
+  byProvider: Record<string, { tokens: number; cost: number; messages: number }>;
+  byDate: Record<string, { tokens: number; cost: number; messages: number }>;
 }
 
 /**
@@ -84,6 +126,16 @@ interface TerminalState {
   messages: Message[];
   isStreaming: boolean;
 
+  // Conversation History
+  conversations: Record<string, Conversation>;
+  activeConversationId: string | null;
+
+  // System Prompt
+  customSystemPrompt: string | null; // Per-conversation override
+
+  // Token Usage Tracking
+  cumulativeUsage: CumulativeUsage;
+
   // Note Integration State
   noteDestination: NoteDestination;
   aiTerminalFolderId: string | null;
@@ -124,6 +176,21 @@ interface TerminalState {
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
   clearMessages: () => void;
   setStreaming: (streaming: boolean) => void;
+
+  // Conversation History Actions
+  createConversation: (title?: string) => string;
+  switchConversation: (conversationId: string) => void;
+  deleteConversation: (conversationId: string) => void;
+  renameConversation: (conversationId: string, title: string) => void;
+  saveCurrentConversation: () => void;
+  getConversationList: () => Array<{ id: string; title: string; updatedAt: number; messageCount: number }>;
+
+  // System Prompt Actions
+  setConversationSystemPrompt: (prompt: string | null, preset: SystemPromptPreset | null) => void;
+  getActiveSystemPrompt: () => string | null;
+
+  // Token Usage Actions
+  recordTokenUsage: (usage: TokenUsage, provider: string) => void;
 
   // Note Integration Actions
   setNoteDestination: (destination: NoteDestination) => void;
@@ -183,6 +250,22 @@ export const useTerminalStore = create<TerminalState>()(
       // Chat State
       messages: [],
       isStreaming: false,
+
+      // Conversation History
+      conversations: {},
+      activeConversationId: null,
+
+      // System Prompt
+      customSystemPrompt: null,
+
+      // Token Usage Tracking
+      cumulativeUsage: {
+        totalTokens: 0,
+        totalCost: 0,
+        totalMessages: 0,
+        byProvider: {},
+        byDate: {},
+      },
 
       // Note Integration State
       noteDestination: { type: 'ai-terminal-daily' },
@@ -328,6 +411,204 @@ export const useTerminalStore = create<TerminalState>()(
       clearMessages: () => set({ messages: [] }),
       setStreaming: (streaming) => set({ isStreaming: streaming }),
 
+      // Conversation History Actions
+      createConversation: (title) => {
+        const id = `conv-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const now = Date.now();
+
+        // Save current conversation before creating new one
+        const { activeConversationId, messages, customSystemPrompt } = get();
+        if (activeConversationId && messages.length > 0) {
+          get().saveCurrentConversation();
+        }
+
+        const conversation: Conversation = {
+          id,
+          title: title || 'New Conversation',
+          messages: [],
+          systemPrompt: null,
+          systemPromptPreset: null,
+          createdAt: now,
+          updatedAt: now,
+          totalTokens: 0,
+          totalCost: 0,
+        };
+
+        set((state) => ({
+          conversations: { ...state.conversations, [id]: conversation },
+          activeConversationId: id,
+          messages: [],
+          customSystemPrompt: null,
+        }));
+
+        log.info('Created conversation', { id, title: conversation.title });
+        return id;
+      },
+
+      switchConversation: (conversationId) => {
+        const state = get();
+
+        // Save current conversation first
+        if (state.activeConversationId && state.messages.length > 0) {
+          state.saveCurrentConversation();
+        }
+
+        const conversation = state.conversations[conversationId];
+        if (!conversation) {
+          log.warn('Conversation not found', { conversationId });
+          return;
+        }
+
+        set({
+          activeConversationId: conversationId,
+          messages: conversation.messages,
+          customSystemPrompt: conversation.systemPrompt,
+        });
+
+        log.info('Switched to conversation', { conversationId, title: conversation.title });
+      },
+
+      deleteConversation: (conversationId) => {
+        set((state) => {
+          const { [conversationId]: deleted, ...remaining } = state.conversations;
+          const isActive = state.activeConversationId === conversationId;
+
+          return {
+            conversations: remaining,
+            activeConversationId: isActive ? null : state.activeConversationId,
+            messages: isActive ? [] : state.messages,
+            customSystemPrompt: isActive ? null : state.customSystemPrompt,
+          };
+        });
+
+        log.info('Deleted conversation', { conversationId });
+      },
+
+      renameConversation: (conversationId, title) => {
+        set((state) => {
+          const conversation = state.conversations[conversationId];
+          if (!conversation) return state;
+
+          return {
+            conversations: {
+              ...state.conversations,
+              [conversationId]: { ...conversation, title, updatedAt: Date.now() },
+            },
+          };
+        });
+      },
+
+      saveCurrentConversation: () => {
+        const { activeConversationId, messages, customSystemPrompt, conversations } = get();
+        if (!activeConversationId) return;
+
+        const existing = conversations[activeConversationId];
+        const totalTokens = messages.reduce((sum, m) => sum + (m.tokenUsage?.totalTokens ?? 0), 0);
+        const totalCost = messages.reduce((sum, m) => sum + (m.tokenUsage?.estimatedCost ?? 0), 0);
+
+        // Auto-generate title from first user message if still default
+        let title = existing?.title || 'New Conversation';
+        if (title === 'New Conversation' && messages.length > 0) {
+          const firstUserMsg = messages.find((m) => m.role === 'user');
+          if (firstUserMsg) {
+            title = firstUserMsg.content.substring(0, 50).trim();
+            if (firstUserMsg.content.length > 50) title += '...';
+          }
+        }
+
+        set((state) => ({
+          conversations: {
+            ...state.conversations,
+            [activeConversationId]: {
+              ...existing,
+              id: activeConversationId,
+              title,
+              messages: [...messages],
+              systemPrompt: customSystemPrompt,
+              systemPromptPreset: existing?.systemPromptPreset ?? null,
+              createdAt: existing?.createdAt ?? Date.now(),
+              updatedAt: Date.now(),
+              totalTokens,
+              totalCost,
+            },
+          },
+        }));
+      },
+
+      getConversationList: () => {
+        const { conversations } = get();
+        return Object.values(conversations)
+          .map((c) => ({
+            id: c.id,
+            title: c.title,
+            updatedAt: c.updatedAt,
+            messageCount: c.messages.length,
+          }))
+          .sort((a, b) => b.updatedAt - a.updatedAt);
+      },
+
+      // System Prompt Actions
+      setConversationSystemPrompt: (prompt, preset) => {
+        set({ customSystemPrompt: prompt });
+
+        // Also update the active conversation record
+        const { activeConversationId } = get();
+        if (activeConversationId) {
+          set((state) => {
+            const conv = state.conversations[activeConversationId];
+            if (!conv) return state;
+            return {
+              conversations: {
+                ...state.conversations,
+                [activeConversationId]: {
+                  ...conv,
+                  systemPrompt: prompt,
+                  systemPromptPreset: preset,
+                  updatedAt: Date.now(),
+                },
+              },
+            };
+          });
+        }
+      },
+
+      getActiveSystemPrompt: () => {
+        return get().customSystemPrompt;
+      },
+
+      // Token Usage Actions
+      recordTokenUsage: (usage, provider) => {
+        const dateKey = new Date().toISOString().split('T')[0];
+
+        set((state) => {
+          const byProvider = { ...state.cumulativeUsage.byProvider };
+          const existing = byProvider[provider] || { tokens: 0, cost: 0, messages: 0 };
+          byProvider[provider] = {
+            tokens: existing.tokens + usage.totalTokens,
+            cost: existing.cost + (usage.estimatedCost ?? 0),
+            messages: existing.messages + 1,
+          };
+
+          const byDate = { ...state.cumulativeUsage.byDate };
+          const dateEntry = byDate[dateKey] || { tokens: 0, cost: 0, messages: 0 };
+          byDate[dateKey] = {
+            tokens: dateEntry.tokens + usage.totalTokens,
+            cost: dateEntry.cost + (usage.estimatedCost ?? 0),
+            messages: dateEntry.messages + 1,
+          };
+
+          return {
+            cumulativeUsage: {
+              totalTokens: state.cumulativeUsage.totalTokens + usage.totalTokens,
+              totalCost: state.cumulativeUsage.totalCost + (usage.estimatedCost ?? 0),
+              totalMessages: state.cumulativeUsage.totalMessages + 1,
+              byProvider,
+              byDate,
+            },
+          };
+        });
+      },
+
       // Note Integration Actions
       setNoteDestination: (destination) => set({ noteDestination: destination }),
       setAITerminalFolderId: (folderId) => set({ aiTerminalFolderId: folderId }),
@@ -400,6 +681,14 @@ export const useTerminalStore = create<TerminalState>()(
 
         // Persist chat history
         messages: state.messages,
+
+        // Persist conversation history
+        conversations: state.conversations,
+        activeConversationId: state.activeConversationId,
+        customSystemPrompt: state.customSystemPrompt,
+
+        // Persist token usage
+        cumulativeUsage: state.cumulativeUsage,
 
         // Persist note integration settings
         noteDestination: state.noteDestination,

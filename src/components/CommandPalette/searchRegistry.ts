@@ -196,6 +196,143 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// =============================================================================
+// SEARCH QUERY PARSING (tag: and date: modifiers)
+// =============================================================================
+
+export interface ParsedSearchQuery {
+  /** The text query without modifiers */
+  text: string;
+  /** Tags to filter by (from tag:xxx) */
+  tags: string[];
+  /** Date filter (from date:today, date:this-week, date:this-month) */
+  dateFilter: DateFilterType | null;
+}
+
+export type DateFilterType = 'today' | 'yesterday' | 'this-week' | 'this-month' | 'last-7-days' | 'last-30-days';
+
+const DATE_FILTER_VALUES: DateFilterType[] = [
+  'today', 'yesterday', 'this-week', 'this-month', 'last-7-days', 'last-30-days',
+];
+
+/**
+ * Parse a search query to extract tag: and date: modifiers.
+ * Examples:
+ *   "meeting tag:work" -> { text: "meeting", tags: ["work"], dateFilter: null }
+ *   "tag:personal date:today" -> { text: "", tags: ["personal"], dateFilter: "today" }
+ */
+export function parseSearchQuery(query: string): ParsedSearchQuery {
+  const tags: string[] = [];
+  let dateFilter: DateFilterType | null = null;
+
+  // Extract tag:xxx modifiers (manually to avoid regex exec)
+  const parts = query.split(/\s+/);
+  const textParts: string[] = [];
+
+  for (const part of parts) {
+    const lowerPart = part.toLowerCase();
+    if (lowerPart.startsWith('tag:') && part.length > 4) {
+      tags.push(part.slice(4).toLowerCase());
+    } else if (lowerPart.startsWith('date:') && part.length > 5) {
+      const dateValue = part.slice(5).toLowerCase() as DateFilterType;
+      if (DATE_FILTER_VALUES.includes(dateValue)) {
+        dateFilter = dateValue;
+      } else {
+        textParts.push(part);
+      }
+    } else {
+      textParts.push(part);
+    }
+  }
+
+  return { text: textParts.join(' ').trim(), tags, dateFilter };
+}
+
+/**
+ * Check if a result matches tag filters
+ */
+function matchesTagFilter(result: SearchResult, tags: string[]): boolean {
+  if (tags.length === 0) return true;
+
+  const resultTags = (result.metadata?.tags as string[] | undefined) || result.keywords || [];
+  const normalizedResultTags = resultTags.map((t) => t.toLowerCase());
+
+  return tags.some((filterTag) =>
+    normalizedResultTags.some((rt) => rt.includes(filterTag))
+  );
+}
+
+/**
+ * Check if a result matches a date filter
+ */
+function matchesDateFilter(result: SearchResult, dateFilter: DateFilterType): boolean {
+  const updatedAt = result.metadata?.updatedAt as string | undefined;
+  const dateKey = result.metadata?.dateKey as string | undefined;
+  const startTime = result.metadata?.startTime as string | undefined;
+  const dueDate = result.metadata?.dueDate as string | undefined;
+  const accessedAt = result.metadata?.accessedAt as string | undefined;
+
+  const dateStr = updatedAt || dueDate || startTime || dateKey || accessedAt;
+  if (!dateStr) return true;
+
+  const itemDate = new Date(dateStr);
+  if (isNaN(itemDate.getTime())) return true;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (dateFilter) {
+    case 'today':
+      return itemDate >= today;
+    case 'yesterday': {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return itemDate >= yesterday && itemDate < today;
+    }
+    case 'this-week': {
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      return itemDate >= weekStart;
+    }
+    case 'this-month': {
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      return itemDate >= monthStart;
+    }
+    case 'last-7-days': {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return itemDate >= sevenDaysAgo;
+    }
+    case 'last-30-days': {
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return itemDate >= thirtyDaysAgo;
+    }
+    default:
+      return true;
+  }
+}
+
+/**
+ * Apply tag and date filters to search results
+ */
+export function applySearchFilters(
+  results: SearchResult[],
+  parsed: ParsedSearchQuery
+): SearchResult[] {
+  let filtered = results;
+
+  if (parsed.tags.length > 0) {
+    filtered = filtered.filter((r) => matchesTagFilter(r, parsed.tags));
+  }
+
+  if (parsed.dateFilter) {
+    filtered = filtered.filter((r) => matchesDateFilter(r, parsed.dateFilter!));
+  }
+
+  return filtered;
+}
+
 /**
  * Score a search result against a query
  */
