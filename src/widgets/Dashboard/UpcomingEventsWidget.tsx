@@ -8,6 +8,7 @@ import React from 'react';
 import { BaseWidget } from './BaseWidget';
 import { useCalendarStore } from '../../stores/useCalendarStore';
 import { useNavigate } from 'react-router-dom';
+import { WidgetEmptyState } from '../../components/WidgetEmptyState';
 
 export const UpcomingEventsWidget: React.FC = () => {
   const { events } = useCalendarStore();
@@ -68,7 +69,12 @@ export const UpcomingEventsWidget: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="text-text-light-secondary dark:text-text-dark-secondary mb-4">No upcoming events</p>
+          <WidgetEmptyState
+            icon="📅"
+            message="No upcoming events"
+            hint="Your calendar is clear - add an event to get started"
+            action={{ label: 'Open Calendar', onClick: () => navigate('/schedule') }}
+          />
         )}
         <button
           onClick={() => navigate('/schedule')}

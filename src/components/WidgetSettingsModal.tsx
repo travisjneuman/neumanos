@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import { useWidgetStore } from '../stores/useWidgetStore';
 import { getWidget } from '../widgets/Dashboard/WidgetRegistry';
+import { WidgetConfigPanel } from './WidgetConfigPanel';
 
 interface WidgetSettingsModalProps {
   widgetId: string;
@@ -141,6 +142,16 @@ export const WidgetSettingsModal: React.FC<WidgetSettingsModalProps> = ({
                 Weather Map size is locked to ensure optimal display of the interactive map.
               </div>
             )}
+
+            {/* Widget-Specific Configuration */}
+            <div>
+              <label className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-2">
+                Widget Configuration
+              </label>
+              <div className="p-3 bg-surface-light dark:bg-surface-dark rounded-button border border-border-light dark:border-border-dark">
+                <WidgetConfigPanel widgetId={widgetId} />
+              </div>
+            </div>
           </div>
 
           {/* Footer */}

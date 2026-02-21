@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormsStore } from '../../stores/useFormsStore';
 import { BaseWidget } from './BaseWidget';
+import { WidgetEmptyState } from '../../components/WidgetEmptyState';
 import { Plus, FileText, BarChart3, Clock } from 'lucide-react';
 
 export function FormWidget() {
@@ -116,21 +117,12 @@ export function FormWidget() {
         {/* Forms List */}
         <div className="flex-1 overflow-auto">
           {topForms.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <div className="w-16 h-16 mb-3 rounded-full bg-surface-light dark:bg-surface-dark flex items-center justify-center">
-                <FileText className="w-8 h-8 text-text-light-tertiary dark:text-text-dark-tertiary" />
-              </div>
-              <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-4">
-                No forms yet
-              </p>
-              <button
-                onClick={handleCreateForm}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-light dark:bg-primary-dark text-white rounded-lg hover:opacity-90 transition-opacity text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Create Form
-              </button>
-            </div>
+            <WidgetEmptyState
+              icon="📋"
+              message="No forms yet"
+              hint="Create surveys, quizzes, and feedback forms"
+              action={{ label: 'Create Form', onClick: handleCreateForm }}
+            />
           ) : (
             <div className="space-y-2">
               {topForms.map((form) => (

@@ -81,14 +81,14 @@ export const WidgetManager: React.FC<WidgetManagerProps> = ({ isOpen, onClose })
     return matchesSearch && matchesCategory;
   });
 
-  // Category display names
+  // Category display names with descriptions
   const categoryNames: Record<WidgetCategory, string> = {
     core: '⭐ Core Features',
     productivity: '💼 Productivity',
-    news: '📰 News & Info',
+    news: '📰 Information',
     finance: '💰 Finance',
-    visual: '🎨 Visual',
-    dev: '🔧 Developer Tools',
+    visual: '🎨 Media',
+    dev: '🔧 Developer',
     fun: '🎮 Fun & Games',
     utility: '🛠️ Utilities',
   };
@@ -350,22 +350,28 @@ export const WidgetManager: React.FC<WidgetManagerProps> = ({ isOpen, onClose })
                     <button
                       key={widget.id}
                       onClick={() => handleEnableWidget(widget.id)}
-                      className={`flex flex-col items-start gap-2 p-3 rounded-button transition-all duration-standard ease-smooth text-left group ${
+                      className={`flex flex-col items-center gap-2 p-4 rounded-button transition-all duration-standard ease-smooth text-center group border ${
                         index === selectedIndex
-                          ? 'bg-accent-blue/10 ring-2 ring-accent-blue scale-105'
-                          : 'bg-surface-light-elevated dark:bg-surface-dark hover:bg-surface-light dark:hover:bg-surface-dark-elevated'
+                          ? 'bg-accent-blue/10 ring-2 ring-accent-blue border-accent-blue/30 scale-[1.02]'
+                          : 'bg-surface-light-elevated dark:bg-surface-dark border-transparent hover:bg-surface-light dark:hover:bg-surface-dark-elevated hover:border-border-light dark:hover:border-border-dark'
                       }`}
                     >
-                      <div className="flex items-center gap-2 w-full">
-                        <span className="text-2xl">{widget.icon}</span>
-                        <h4 className="font-medium text-text-light-primary dark:text-text-dark-primary flex-1 truncate">
+                      {/* Preview Icon */}
+                      <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-surface-light dark:bg-surface-dark-elevated text-3xl group-hover:scale-110 transition-transform duration-standard ease-smooth">
+                        {widget.icon}
+                      </div>
+                      <div className="w-full">
+                        <h4 className="font-medium text-sm text-text-light-primary dark:text-text-dark-primary truncate">
                           {highlightText(widget.name, searchQuery)}
                         </h4>
-                        <span className="text-accent-blue opacity-0 group-hover:opacity-100 transition-opacity">+</span>
+                        <p className="text-[11px] text-text-light-secondary dark:text-text-dark-secondary line-clamp-2 mt-0.5">
+                          {highlightText(widget.description, searchQuery)}
+                        </p>
                       </div>
-                      <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary line-clamp-2">
-                        {highlightText(widget.description, searchQuery)}
-                      </p>
+                      {/* Category badge */}
+                      <span className="text-[9px] uppercase tracking-wider text-text-light-tertiary dark:text-text-dark-tertiary px-2 py-0.5 rounded-full bg-surface-light dark:bg-surface-dark-elevated">
+                        {widget.category}
+                      </span>
                     </button>
                   ))}
                 </div>

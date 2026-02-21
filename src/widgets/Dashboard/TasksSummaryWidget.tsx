@@ -9,6 +9,7 @@ import React from 'react';
 import { BaseWidget } from './BaseWidget';
 import { useKanbanStore } from '../../stores/useKanbanStore';
 import { useNavigate } from 'react-router-dom';
+import { WidgetEmptyState } from '../../components/WidgetEmptyState';
 
 export const TasksSummaryWidget: React.FC = () => {
   const { tasks } = useKanbanStore();
@@ -26,6 +27,19 @@ export const TasksSummaryWidget: React.FC = () => {
   const todo = tasks.filter((t) => t.status === 'todo' || t.status === 'backlog');
   const inProgress = tasks.filter((t) => t.status === 'inprogress' || t.status === 'review');
   const completed = tasks.filter((t) => t.status === 'done');
+
+  if (tasks.length === 0) {
+    return (
+      <BaseWidget title="Tasks Summary" icon="📊">
+        <WidgetEmptyState
+          icon="📊"
+          message="No tasks yet"
+          hint="Create your first task to see your progress overview"
+          action={{ label: 'Go to Tasks', onClick: () => navigate('/tasks') }}
+        />
+      </BaseWidget>
+    );
+  }
 
   return (
     <BaseWidget title="Tasks Summary" icon="📊">

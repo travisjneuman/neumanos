@@ -8,9 +8,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/** Per-widget configuration options stored in the widget store */
 export interface WidgetSettings {
-  refreshRate?: number; // Minutes between auto-refresh
-  [key: string]: any; // Widget-specific settings
+  refreshRate?: number; // Minutes between auto-refresh (0 = manual only)
+  // Widget-specific settings
+  username?: string; // GitHub widget
+  subreddit?: string; // Reddit widget
+  category?: string; // Unsplash widget
+  duration?: number; // Pomodoro widget (minutes)
+  coins?: string[]; // Crypto widget - tracked coins
+  sources?: string[]; // News widget - selected sources
+  maxItems?: number; // Feed widgets - number of items to show
+  location?: string; // Weather widget
+  timezones?: string[]; // World clock widget
+  baseCurrency?: string; // Currency widget
+  targetCurrencies?: string[]; // Currency widget
+  packageNames?: string[]; // NPM stats widget
+  gridSize?: number; // Pixel art widget
 }
 
 export interface WidgetState {

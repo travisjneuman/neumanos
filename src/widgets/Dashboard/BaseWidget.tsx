@@ -18,6 +18,10 @@ export interface BaseWidgetProps {
   onRefresh?: () => void;
   onSettings?: () => void;
   className?: string;
+  /** Show subtle refresh progress indicator */
+  isAutoRefreshing?: boolean;
+  /** Human-readable label for when data was last refreshed */
+  lastRefreshedLabel?: string;
 }
 
 const BaseWidgetComponent: React.FC<BaseWidgetProps> = ({
@@ -30,6 +34,8 @@ const BaseWidgetComponent: React.FC<BaseWidgetProps> = ({
   onRefresh,
   onSettings,
   className = '',
+  isAutoRefreshing = false,
+  lastRefreshedLabel,
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -50,8 +56,15 @@ const BaseWidgetComponent: React.FC<BaseWidgetProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      className={`bg-surface-light dark:bg-surface-dark-elevated rounded-card shadow-card p-4 flex flex-col ${className}`}
+      className={`bg-surface-light dark:bg-surface-dark-elevated rounded-card shadow-card p-4 flex flex-col relative overflow-hidden ${className}`}
     >
+      {/* Auto-refresh progress indicator */}
+      {isAutoRefreshing && (
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-accent-blue/20 overflow-hidden">
+          <div className="h-full bg-accent-blue animate-pulse w-full" />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -60,9 +73,13 @@ const BaseWidgetComponent: React.FC<BaseWidgetProps> = ({
             <h3 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">
               {title}
             </h3>
-            {subtitle && (
+            {(subtitle || lastRefreshedLabel) && (
               <p className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
                 {subtitle}
+                {subtitle && lastRefreshedLabel && ' · '}
+                {lastRefreshedLabel && (
+                  <span title="Last refreshed">{lastRefreshedLabel}</span>
+                )}
               </p>
             )}
           </div>

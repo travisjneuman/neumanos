@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Target, Flame, Check } from 'lucide-react';
 import { useHabitStore } from '../../stores/useHabitStore';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { WidgetEmptyState } from '../../components/WidgetEmptyState';
 import type { Habit } from '../../types';
 
 // Helper to get date key in YYYY-M-D format
@@ -64,20 +65,16 @@ export function HabitSummaryWidget() {
     [habits]
   );
 
+  const navigateTo = useNavigate();
+
   if (habits.filter((h) => !h.archivedAt).length === 0) {
     return (
-      <div className="text-center py-6">
-        <Target className="w-10 h-10 mx-auto text-text-light-tertiary dark:text-text-dark-tertiary mb-2" />
-        <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-3">
-          No habits yet
-        </p>
-        <Link
-          to="/habits"
-          className="inline-flex items-center gap-1 text-sm text-accent-primary hover:underline"
-        >
-          Create your first habit
-        </Link>
-      </div>
+      <WidgetEmptyState
+        icon="🎯"
+        message="No habits yet"
+        hint="Build daily routines and track your streaks"
+        action={{ label: 'Create Habit', onClick: () => navigateTo('/habits') }}
+      />
     );
   }
 

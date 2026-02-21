@@ -8,6 +8,7 @@ import React from 'react';
 import { BaseWidget } from './BaseWidget';
 import { useNotesStore } from '../../stores/useNotesStore';
 import { useNavigate } from 'react-router-dom';
+import { WidgetEmptyState } from '../../components/WidgetEmptyState';
 
 export const RecentNotesWidget: React.FC = () => {
   const notes = useNotesStore((state) => state.notes);
@@ -40,7 +41,12 @@ export const RecentNotesWidget: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="text-text-light-secondary dark:text-text-dark-secondary mb-4">No notes yet</p>
+          <WidgetEmptyState
+            icon="📝"
+            message="No notes yet"
+            hint="Start capturing your thoughts and ideas"
+            action={{ label: 'Create Note', onClick: () => navigate('/notes') }}
+          />
         )}
         <button
           onClick={() => navigate('/notes')}

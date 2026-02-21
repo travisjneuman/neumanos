@@ -7,6 +7,7 @@ import { BackgroundCustomizer, type BackgroundSettings } from '../components/Bac
 import { SortableWidget } from '../components/SortableWidget';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { EmptyState } from '../components/EmptyState';
+import { DashboardTemplatePicker } from '../components/DashboardTemplatePicker';
 import { LayoutGrid } from 'lucide-react';
 // Masonry removed - using CSS Grid for proper column spanning support
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
@@ -267,14 +268,8 @@ export const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="relative z-10">
-              <EmptyState
-                icon={LayoutGrid}
-                title="No widgets enabled"
-                description="Customize your dashboard by adding widgets. Choose from productivity tools, information feeds, utilities, and more."
-                action={{
-                  label: "Customize Widgets",
-                  onClick: () => setShowWidgetManager(true),
-                }}
+              <DashboardTemplatePicker
+                onCustomize={() => setShowWidgetManager(true)}
               />
             </div>
           )}
