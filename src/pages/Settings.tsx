@@ -12,6 +12,12 @@ import {
   Sliders,
   ChevronRight,
   FolderTree,
+  Palette,
+  Bell,
+  Database,
+  Keyboard,
+  Info,
+  PenTool,
 } from 'lucide-react';
 import {
   exportBrainFile,
@@ -60,6 +66,10 @@ import { CalendarNotificationsSection } from '../widgets/Settings/CalendarNotifi
 import { CalendarImportExportSection } from '../widgets/Settings/CalendarImportExportSection';
 import { WidgetSettingsSection } from '../widgets/Settings/WidgetSettingsSection';
 import { ProjectSettings } from '../widgets/Settings/ProjectSettings';
+import { DataManagementSection } from '../widgets/Settings/DataManagementSection';
+import { MarkdownImportSection } from '../widgets/Settings/MarkdownImportSection';
+import { KeyboardShortcutsSection } from '../widgets/Settings/KeyboardShortcutsSection';
+import { AccentColorSection } from '../widgets/Settings/AccentColorSection';
 
 const log = logger.module('Settings');
 
@@ -68,13 +78,19 @@ const log = logger.module('Settings');
  */
 const SETTINGS_TABS = [
   { id: 'general', label: 'General', icon: SettingsIcon },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'editor', label: 'Editor', icon: PenTool },
   { id: 'projects', label: 'Projects', icon: FolderTree },
   { id: 'time', label: 'Time Tracking', icon: Clock },
   { id: 'tasks', label: 'Tasks', icon: CheckSquare },
   { id: 'notes', label: 'Notes & Calendar', icon: FileText },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'data', label: 'Data Management', icon: Database },
   { id: 'backup', label: 'Backup & Data', icon: HardDrive },
-  { id: 'ai', label: 'AI Terminal', icon: Bot },
+  { id: 'shortcuts', label: 'Keyboard Shortcuts', icon: Keyboard },
+  { id: 'ai', label: 'AI Providers', icon: Bot },
   { id: 'advanced', label: 'Advanced', icon: Sliders },
+  { id: 'about', label: 'About', icon: Info },
 ] as const;
 
 type SettingsTabId = (typeof SETTINGS_TABS)[number]['id'];
@@ -429,11 +445,33 @@ export const Settings: React.FC = () => {
               {currentTab === 'general' && (
                 <>
                   <AccountSettings />
-                  <ThemeSettings />
                   <SiteWideSettings />
                   <DashboardSettingsSection onOpenPresetManager={() => setShowPresetManager(true)} />
                   <div className="bento-card p-6">
                     <WidgetSettingsSection />
+                  </div>
+                </>
+              )}
+
+              {/* Appearance Settings */}
+              {currentTab === 'appearance' && (
+                <>
+                  <ThemeSettings />
+                  <AccentColorSection />
+                </>
+              )}
+
+              {/* Editor Settings */}
+              {currentTab === 'editor' && (
+                <>
+                  <div className="bento-card p-6">
+                    <DailyNotesSettings />
+                  </div>
+                  <div className="bento-card p-6">
+                    <TemplateSettings />
+                  </div>
+                  <div className="bento-card p-6">
+                    <ExportSettings />
                   </div>
                 </>
               )}
@@ -461,27 +499,34 @@ export const Settings: React.FC = () => {
               {/* Notes & Calendar Settings */}
               {currentTab === 'notes' && (
                 <>
-                  <div className="bento-card p-6">
-                    <DailyNotesSettings />
-                  </div>
-                  <div className="bento-card p-6">
-                    <TemplateSettings />
-                  </div>
-                  <div className="bento-card p-6">
-                    <ExportSettings />
-                  </div>
-
                   <CalendarImportExportSection
                     isExporting={isExportingCalendar}
                     isImporting={isImportingCalendar}
                     onExport={handleExportCalendar}
                     onImport={handleICSFileSelect}
                   />
+                </>
+              )}
 
+              {/* Notifications Settings */}
+              {currentTab === 'notifications' && (
+                <>
                   <CalendarNotificationsSection
                     notificationPermission={notificationPermission}
                     requestingPermission={requestingPermission}
                     onRequestPermission={handleRequestNotificationPermission}
+                  />
+                </>
+              )}
+
+              {/* Data Management Settings */}
+              {currentTab === 'data' && (
+                <>
+                  <DataManagementSection
+                    onMessage={setMessage}
+                  />
+                  <MarkdownImportSection
+                    onMessage={setMessage}
                   />
                 </>
               )}
@@ -566,6 +611,11 @@ export const Settings: React.FC = () => {
                 </>
               )}
 
+              {/* Keyboard Shortcuts */}
+              {currentTab === 'shortcuts' && (
+                <KeyboardShortcutsSection />
+              )}
+
               {/* AI Terminal Settings */}
               {currentTab === 'ai' && (
                 <AITerminalSettingsSection />
@@ -595,11 +645,14 @@ export const Settings: React.FC = () => {
                   </div>
 
                   <StorageInfoSection storageInfo={storageInfo} />
-
-                  <div className="bento-card p-6">
-                    <AboutSettings />
-                  </div>
                 </>
+              )}
+
+              {/* About */}
+              {currentTab === 'about' && (
+                <div className="bento-card p-6">
+                  <AboutSettings />
+                </div>
               )}
             </motion.div>
           </AnimatePresence>
