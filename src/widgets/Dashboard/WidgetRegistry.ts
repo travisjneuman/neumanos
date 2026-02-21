@@ -88,6 +88,7 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   uptime: 'UptimeWidget',
   forms: 'FormWidget',
   habitsummary: 'HabitSummaryWidget',
+  bookmarks: 'BookmarksWidget',
 };
 
 /**
@@ -609,6 +610,15 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     icon: '📋',
     category: 'core',
     defaultEnabled: true,
+  },
+
+  bookmarks: {
+    id: 'bookmarks',
+    name: 'Bookmarks',
+    description: 'Save and organize quick links to your favorite sites',
+    icon: '🔖',
+    category: 'productivity',
+    defaultEnabled: false,
   },
 };
 

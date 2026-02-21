@@ -25,6 +25,7 @@ export interface WidgetSettings {
   targetCurrencies?: string[]; // Currency widget
   packageNames?: string[]; // NPM stats widget
   gridSize?: number; // Pixel art widget
+  accentColor?: string; // Custom accent/border color (hex)
 }
 
 export interface WidgetState {

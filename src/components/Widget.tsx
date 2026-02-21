@@ -3,6 +3,7 @@ import type { WidgetProps } from '../types';
 import { WidgetControls } from './WidgetControls';
 import { WidgetSettingsModal } from './WidgetSettingsModal';
 import { useDragHandle } from '../hooks/useDragHandle';
+import { useWidgetStore } from '../stores/useWidgetStore';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Button } from './ui';
 
@@ -29,6 +30,9 @@ export const Widget: React.FC<WidgetProps> = ({
 }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Read accent color from widget settings
+  const accentColor = useWidgetStore((state) => state.getWidgetSettings(id).accentColor);
 
   // Get drag handle from SortableWidget context (if wrapped)
   const dragHandle = useDragHandle();
@@ -83,9 +87,10 @@ export const Widget: React.FC<WidgetProps> = ({
     <>
     <div
       id={id}
-      className={`h-full flex flex-col border border-border-light dark:border-border-dark rounded-button bg-transparent ${className}`}
+      className={`h-full flex flex-col border border-border-light dark:border-border-dark rounded-button bg-transparent ${accentColor ? 'border-t-2' : ''} ${className}`}
       data-widget-id={id}
       data-category={category}
+      style={accentColor ? { borderTopColor: accentColor } : undefined}
     >
       {/* Widget Header - Draggable via cursor (no icon, entire header is drag handle) */}
       <div

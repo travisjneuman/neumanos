@@ -11,6 +11,20 @@ import { useWidgetStore } from '../stores/useWidgetStore';
 import { getWidget } from '../widgets/Dashboard/WidgetRegistry';
 import { WidgetConfigPanel } from './WidgetConfigPanel';
 
+/** Preset accent colors for widget theming */
+const ACCENT_COLORS = [
+  { label: 'Default', value: '' },
+  { label: 'Blue', value: '#3b82f6' },
+  { label: 'Purple', value: '#8b5cf6' },
+  { label: 'Pink', value: '#ec4899' },
+  { label: 'Red', value: '#ef4444' },
+  { label: 'Orange', value: '#f97316' },
+  { label: 'Yellow', value: '#eab308' },
+  { label: 'Green', value: '#22c55e' },
+  { label: 'Teal', value: '#14b8a6' },
+  { label: 'Cyan', value: '#06b6d4' },
+];
+
 interface WidgetSettingsModalProps {
   widgetId: string;
   isOpen: boolean;
@@ -24,14 +38,18 @@ export const WidgetSettingsModal: React.FC<WidgetSettingsModalProps> = ({
 }) => {
   const widgetSizes = useWidgetStore((state) => state.widgetSizes);
   const setWidgetSize = useWidgetStore((state) => state.setWidgetSize);
+  const widgetSettings = useWidgetStore((state) => state.getWidgetSettings(widgetId));
+  const updateWidgetSettings = useWidgetStore((state) => state.updateWidgetSettings);
   const currentSize = widgetSizes[widgetId] || 1;
   const [selectedSize, setSelectedSize] = useState<1 | 2 | 3>(currentSize);
+  const [accentColor, setAccentColor] = useState(widgetSettings.accentColor ?? '');
 
   const widgetMeta = getWidget(widgetId);
   const isWeatherMap = widgetId === 'weathermap';
 
   const handleApply = () => {
     setWidgetSize(widgetId, selectedSize);
+    updateWidgetSettings(widgetId, { accentColor: accentColor || undefined });
     onClose();
   };
 
@@ -151,6 +169,43 @@ export const WidgetSettingsModal: React.FC<WidgetSettingsModalProps> = ({
               <div className="p-3 bg-surface-light dark:bg-surface-dark rounded-button border border-border-light dark:border-border-dark">
                 <WidgetConfigPanel widgetId={widgetId} />
               </div>
+            </div>
+
+            {/* Accent Color Picker */}
+            <div>
+              <label className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-2">
+                Accent Color
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {ACCENT_COLORS.map((color) => (
+                  <button
+                    key={color.value || 'default'}
+                    onClick={() => setAccentColor(color.value)}
+                    className={`w-7 h-7 rounded-full border-2 transition-all duration-standard ease-smooth flex items-center justify-center ${
+                      accentColor === color.value
+                        ? 'border-text-light-primary dark:border-text-dark-primary scale-110'
+                        : 'border-border-light dark:border-border-dark hover:scale-105'
+                    }`}
+                    style={color.value ? { backgroundColor: color.value } : undefined}
+                    title={color.label}
+                    aria-label={`Set accent color to ${color.label}`}
+                  >
+                    {!color.value && (
+                      <svg className="w-4 h-4 text-text-light-secondary dark:text-text-dark-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                    )}
+                    {accentColor === color.value && color.value && (
+                      <svg className="w-3.5 h-3.5 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-text-light-secondary dark:text-text-dark-secondary mt-1.5">
+                Adds a colored top border to the widget
+              </p>
             </div>
           </div>
 
