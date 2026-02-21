@@ -45,6 +45,10 @@ interface SpreadsheetGridProps {
   editingCell: { row: number; col: number } | null;
   /** Edit value for the editing cell */
   editValue: string;
+  /** Number of frozen rows */
+  frozenRows?: number;
+  /** Number of frozen columns */
+  frozenCols?: number;
   /** Called when selection changes */
   onSelectionChange: (selection: CellSelection | null) => void;
   /** Called when editing starts */
@@ -66,6 +70,8 @@ export function SpreadsheetGrid({
   selection,
   editingCell,
   editValue,
+  frozenRows = 0,
+  frozenCols = 0,
   onSelectionChange,
   onStartEdit,
   onEditChange,
@@ -522,6 +528,20 @@ export function SpreadsheetGrid({
         }}
       >
         {renderCells()}
+
+        {/* Freeze pane indicators */}
+        {frozenRows > 0 && (
+          <div
+            className="absolute left-0 right-0 border-b-2 border-accent-primary/60 pointer-events-none z-20"
+            style={{ top: rowOffsets[frozenRows] || 0 }}
+          />
+        )}
+        {frozenCols > 0 && (
+          <div
+            className="absolute top-0 bottom-0 border-r-2 border-accent-primary/60 pointer-events-none z-20"
+            style={{ left: colOffsets[frozenCols] || 0 }}
+          />
+        )}
       </div>
     </div>
   );

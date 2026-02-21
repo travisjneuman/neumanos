@@ -38,6 +38,30 @@ interface PresentationCanvasProps {
   isEditable?: boolean;
 }
 
+// Background image component for slides
+function SlideBackgroundImage({
+  imageUrl,
+  width,
+  height,
+}: {
+  imageUrl: string;
+  width: number;
+  height: number;
+}) {
+  const [image] = useImage(imageUrl, 'anonymous');
+
+  return (
+    <KonvaImage
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      image={image}
+      listening={false}
+    />
+  );
+}
+
 // Image element component
 function ImageElement({
   element,
@@ -337,9 +361,17 @@ export function PresentationCanvas({
   const renderBackground = () => {
     const bg = slide.background;
 
+    if (bg.type === 'image' && bg.imageUrl) {
+      return (
+        <SlideBackgroundImage
+          imageUrl={bg.imageUrl}
+          width={SLIDE_WIDTH}
+          height={SLIDE_HEIGHT}
+        />
+      );
+    }
+
     if (bg.type === 'gradient' && bg.gradient) {
-      // For gradients, we'd need to use fillLinearGradientColorStops
-      // Simplified: just use first color
       const firstStop = bg.gradient.stops[0];
       return (
         <Rect

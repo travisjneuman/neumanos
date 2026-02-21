@@ -357,6 +357,37 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
     [activeSheet, activeSheetIndex, doc.sheets, debouncedSave]
   );
 
+  // Freeze panes handler
+  const handleToggleFreeze = useCallback(() => {
+    const currentFrozenRows = activeSheet.frozenRows || 0;
+    const currentFrozenCols = activeSheet.frozenCols || 0;
+
+    let newFrozenRows: number;
+    let newFrozenCols: number;
+
+    if (currentFrozenRows > 0 || currentFrozenCols > 0) {
+      // Unfreeze
+      newFrozenRows = 0;
+      newFrozenCols = 0;
+    } else if (selection) {
+      // Freeze at current selection
+      newFrozenRows = selection.focusRow;
+      newFrozenCols = selection.focusCol;
+    } else {
+      // Default: freeze first row
+      newFrozenRows = 1;
+      newFrozenCols = 0;
+    }
+
+    const newSheets = doc.sheets.map((sheet, i) =>
+      i === activeSheetIndex
+        ? { ...sheet, frozenRows: newFrozenRows, frozenCols: newFrozenCols }
+        : sheet
+    );
+
+    onSave({ sheets: newSheets });
+  }, [activeSheet, activeSheetIndex, doc.sheets, selection, onSave]);
+
   // Import/Export handlers
   const handleExport = useCallback(
     async (format: 'xlsx' | 'csv') => {
@@ -406,6 +437,9 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
         onInsertChart={handleInsertChart}
         onExport={handleExport}
         onImport={handleImport}
+        frozenRows={activeSheet.frozenRows}
+        frozenCols={activeSheet.frozenCols}
+        onToggleFreeze={handleToggleFreeze}
       />
 
       {/* Formula Bar */}
@@ -430,6 +464,8 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
           selection={selection}
           editingCell={editingCell}
           editValue={editValue}
+          frozenRows={activeSheet.frozenRows}
+          frozenCols={activeSheet.frozenCols}
           onSelectionChange={handleSelectionChange}
           onStartEdit={handleStartEdit}
           onEditChange={handleEditChange}

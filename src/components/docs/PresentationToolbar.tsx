@@ -13,6 +13,7 @@ import {
   Minus,
   ArrowRight,
   Image,
+  ImagePlus,
   Play,
   Download,
   Plus,
@@ -35,6 +36,7 @@ interface PresentationToolbarProps {
   onTheme?: () => void;
   onAnimation?: () => void;
   onImageUpload: () => void;
+  onBackgroundImage?: () => void;
   slideCount: number;
   canDeleteSlide: boolean;
 }
@@ -59,6 +61,7 @@ export function PresentationToolbar({
   onTheme,
   onAnimation,
   onImageUpload,
+  onBackgroundImage,
   slideCount,
   canDeleteSlide,
 }: PresentationToolbarProps) {
@@ -122,8 +125,8 @@ export function PresentationToolbar({
         </button>
       </div>
 
-      {/* Theme & Animation */}
-      {(onTheme || onAnimation) && (
+      {/* Theme, Background & Animation */}
+      {(onTheme || onAnimation || onBackgroundImage) && (
         <div className="flex items-center gap-0.5 border-r border-border-light dark:border-border-dark pr-2 mr-1">
           {onTheme && (
             <button
@@ -132,6 +135,15 @@ export function PresentationToolbar({
               title="Theme"
             >
               <Palette className="w-4 h-4" />
+            </button>
+          )}
+          {onBackgroundImage && (
+            <button
+              onClick={onBackgroundImage}
+              className="p-1.5 rounded transition-colors text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-alt dark:hover:bg-surface-dark-elevated hover:text-accent-primary"
+              title="Set Background Image"
+            >
+              <ImagePlus className="w-4 h-4" />
             </button>
           )}
           {onAnimation && (

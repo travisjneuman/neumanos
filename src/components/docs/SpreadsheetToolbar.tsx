@@ -21,8 +21,12 @@ import {
   BarChart2,
   Download,
   Upload,
+  Grid3X3,
+  Square,
+  Minus,
+  Rows3,
 } from 'lucide-react';
-import type { CellStyle } from '../../types';
+import type { CellStyle, BorderStyle } from '../../types';
 
 interface SpreadsheetToolbarProps {
   /** Current style of the selected cell */
@@ -37,6 +41,12 @@ interface SpreadsheetToolbarProps {
   onExport?: (format: 'xlsx' | 'csv') => void;
   /** Called when import is requested */
   onImport?: () => void;
+  /** Current frozen rows count */
+  frozenRows?: number;
+  /** Current frozen cols count */
+  frozenCols?: number;
+  /** Called to toggle freeze panes at current selection */
+  onToggleFreeze?: () => void;
 }
 
 // Preset colors for quick selection
@@ -55,6 +65,63 @@ const NUMBER_FORMATS = [
   { id: 'number', label: 'Number', format: '#,##0.00', icon: Hash },
 ];
 
+// Border presets
+const DEFAULT_BORDER: BorderStyle = { color: '#000000', style: 'thin' };
+
+interface BorderPreset {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  apply: () => Partial<CellStyle>;
+}
+
+const BORDER_PRESETS: BorderPreset[] = [
+  {
+    id: 'all',
+    label: 'All Borders',
+    icon: Grid3X3,
+    apply: () => ({
+      borderTop: DEFAULT_BORDER,
+      borderRight: DEFAULT_BORDER,
+      borderBottom: DEFAULT_BORDER,
+      borderLeft: DEFAULT_BORDER,
+    }),
+  },
+  {
+    id: 'outer',
+    label: 'Outer Borders',
+    icon: Square,
+    apply: () => ({
+      borderTop: DEFAULT_BORDER,
+      borderRight: DEFAULT_BORDER,
+      borderBottom: DEFAULT_BORDER,
+      borderLeft: DEFAULT_BORDER,
+    }),
+  },
+  {
+    id: 'bottom',
+    label: 'Bottom Border',
+    icon: Minus,
+    apply: () => ({
+      borderTop: undefined,
+      borderRight: undefined,
+      borderBottom: DEFAULT_BORDER,
+      borderLeft: undefined,
+    }),
+  },
+  {
+    id: 'none',
+    label: 'No Borders',
+    icon: Rows3,
+    apply: () => ({
+      borderTop: undefined,
+      borderRight: undefined,
+      borderBottom: undefined,
+      borderLeft: undefined,
+    }),
+  },
+];
+
 export function SpreadsheetToolbar({
   currentStyle,
   onFormatChange,
@@ -62,9 +129,13 @@ export function SpreadsheetToolbar({
   onInsertChart,
   onExport,
   onImport,
+  frozenRows = 0,
+  frozenCols = 0,
+  onToggleFreeze,
 }: SpreadsheetToolbarProps) {
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showBorderPicker, setShowBorderPicker] = useState(false);
 
   const toggleBold = () => onFormatChange({ bold: !currentStyle.bold });
   const toggleItalic = () => onFormatChange({ italic: !currentStyle.italic });
@@ -225,6 +296,43 @@ export function SpreadsheetToolbar({
         </div>
       </div>
 
+      {/* Borders */}
+      <div className="flex items-center gap-0.5 border-r border-border-light dark:border-border-dark pr-2 mr-1">
+        <div className="relative">
+          <button
+            onClick={() => setShowBorderPicker(!showBorderPicker)}
+            disabled={!hasSelection}
+            className={buttonClass(!!currentStyle.borderTop || !!currentStyle.borderBottom)}
+            title="Borders"
+          >
+            <Grid3X3 className="w-4 h-4" />
+          </button>
+          {showBorderPicker && hasSelection && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowBorderPicker(false)}
+              />
+              <div className="absolute top-full left-0 mt-1 py-1 bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-lg shadow-lg z-50 min-w-[140px]">
+                {BORDER_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => {
+                      onFormatChange(preset.apply());
+                      setShowBorderPicker(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-text-light-primary dark:text-text-dark-primary hover:bg-surface-light-alt dark:hover:bg-surface-dark transition-colors"
+                  >
+                    <preset.icon className="w-4 h-4" />
+                    <span>{preset.label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Number formats */}
       <div className="flex items-center gap-0.5 border-r border-border-light dark:border-border-dark pr-2 mr-1">
         {NUMBER_FORMATS.map((format) => (
@@ -239,6 +347,25 @@ export function SpreadsheetToolbar({
           </button>
         ))}
       </div>
+
+      {/* Freeze Panes */}
+      {onToggleFreeze && (
+        <div className="flex items-center gap-0.5 border-r border-border-light dark:border-border-dark pr-2 mr-1">
+          <button
+            onClick={onToggleFreeze}
+            disabled={!hasSelection}
+            className={buttonClass(frozenRows > 0 || frozenCols > 0)}
+            title={frozenRows > 0 || frozenCols > 0
+              ? `Frozen: ${frozenRows} rows, ${frozenCols} cols (click to unfreeze)`
+              : 'Freeze panes at selection'}
+          >
+            <Rows3 className="w-4 h-4" />
+            {(frozenRows > 0 || frozenCols > 0) && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent-primary rounded-full" />
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Insert Chart */}
       {onInsertChart && (
