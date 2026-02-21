@@ -24,6 +24,7 @@ import {
   Target,
   Zap,
   CloudSun,
+  Focus,
 } from 'lucide-react';
 import { DayView } from '../components/DayView';
 import { TodayFocus } from '../components/today/TodayFocus';
@@ -31,11 +32,13 @@ import { TimeboxSelector } from '../components/today/TimeboxSelector';
 import { TimeboxSummary } from '../components/today/TimeboxSummary';
 import { DailyReview } from '../components/today/DailyReview';
 import { TomorrowPlanning } from '../components/today/TomorrowPlanning';
+import { WeeklyPlanning } from '../components/today/WeeklyPlanning';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { useKanbanStore } from '../stores/useKanbanStore';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useWeatherStore } from '../stores/useWeatherStore';
 import { useSettingsStore, formatTemperature } from '../stores/useSettingsStore';
+import { useFocusModeStore } from '../stores/useFocusModeStore';
 import { useShortcut } from '../hooks/useShortcut';
 import type { CalendarEvent, WeatherData } from '../types';
 import { PageContent } from '../components/PageContent';
@@ -161,13 +164,15 @@ const TodayWeather: React.FC<{
 };
 
 /**
- * TodayTasks - Quick list of today's tasks with timeboxing
+ * TodayTasks - Quick list of today's tasks with timeboxing and focus highlighting
  */
 const TodayTasks: React.FC<{
   tasks: Array<{ id: string; title: string; status: string; priority: 'low' | 'medium' | 'high' }>;
   onTaskClick: (taskId: string) => void;
+  onFocusTask: (taskId: string) => void;
+  focusedTaskId: string | null;
   dateKey: string;
-}> = ({ tasks, onTaskClick, dateKey }) => {
+}> = ({ tasks, onTaskClick, onFocusTask, focusedTaskId, dateKey }) => {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-text-light-secondary dark:text-text-dark-secondary">
@@ -178,6 +183,8 @@ const TodayTasks: React.FC<{
     );
   }
 
+  const isFocused = (id: string) => focusedTaskId === id;
+
   return (
     <div className="space-y-1">
       {tasks.map((task) => (
@@ -185,11 +192,18 @@ const TodayTasks: React.FC<{
           key={task.id}
           className={`
             flex items-center gap-2 px-3 py-2 rounded-lg
-            hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated
             transition-colors group
+            ${isFocused(task.id)
+              ? 'bg-accent-primary/10 border border-accent-primary/30 shadow-sm'
+              : 'hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'}
             ${task.status === 'done' ? 'opacity-60' : ''}
           `}
         >
+          {/* Focus indicator */}
+          {isFocused(task.id) && (
+            <div className="w-1 h-6 bg-accent-primary rounded-full flex-shrink-0" />
+          )}
+
           <button
             onClick={() => onTaskClick(task.id)}
             className="flex items-center gap-2 flex-1 min-w-0 text-left"
@@ -203,13 +217,35 @@ const TodayTasks: React.FC<{
             />
             <span
               className={`
-                flex-1 text-sm text-text-light-primary dark:text-text-dark-primary truncate
+                flex-1 text-sm truncate
+                ${isFocused(task.id)
+                  ? 'font-medium text-accent-primary'
+                  : 'text-text-light-primary dark:text-text-dark-primary'}
                 ${task.status === 'done' ? 'line-through' : ''}
               `}
             >
               {task.title}
             </span>
           </button>
+
+          {/* Focus button */}
+          {task.status !== 'done' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onFocusTask(task.id);
+              }}
+              className={`p-1 rounded transition-colors flex-shrink-0 ${
+                isFocused(task.id)
+                  ? 'text-accent-primary bg-accent-primary/10'
+                  : 'text-text-light-tertiary dark:text-text-dark-tertiary opacity-0 group-hover:opacity-100 hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
+              }`}
+              title={isFocused(task.id) ? 'End focus' : 'Focus on this task'}
+              aria-label={isFocused(task.id) ? 'End focus' : 'Focus on this task'}
+            >
+              <Focus className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* Timebox selector */}
           <TimeboxSelector dateKey={dateKey} taskId={task.id} />
@@ -243,6 +279,12 @@ export const Today: React.FC = () => {
   const city = useWeatherStore((state) => state.city);
   const weatherLoading = useWeatherStore((state) => state.loading);
   const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
+
+  // Focus mode
+  const focusedTaskId = useFocusModeStore((state) => state.linkedTaskId);
+  const focusIsActive = useFocusModeStore((state) => state.isActive);
+  const startFocus = useFocusModeStore((state) => state.startFocus);
+  const endFocus = useFocusModeStore((state) => state.endFocus);
 
   // Get today's events from the map
   const todayEvents = useMemo(() => {
@@ -306,6 +348,15 @@ export const Today: React.FC = () => {
   const handleTaskClick = useCallback((taskId: string) => {
     navigate(`/tasks?task=${taskId}`);
   }, [navigate]);
+
+  // Handle focus on task
+  const handleFocusTask = useCallback((taskId: string) => {
+    if (focusIsActive && focusedTaskId === taskId) {
+      endFocus();
+    } else {
+      startFocus(taskId);
+    }
+  }, [focusIsActive, focusedTaskId, startFocus, endFocus]);
 
   // Handle event time change (time blocking drag-drop)
   const handleEventTimeChange = useCallback((eventId: string, newStartTime: string, newEndTime: string) => {
@@ -386,6 +437,8 @@ export const Today: React.FC = () => {
                   priority: t.priority,
                 }))}
                 onTaskClick={handleTaskClick}
+                onFocusTask={handleFocusTask}
+                focusedTaskId={focusIsActive ? focusedTaskId : null}
                 dateKey={todayKey}
               />
             </div>
@@ -393,6 +446,9 @@ export const Today: React.FC = () => {
 
           {/* Tomorrow Planning */}
           <TomorrowPlanning today={today} />
+
+          {/* Weekly Planning */}
+          <WeeklyPlanning today={today} />
 
           {/* Daily Review */}
           <DailyReview
