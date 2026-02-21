@@ -68,8 +68,10 @@ import { WidgetSettingsSection } from '../widgets/Settings/WidgetSettingsSection
 import { ProjectSettings } from '../widgets/Settings/ProjectSettings';
 import { DataManagementSection } from '../widgets/Settings/DataManagementSection';
 import { MarkdownImportSection } from '../widgets/Settings/MarkdownImportSection';
+import { NotionImportSection } from '../widgets/Settings/NotionImportSection';
 import { KeyboardShortcutsSection } from '../widgets/Settings/KeyboardShortcutsSection';
 import { AccentColorSection } from '../widgets/Settings/AccentColorSection';
+import { SelectiveExportSection } from '../widgets/Settings/SelectiveExportSection';
 
 const log = logger.module('Settings');
 
@@ -525,9 +527,18 @@ export const Settings: React.FC = () => {
                   <DataManagementSection
                     onMessage={setMessage}
                   />
+                  <SelectiveExportSection
+                    onMessage={setMessage}
+                  />
                   <MarkdownImportSection
                     onMessage={setMessage}
                   />
+                  <NotionImportSection
+                    onMessage={setMessage}
+                  />
+                  <div className="bento-card p-6">
+                    <ImportData />
+                  </div>
                 </>
               )}
 
