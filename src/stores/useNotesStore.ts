@@ -21,6 +21,7 @@ import { NOTE_CONSTANTS } from '../types/notes';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useUndoStore } from './useUndoStore';
 import { extractWikiLinks, resolveLinksToIds, getBacklinks as getBacklinksUtil } from '../utils/backlinks';
+import { fuzzySearch, type SearchResult } from '../utils/fuzzySearch';
 import { getDailyNote as getDailyNoteUtil, createDailyNote as createDailyNoteUtil } from '../services/dailyNotes';
 import { useSettingsStore } from './useSettingsStore';
 import { findBlockInContent } from '../utils/blockReferences';
@@ -78,6 +79,15 @@ const DEFAULT_NOTE_TEMPLATES: NoteTemplate[] = [
     defaultTags: ['review', 'weekly'],
     isBuiltIn: true,
   },
+  {
+    id: 'decision-record',
+    name: 'Decision Record',
+    description: '## Decision: {title}\n\n**Date:** {date}\n**Status:** Proposed | Accepted | Deprecated | Superseded\n\n### Context\nWhat is the issue or problem we need to solve?\n\n\n### Options Considered\n1. **Option A** — \n2. **Option B** — \n3. **Option C** — \n\n### Decision\nWhat was decided?\n\n\n### Rationale\nWhy was this option chosen over the alternatives?\n\n\n### Consequences\n**Positive:**\n- \n\n**Negative:**\n- \n\n**Risks:**\n- \n\n### Related\n- \n',
+    icon: '⚖️',
+    category: 'Work',
+    defaultTags: ['decision', 'adr'],
+    isBuiltIn: true,
+  },
 ];
 
 /**
@@ -111,6 +121,7 @@ interface NotesStore {
   getNotesByFolder: (folderId: string | null) => Note[];
   getNotesBy: (predicate: (note: Note) => boolean) => Note[];
   searchNotes: (query: string) => Note[];
+  fuzzySearchNotes: (query: string) => SearchResult<Note>[];
 
   // Actions - Pin/Archive/Favorite
   togglePin: (id: string) => void;
@@ -554,17 +565,36 @@ export const useNotesStore = create<NotesStore>()(
       searchNotes: (query) => {
         if (!query.trim()) return [];
 
-        const lowerQuery = query.toLowerCase();
-        const notes = Object.values(get().notes).filter((note) => {
-          // Search in title, content text, and tags
-          return (
-            note.title.toLowerCase().includes(lowerQuery) ||
-            note.contentText.toLowerCase().includes(lowerQuery) ||
-            note.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
-          );
-        });
+        // Use fuzzy search for better results
+        const allNotes = Object.values(get().notes);
+        const results = fuzzySearch(
+          allNotes,
+          query,
+          [
+            { key: 'title', weight: 1.0 },
+            { key: 'contentText', weight: 0.7 },
+            { key: 'tags' as keyof Note, weight: 0.5 },
+          ],
+          NOTE_CONSTANTS.MAX_SEARCH_RESULTS
+        );
 
-        return sortNotes(notes, get().sortConfig);
+        return results.map((r) => r.item);
+      },
+
+      fuzzySearchNotes: (query) => {
+        if (!query.trim()) return [];
+
+        const allNotes = Object.values(get().notes);
+        return fuzzySearch(
+          allNotes,
+          query,
+          [
+            { key: 'title', weight: 1.0 },
+            { key: 'contentText', weight: 0.7 },
+            { key: 'tags' as keyof Note, weight: 0.5 },
+          ],
+          NOTE_CONSTANTS.MAX_SEARCH_RESULTS
+        );
       },
 
       // Pin/Archive

@@ -31,6 +31,7 @@ import { ConfirmDialog } from '../ConfirmDialog';
 import { PromptDialog } from '../PromptDialog';
 import { TagFilter } from '../TagFilter';
 import { FolderTreeNode } from './FolderTreeNode';
+import { SearchHighlight } from '../SearchHighlight';
 import { logger } from '../../services/logger';
 
 const log = logger.module('FolderSidebar');
@@ -84,7 +85,7 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
   const moveFolder = useFoldersStore((state) => state.moveFolder);
   const canMoveFolder = useFoldersStore((state) => state.canMoveFolder);
   const notesObj = useNotesStore((state) => state.notes);
-  const searchNotes = useNotesStore((state) => state.searchNotes);
+  const fuzzySearchNotes = useNotesStore((state) => state.fuzzySearchNotes);
 
   // Dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -341,39 +342,55 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
 
       {/* Search Results OR Folder list */}
       {searchQuery.trim() ? (
-        /* Search Results */
-        <div className="overflow-y-auto flex-1 min-h-0">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-text-light-tertiary dark:text-text-dark-tertiary mb-2">
-            {searchNotes(searchQuery).length} results for "{searchQuery}"
-          </h3>
-          <div className="space-y-2">
-            {searchNotes(searchQuery).map((note) => (
-              <div
-                key={note.id}
-                onClick={() => {
-                  setSearchQuery('');
-                  useNotesStore.getState().setActiveNote(note.id);
-                }}
-                className="p-3 rounded-lg cursor-pointer hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors"
-              >
-                <div className="font-medium text-sm text-text-light-primary dark:text-text-dark-primary mb-1 truncate">
-                  {note.title || 'Untitled'}
-                </div>
-                <div className="text-xs text-text-light-secondary dark:text-text-dark-secondary line-clamp-2">
-                  {note.contentText?.slice(0, 150)}...
-                </div>
-                <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary mt-1">
-                  {new Date(note.updatedAt).toLocaleDateString()}
-                </div>
+        /* Search Results with Fuzzy Matching */
+        (() => {
+          const searchResults = fuzzySearchNotes(searchQuery);
+          return (
+            <div className="overflow-y-auto flex-1 min-h-0">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-text-light-tertiary dark:text-text-dark-tertiary mb-2">
+                {searchResults.length} results for &ldquo;{searchQuery}&rdquo;
+              </h3>
+              <div className="space-y-2">
+                {searchResults.map((result) => (
+                  <div
+                    key={result.item.id}
+                    onClick={() => {
+                      setSearchQuery('');
+                      useNotesStore.getState().setActiveNote(result.item.id);
+                    }}
+                    className="p-3 rounded-lg cursor-pointer hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors"
+                  >
+                    <div className="font-medium text-sm text-text-light-primary dark:text-text-dark-primary mb-1 truncate">
+                      <SearchHighlight
+                        text={result.item.title || 'Untitled'}
+                        matchedIndices={result.matches['title']}
+                      />
+                    </div>
+                    <div className="text-xs text-text-light-secondary dark:text-text-dark-secondary line-clamp-2">
+                      <SearchHighlight
+                        text={result.item.contentText?.slice(0, 150) || ''}
+                        matchedIndices={result.matches['contentText']}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+                        {new Date(result.item.updatedAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary opacity-60">
+                        {Math.round(result.score * 100)}%
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {searchResults.length === 0 && (
+                  <div className="text-sm text-text-light-secondary dark:text-text-dark-secondary text-center py-8">
+                    No notes found for &ldquo;{searchQuery}&rdquo;
+                  </div>
+                )}
               </div>
-            ))}
-            {searchNotes(searchQuery).length === 0 && (
-              <div className="text-sm text-text-light-secondary dark:text-text-dark-secondary text-center py-8">
-                No notes found for "{searchQuery}"
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          );
+        })()
       ) : (
         /* Folder tree - Scrollable with DnD */
         <DndContext
