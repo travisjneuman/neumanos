@@ -19,11 +19,12 @@ import { CodeNode, CodeHighlightNode } from '@lexical/code';
 import { LinkNode } from '@lexical/link';
 import { TableNode, TableCellNode, TableRowNode } from '@lexical/table';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { AutoLinkPlugin } from '@lexical/react/LexicalAutoLinkPlugin';
 import { AutoLinkNode } from '@lexical/link';
-import { TRANSFORMERS } from '@lexical/markdown';
+import { TRANSFORMERS, CHECK_LIST } from '@lexical/markdown';
 import {
   $getRoot,
   $getSelection,
@@ -46,8 +47,10 @@ import type { HeadingTagType } from '@lexical/rich-text';
 import {
   INSERT_UNORDERED_LIST_COMMAND,
   INSERT_ORDERED_LIST_COMMAND,
+  INSERT_CHECK_LIST_COMMAND,
   $isListNode
 } from '@lexical/list';
+import { registerCodeHighlighting } from '@lexical/code';
 
 // URL matcher for AutoLinkPlugin
 const URL_MATCHER =
@@ -77,6 +80,8 @@ import { NOTE_CONSTANTS } from '../types/notes';
 import { ImageNode, $createImageNode } from './NotesEditor/ImageNode';
 import { indexedDBService } from '../services/indexedDB';
 import { BacklinksPanel } from '../components/BacklinksPanel';
+import { VersionHistoryPanel } from '../components/notes/VersionHistoryPanel';
+import { useNoteVersionStore } from '../stores/useNoteVersionStore';
 import { toast } from '../stores/useToastStore';
 import WikiLinkAutocompletePlugin from '../components/editor/WikiLinkAutocompletePlugin';
 import WikiLinkTransformPlugin from '../components/editor/WikiLinkTransformPlugin';
@@ -95,6 +100,20 @@ const KeyboardShortcutsPlugin: React.FC = () => {
 
   useEffect(() => {
     return registerRichText(editor);
+  }, [editor]);
+
+  return null;
+};
+
+/**
+ * Code Highlight Plugin
+ * Registers Prism-based syntax highlighting for code blocks
+ */
+const CodeHighlightPlugin: React.FC = () => {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    return registerCodeHighlighting(editor);
   }, [editor]);
 
   return null;
@@ -434,6 +453,10 @@ const EditorToolbar: React.FC<{
     editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
   };
 
+  const formatCheckList = () => {
+    editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
+  };
+
   const undo = () => {
     editor.dispatchCommand(UNDO_COMMAND, undefined);
   };
@@ -545,8 +568,11 @@ const EditorToolbar: React.FC<{
       <button onClick={formatNumberedList} className={btnClass} title="Numbered List">
         ⋮
       </button>
+      <button onClick={formatCheckList} className={btnClass} title="Checklist ([] )">
+        ☑
+      </button>
       <button onClick={formatQuote} className={btnClass} title="Quote">
-        "
+        &ldquo;
       </button>
 
       <div className={dividerClass} />
@@ -631,6 +657,7 @@ const AutoSavePlugin: React.FC<{ noteId: string }> = ({ noteId }) => {
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastContentRef = useRef<string>('');
   const lastTextRef = useRef<string>('');
+  const lastVersionSaveRef = useRef<number>(0);
 
   const handleChange = useCallback((editorState: EditorState) => {
     // Extract plain text for search
@@ -663,6 +690,25 @@ const AutoSavePlugin: React.FC<{ noteId: string }> = ({ noteId }) => {
           // Update refs with saved content
           lastContentRef.current = contentJson;
           lastTextRef.current = contentText;
+
+          // Version history: save snapshot periodically when content changes significantly
+          const now = Date.now();
+          const versionStore = useNoteVersionStore.getState();
+          if (
+            now - lastVersionSaveRef.current >= NOTE_CONSTANTS.VERSION_SAVE_INTERVAL_MS &&
+            versionStore.shouldSaveVersion(noteId, contentText)
+          ) {
+            const note = useNotesStore.getState().notes[noteId];
+            if (note) {
+              versionStore.saveVersion({
+                noteId,
+                title: note.title,
+                content: contentJson,
+                contentText,
+              });
+              lastVersionSaveRef.current = now;
+            }
+          }
 
           // Reset saving state after a brief delay
           setTimeout(() => setIsSaving(false), 300);
@@ -722,9 +768,44 @@ const getEditorConfig = (initialContent?: string) => ({
       ul: 'list-disc list-inside my-4 space-y-1.5',
       ol: 'list-decimal list-inside my-4 space-y-1.5',
       listitem: 'my-1 leading-relaxed',
+      checklist: 'editor-checklist my-4 space-y-1.5 list-none pl-0',
+      listitemChecked: 'editor-checklist-item editor-checklist-item--checked line-through opacity-60',
+      listitemUnchecked: 'editor-checklist-item editor-checklist-item--unchecked',
     },
     quote: 'border-l-4 border-accent-primary bg-surface-light-elevated dark:bg-surface-dark-elevated pl-4 py-3 italic my-4 rounded-r',
     code: 'bg-surface-dark dark:bg-surface-dark-elevated text-text-dark-primary p-4 rounded-lg font-mono text-sm my-4 overflow-x-auto shadow-sm',
+    codeHighlight: {
+      atrule: 'text-purple-400',
+      attr: 'text-yellow-300',
+      boolean: 'text-orange-400',
+      builtin: 'text-cyan-400',
+      cdata: 'text-gray-500',
+      char: 'text-green-400',
+      class: 'text-yellow-300',
+      'class-name': 'text-yellow-300',
+      comment: 'text-gray-500 italic',
+      constant: 'text-orange-400',
+      deleted: 'text-red-400',
+      doctype: 'text-gray-500',
+      entity: 'text-red-400',
+      function: 'text-blue-400',
+      important: 'text-orange-400 font-bold',
+      inserted: 'text-green-400',
+      keyword: 'text-purple-400',
+      namespace: 'text-red-400',
+      number: 'text-orange-400',
+      operator: 'text-cyan-400',
+      prolog: 'text-gray-500',
+      property: 'text-cyan-400',
+      punctuation: 'text-gray-400',
+      regex: 'text-yellow-300',
+      selector: 'text-green-400',
+      string: 'text-green-400',
+      symbol: 'text-orange-400',
+      tag: 'text-red-400',
+      url: 'text-cyan-400',
+      variable: 'text-red-400',
+    },
     link: 'text-accent-primary hover:underline transition-colors',
   },
   nodes: [
@@ -947,8 +1028,10 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
             <ReadOnlyPlugin isReadOnly={viewMode === 'preview'} />
             <HistoryPlugin />
             <ListPlugin />
+            <CheckListPlugin />
             <TablePlugin />
-            <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+            <CodeHighlightPlugin />
+            <MarkdownShortcutPlugin transformers={[...TRANSFORMERS, CHECK_LIST]} />
             <AutoLinkPlugin matchers={MATCHERS} />
             <KeyboardShortcutsPlugin />
             <WordCountPlugin onUpdate={handleWordCountUpdate} />
@@ -974,6 +1057,11 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
       {/* Backlinks Panel */}
       <div className="flex-shrink-0">
         <BacklinksPanel noteId={noteId} />
+      </div>
+
+      {/* Version History Panel */}
+      <div className="flex-shrink-0">
+        <VersionHistoryPanel noteId={noteId} />
       </div>
     </motion.div>
   );

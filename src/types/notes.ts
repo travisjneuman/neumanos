@@ -321,6 +321,28 @@ export interface BlockReference {
 }
 
 /**
+ * Note version snapshot for history tracking
+ */
+export interface NoteVersion {
+  /** Unique version ID */
+  id: string;
+  /** Note ID this version belongs to */
+  noteId: string;
+  /** Snapshot of the note title */
+  title: string;
+  /** Snapshot of contentText at this version */
+  contentText: string;
+  /** Snapshot of Lexical JSON content */
+  content: string;
+  /** When this version was saved */
+  savedAt: Date;
+  /** Word count at this version */
+  wordCount: number;
+  /** Change summary (auto-generated) */
+  changeSummary: string;
+}
+
+/**
  * P2: Note preview (for hover preview popover)
  */
 export interface NotePreview {
@@ -362,6 +384,11 @@ export const NOTE_CONSTANTS = {
 
   /** Snippet length for search results */
   SEARCH_SNIPPET_LENGTH: 200,
+
+  /** Version history constants */
+  MAX_VERSIONS_PER_NOTE: 50,
+  VERSION_SAVE_INTERVAL_MS: 30000, // Save version every 30 seconds of active editing
+  MIN_CONTENT_CHANGE_FOR_VERSION: 20, // Minimum character change to trigger version
 
   /** P2: Block-level links & hover preview constants */
   PREVIEW_MAX_LINES: 5,
