@@ -38,6 +38,17 @@ export interface ProjectContextState {
 
 // ==================== WIDGET DATA TYPES ====================
 
+export type EventColorCategory = 'default' | 'work' | 'personal' | 'health' | 'social' | 'travel' | 'finance' | 'education';
+
+export interface EventColorCategoryConfig {
+  id: EventColorCategory;
+  label: string;
+  bgClass: string;       // Tailwind bg class for event display
+  textClass: string;     // Tailwind text class
+  borderClass: string;   // Tailwind border class
+  hex: string;           // Hex color for inline styles
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -70,6 +81,9 @@ export interface CalendarEvent {
 
   // Location
   location?: string;
+
+  // Color category
+  colorCategory?: EventColorCategory;
 
   // Multi-day rendering flags (internal, not persisted)
   _isMultiDayPart?: boolean;
@@ -496,12 +510,25 @@ export type HabitFrequency =
   | 'specific-days'
   | 'times-per-week';
 
+export type HabitCategory =
+  | 'health'
+  | 'productivity'
+  | 'learning'
+  | 'social'
+  | 'mindfulness'
+  | 'fitness'
+  | 'nutrition'
+  | 'creative'
+  | 'finance'
+  | 'uncategorized';
+
 export interface Habit {
   id: string;
   title: string;
   description?: string;
   icon?: string;                    // Emoji or Lucide icon name
   color: string;                    // Hex color for visual identity
+  category: HabitCategory;          // Grouping category
 
   // Frequency configuration
   frequency: HabitFrequency;
@@ -803,6 +830,7 @@ export interface BaseDoc {
   folderId?: string;         // Optional folder organization
   createdAt: string;         // ISO date
   updatedAt: string;         // ISO date
+  lastAccessedAt?: string;   // ISO date - last time the document was opened
   order: number;             // For manual sorting
   version: number;           // Document version (for history)
   projectIds: string[];      // Project context support

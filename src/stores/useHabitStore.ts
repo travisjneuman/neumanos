@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
-import type { Habit, HabitCompletion, HabitAchievement } from '../types';
+import type { Habit, HabitCompletion, HabitAchievement, HabitCategory } from '../types';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';
@@ -172,6 +172,8 @@ interface HabitStore {
   // Stats
   getTodayProgress: () => { completed: number; total: number };
   getWeekProgress: (habitId: string) => boolean[];
+  getCompletionRate: (habitId: string, days: number) => number;
+  getCompletionHistory: (habitId: string, days: number) => Array<{ date: string; completed: boolean }>;
 }
 
 export const useHabitStore = create<HabitStore>()(
@@ -191,6 +193,7 @@ export const useHabitStore = create<HabitStore>()(
         const newHabit: Habit = {
           ...habitData,
           id,
+          category: habitData.category ?? 'uncategorized',
           createdAt: now,
           currentStreak: 0,
           longestStreak: 0,
@@ -513,6 +516,52 @@ export const useHabitStore = create<HabitStore>()(
 
         return progress;
       },
+
+      // Get completion rate for a habit over N days
+      getCompletionRate: (habitId, days) => {
+        const state = get();
+        const habit = state.habits.find((h) => h.id === habitId);
+        if (!habit) return 0;
+
+        let tracked = 0;
+        let completed = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < days; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          if (shouldTrackOnDate(habit, date)) {
+            tracked++;
+            const dateKey = getDateKey(date);
+            if (state.completions.some((c) => c.habitId === habitId && c.date === dateKey)) {
+              completed++;
+            }
+          }
+        }
+
+        return tracked === 0 ? 0 : Math.round((completed / tracked) * 100);
+      },
+
+      // Get completion history for a habit (for heatmap/charts)
+      getCompletionHistory: (habitId, days) => {
+        const state = get();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const history: Array<{ date: string; completed: boolean }> = [];
+
+        for (let i = days - 1; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dateKey = getDateKey(date);
+          history.push({
+            date: dateKey,
+            completed: state.completions.some((c) => c.habitId === habitId && c.date === dateKey),
+          });
+        }
+
+        return history;
+      },
     }),
     {
       name: 'habit-store',
@@ -522,8 +571,21 @@ export const useHabitStore = create<HabitStore>()(
         completions: state.completions,
         achievements: state.achievements,
       }),
-      version: 1,
-      migrate: (persisted) => persisted,
+      version: 2,
+      migrate: (persisted, version) => {
+        if (version < 2) {
+          const state = persisted as Record<string, unknown>;
+          const habits = (state.habits ?? []) as Array<Record<string, unknown>>;
+          return {
+            ...state,
+            habits: habits.map((h) => ({
+              ...h,
+              category: h.category ?? 'uncategorized',
+            })),
+          };
+        }
+        return persisted;
+      },
     }
   )
 );

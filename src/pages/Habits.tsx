@@ -1,9 +1,23 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Plus, Target, Flame, Trophy, Archive, RotateCcw, Trash2, Edit2, Check, MoreVertical } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  Plus, Target, Flame, Trophy, Archive, RotateCcw, Trash2, Edit2,
+  Check, MoreVertical, ChevronDown, ChevronRight, BarChart3, BookTemplate,
+  Grid3X3,
+} from 'lucide-react';
 import { useHabitStore } from '../stores/useHabitStore';
 import { PageContent } from '../components/PageContent';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Habit, HabitFrequency } from '../types';
+import {
+  HabitHeatmap,
+  HabitStats,
+  HabitTemplatePicker,
+  useCompletionAnimation,
+  ConfettiEffect,
+  StreakBump,
+  HABIT_ANIMATION_STYLES,
+} from '../components/habits';
+import type { HabitTemplate } from '../components/habits';
+import type { Habit, HabitFrequency, HabitCategory } from '../types';
 
 // Helper to get date key in YYYY-M-D format
 function getDateKey(date: Date): string {
@@ -40,9 +54,10 @@ function getFrequencyLabel(habit: Habit): string {
       return 'Weekdays';
     case 'weekends':
       return 'Weekends';
-    case 'specific-days':
+    case 'specific-days': {
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       return habit.targetDays?.map((d) => days[d]).join(', ') ?? '';
+    }
     case 'times-per-week':
       return `${habit.timesPerWeek}x per week`;
     default:
@@ -50,35 +65,52 @@ function getFrequencyLabel(habit: Habit): string {
   }
 }
 
+// Category configuration
+const CATEGORY_CONFIG: Record<HabitCategory, { label: string; icon: string }> = {
+  health: { label: 'Health', icon: '🏥' },
+  productivity: { label: 'Productivity', icon: '⚡' },
+  learning: { label: 'Learning', icon: '📖' },
+  social: { label: 'Social', icon: '👥' },
+  mindfulness: { label: 'Mindfulness', icon: '🧘' },
+  fitness: { label: 'Fitness', icon: '💪' },
+  nutrition: { label: 'Nutrition', icon: '🥗' },
+  creative: { label: 'Creative', icon: '🎨' },
+  finance: { label: 'Finance', icon: '💰' },
+  uncategorized: { label: 'Uncategorized', icon: '📌' },
+};
+
+const ALL_CATEGORIES: HabitCategory[] = [
+  'health', 'productivity', 'learning', 'social', 'mindfulness',
+  'fitness', 'nutrition', 'creative', 'finance', 'uncategorized',
+];
+
 // Default colors for habits
 const HABIT_COLORS = [
-  '#06b6d4', // cyan
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#f97316', // orange
-  '#22c55e', // green
-  '#3b82f6', // blue
-  '#eab308', // yellow
-  '#ef4444', // red
+  '#06b6d4', '#8b5cf6', '#ec4899', '#f97316',
+  '#22c55e', '#3b82f6', '#eab308', '#ef4444',
 ];
 
 // Default icons for habits
 const HABIT_ICONS = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
 
+// ─── Habit Modal ──────────────────────────────────────────
+
 interface HabitModalProps {
   habit?: Habit;
+  initialTemplate?: HabitTemplate;
   onClose: () => void;
   onSave: (data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'order'>) => void;
 }
 
-function HabitModal({ habit, onClose, onSave }: HabitModalProps) {
-  const [title, setTitle] = useState(habit?.title ?? '');
-  const [description, setDescription] = useState(habit?.description ?? '');
-  const [icon, setIcon] = useState(habit?.icon ?? '🎯');
-  const [color, setColor] = useState(habit?.color ?? HABIT_COLORS[0]);
-  const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency ?? 'daily');
+function HabitModal({ habit, initialTemplate, onClose, onSave }: HabitModalProps) {
+  const [title, setTitle] = useState(habit?.title ?? initialTemplate?.title ?? '');
+  const [description, setDescription] = useState(habit?.description ?? initialTemplate?.description ?? '');
+  const [icon, setIcon] = useState(habit?.icon ?? initialTemplate?.icon ?? '🎯');
+  const [color, setColor] = useState(habit?.color ?? initialTemplate?.color ?? HABIT_COLORS[0]);
+  const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency ?? initialTemplate?.frequency ?? 'daily');
+  const [category, setCategory] = useState<HabitCategory>(habit?.category ?? initialTemplate?.category ?? 'uncategorized');
   const [targetDays, setTargetDays] = useState<number[]>(habit?.targetDays ?? []);
-  const [timesPerWeek, setTimesPerWeek] = useState(habit?.timesPerWeek ?? 3);
+  const [timesPerWeek, setTimesPerWeek] = useState(habit?.timesPerWeek ?? initialTemplate?.timesPerWeek ?? 3);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +121,7 @@ function HabitModal({ habit, onClose, onSave }: HabitModalProps) {
       description: description.trim() || undefined,
       icon,
       color,
+      category,
       frequency,
       targetDays: frequency === 'specific-days' ? targetDays : undefined,
       timesPerWeek: frequency === 'times-per-week' ? timesPerWeek : undefined,
@@ -139,6 +172,24 @@ function HabitModal({ habit, onClose, onSave }: HabitModalProps) {
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-accent-primary resize-none"
               />
+            </div>
+
+            {/* Category */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary mb-1">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as HabitCategory)}
+                className="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
+              >
+                {ALL_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_CONFIG[cat].icon} {CATEGORY_CONFIG[cat].label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Icon */}
@@ -268,6 +319,8 @@ function HabitModal({ habit, onClose, onSave }: HabitModalProps) {
   );
 }
 
+// ─── Habit Card ───────────────────────────────────────────
+
 interface HabitCardProps {
   habit: Habit;
   isCompletedToday: boolean;
@@ -275,7 +328,10 @@ interface HabitCardProps {
   onEdit: () => void;
   onArchive: () => void;
   onDelete: () => void;
+  onViewStats: () => void;
   weekProgress: boolean[];
+  showConfetti: boolean;
+  animatedStreak: boolean;
 }
 
 function HabitCard({
@@ -285,7 +341,10 @@ function HabitCard({
   onEdit,
   onArchive,
   onDelete,
+  onViewStats,
   weekProgress,
+  showConfetti,
+  animatedStreak,
 }: HabitCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const trackToday = shouldTrackToday(habit);
@@ -297,30 +356,32 @@ function HabitCard({
     >
       <div className="flex items-start gap-4">
         {/* Check button */}
-        <button
-          onClick={onToggle}
-          disabled={!trackToday}
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all shrink-0 ${
-            isCompletedToday
-              ? 'bg-status-success text-white'
-              : trackToday
-              ? 'bg-surface-light-alt dark:bg-surface-dark hover:bg-accent-primary/20 border-2 border-border-light dark:border-border-dark'
-              : 'bg-surface-light-alt dark:bg-surface-dark opacity-50 cursor-not-allowed'
-          }`}
-          title={
-            trackToday
-              ? isCompletedToday
-                ? 'Mark incomplete'
-                : 'Mark complete'
-              : 'Not scheduled for today'
-          }
-        >
-          {isCompletedToday ? (
-            <Check className="w-5 h-5" />
-          ) : (
-            <span>{habit.icon}</span>
-          )}
-        </button>
+        <div className="relative">
+          <button
+            onClick={onToggle}
+            disabled={!trackToday}
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all shrink-0 ${
+              isCompletedToday
+                ? 'bg-status-success text-white'
+                : trackToday
+                ? 'bg-surface-light-alt dark:bg-surface-dark hover:bg-accent-primary/20 border-2 border-border-light dark:border-border-dark'
+                : 'bg-surface-light-alt dark:bg-surface-dark opacity-50 cursor-not-allowed'
+            }`}
+            style={isCompletedToday ? { animation: 'habit-check-pop 0.3s ease-out' } : undefined}
+            title={
+              trackToday
+                ? isCompletedToday ? 'Mark incomplete' : 'Mark complete'
+                : 'Not scheduled for today'
+            }
+          >
+            {isCompletedToday ? (
+              <Check className="w-5 h-5" style={{ animation: 'habit-check-in 0.3s ease-out' }} />
+            ) : (
+              <span>{habit.icon}</span>
+            )}
+          </button>
+          {showConfetti && <ConfettiEffect onDone={() => {}} />}
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -329,22 +390,28 @@ function HabitCard({
               <h3 className="font-medium text-text-light-primary dark:text-text-dark-primary">
                 {habit.title}
               </h3>
-              <p className="text-sm text-text-light-tertiary dark:text-text-dark-tertiary">
-                {getFrequencyLabel(habit)}
-              </p>
+              <div className="flex items-center gap-2 text-sm text-text-light-tertiary dark:text-text-dark-tertiary">
+                <span>{getFrequencyLabel(habit)}</span>
+                {habit.category !== 'uncategorized' && (
+                  <>
+                    <span className="text-border-light dark:text-border-dark">|</span>
+                    <span>{CATEGORY_CONFIG[habit.category].icon} {CATEGORY_CONFIG[habit.category].label}</span>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Stats + Menu */}
             <div className="flex items-center gap-3">
-              {/* Streak */}
               {habit.currentStreak > 0 && (
                 <div className="flex items-center gap-1 text-accent-orange">
                   <Flame className="w-4 h-4" />
-                  <span className="text-sm font-medium">{habit.currentStreak}</span>
+                  <span className="text-sm font-medium">
+                    {animatedStreak ? <StreakBump streak={habit.currentStreak} /> : habit.currentStreak}
+                  </span>
                 </div>
               )}
 
-              {/* Menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
@@ -355,36 +422,31 @@ function HabitCard({
 
                 {showMenu && (
                   <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setShowMenu(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-1 z-20 bg-surface-light dark:bg-surface-dark-elevated rounded-lg shadow-lg border border-border-light dark:border-border-dark py-1 min-w-[120px]">
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-20 bg-surface-light dark:bg-surface-dark-elevated rounded-lg shadow-lg border border-border-light dark:border-border-dark py-1 min-w-[140px]">
                       <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onEdit();
-                        }}
+                        onClick={() => { setShowMenu(false); onViewStats(); }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Statistics
+                      </button>
+                      <button
+                        onClick={() => { setShowMenu(false); onEdit(); }}
                         className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
                       >
                         <Edit2 className="w-4 h-4" />
                         Edit
                       </button>
                       <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onArchive();
-                        }}
+                        onClick={() => { setShowMenu(false); onArchive(); }}
                         className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
                       >
                         <Archive className="w-4 h-4" />
                         Archive
                       </button>
                       <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onDelete();
-                        }}
+                        onClick={() => { setShowMenu(false); onDelete(); }}
                         className="w-full px-3 py-2 text-left text-sm text-status-error hover:bg-status-error/10 flex items-center gap-2"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -419,10 +481,40 @@ function HabitCard({
   );
 }
 
-/**
- * HabitsContent - Core habits UI that can be embedded in Tasks page as a tab
- * Exported separately to allow use without PageContent wrapper
- */
+// ─── Category Section (collapsible) ──────────────────────
+
+interface CategorySectionProps {
+  category: HabitCategory;
+  habits: Habit[];
+  renderHabit: (habit: Habit) => React.ReactNode;
+}
+
+function CategorySection({ category, habits, renderHabit }: CategorySectionProps) {
+  const [collapsed, setCollapsed] = useState(false);
+  const config = CATEGORY_CONFIG[category];
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-2 mb-2 text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors"
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <span>{config.icon}</span>
+        <span>{config.label}</span>
+        <span className="text-text-light-tertiary dark:text-text-dark-tertiary">({habits.length})</span>
+      </button>
+      {!collapsed && (
+        <div className="space-y-3 ml-2">
+          {habits.map(renderHabit)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Habits Content (main body) ──────────────────────────
+
 export function HabitsContent() {
   const habits = useHabitStore((s) => s.habits);
   const achievements = useHabitStore((s) => s.achievements);
@@ -440,15 +532,34 @@ export function HabitsContent() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | undefined>(undefined);
+  const [statsHabit, setStatsHabit] = useState<Habit | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [groupByCategory, setGroupByCategory] = useState(true);
+
+  const { triggerAnimation, clearAnimation, getAnimation } = useCompletionAnimation();
+
+  // Inject animation styles
+  useEffect(() => {
+    const styleId = 'habit-animations';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = HABIT_ANIMATION_STYLES;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
+  }, []);
 
   const todayKey = getDateKey(new Date());
   const todayProgress = getTodayProgress();
 
   const activeHabits = useMemo(
-    () =>
-      habits
-        .filter((h) => !h.archivedAt)
-        .sort((a, b) => a.order - b.order),
+    () => habits.filter((h) => !h.archivedAt).sort((a, b) => a.order - b.order),
     [habits]
   );
 
@@ -462,6 +573,42 @@ export function HabitsContent() {
     [activeHabits]
   );
 
+  // Group habits by category
+  const habitsByCategory = useMemo(() => {
+    const groups = new Map<HabitCategory, Habit[]>();
+    for (const habit of activeHabits) {
+      const cat = habit.category ?? 'uncategorized';
+      const list = groups.get(cat) ?? [];
+      list.push(habit);
+      groups.set(cat, list);
+    }
+    // Sort categories: populated ones first, in defined order
+    const sorted: Array<{ category: HabitCategory; habits: Habit[] }> = [];
+    for (const cat of ALL_CATEGORIES) {
+      const list = groups.get(cat);
+      if (list && list.length > 0) {
+        sorted.push({ category: cat, habits: list });
+      }
+    }
+    return sorted;
+  }, [activeHabits]);
+
+  const handleToggleCompletion = useCallback((habitId: string) => {
+    const wasCompleted = isCompletedOnDate(habitId, todayKey);
+    toggleCompletion(habitId, todayKey);
+
+    if (!wasCompleted) {
+      // Find updated streak after toggle
+      const habit = habits.find((h) => h.id === habitId);
+      if (habit) {
+        // Trigger animation with current streak + 1 (optimistic)
+        const newStreak = habit.currentStreak + 1;
+        triggerAnimation(habitId, newStreak);
+        setTimeout(() => clearAnimation(habitId), 2000);
+      }
+    }
+  }, [isCompletedOnDate, todayKey, toggleCompletion, habits, triggerAnimation, clearAnimation]);
+
   const handleSaveHabit = (
     data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'order'>
   ) => {
@@ -472,6 +619,14 @@ export function HabitsContent() {
     }
     setShowModal(false);
     setEditingHabit(null);
+    setSelectedTemplate(undefined);
+  };
+
+  const handleSelectTemplate = (template: HabitTemplate) => {
+    setShowTemplatePicker(false);
+    setSelectedTemplate(template);
+    setEditingHabit(null);
+    setShowModal(true);
   };
 
   const handleDeleteHabit = useCallback((id: string) => {
@@ -484,6 +639,25 @@ export function HabitsContent() {
       setHabitToDelete(null);
     }
   }, [habitToDelete, deleteHabit]);
+
+  const renderHabitCard = useCallback((habit: Habit) => {
+    const animation = getAnimation(habit.id);
+    return (
+      <HabitCard
+        key={habit.id}
+        habit={habit}
+        isCompletedToday={isCompletedOnDate(habit.id, todayKey)}
+        onToggle={() => handleToggleCompletion(habit.id)}
+        onEdit={() => { setEditingHabit(habit); setShowModal(true); }}
+        onArchive={() => archiveHabit(habit.id)}
+        onDelete={() => handleDeleteHabit(habit.id)}
+        onViewStats={() => setStatsHabit(habit)}
+        weekProgress={getWeekProgress(habit.id)}
+        showConfetti={animation?.type === 'milestone'}
+        animatedStreak={!!animation}
+      />
+    );
+  }, [getAnimation, isCompletedOnDate, todayKey, handleToggleCompletion, archiveHabit, handleDeleteHabit, getWeekProgress]);
 
   return (
     <>
@@ -520,21 +694,63 @@ export function HabitsContent() {
         </div>
       </div>
 
-      {/* Add habit button */}
+      {/* Heatmap toggle */}
+      {activeHabits.length > 0 && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            className="flex items-center gap-2 text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary mb-3"
+          >
+            <Grid3X3 className="w-4 h-4" />
+            {showHeatmap ? 'Hide' : 'Show'} Activity Heatmap
+          </button>
+          {showHeatmap && (
+            <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-xl p-4 border border-border-light dark:border-border-dark">
+              <HabitHeatmap weeks={20} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add habit + view controls */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">
-          Your Habits ({activeHabits.length})
-        </h2>
-        <button
-          onClick={() => {
-            setEditingHabit(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Habit
-        </button>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">
+            Your Habits ({activeHabits.length})
+          </h2>
+          {activeHabits.length > 0 && habitsByCategory.length > 1 && (
+            <button
+              onClick={() => setGroupByCategory(!groupByCategory)}
+              className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                groupByCategory
+                  ? 'bg-accent-primary/10 text-accent-primary'
+                  : 'bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary'
+              }`}
+            >
+              Categories
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTemplatePicker(true)}
+            className="flex items-center gap-2 px-3 py-2 text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-alt dark:hover:bg-surface-dark rounded-lg transition-colors border border-border-light dark:border-border-dark"
+          >
+            <BookTemplate className="w-4 h-4" />
+            Templates
+          </button>
+          <button
+            onClick={() => {
+              setEditingHabit(null);
+              setSelectedTemplate(undefined);
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Habit
+          </button>
+        </div>
       </div>
 
       {/* Habit list */}
@@ -544,34 +760,41 @@ export function HabitsContent() {
           <p className="text-text-light-secondary dark:text-text-dark-secondary mb-4">
             No habits yet. Start building positive routines!
           </p>
-          <button
-            onClick={() => {
-              setEditingHabit(null);
-              setShowModal(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create your first habit
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {activeHabits.map((habit) => (
-            <HabitCard
-              key={habit.id}
-              habit={habit}
-              isCompletedToday={isCompletedOnDate(habit.id, todayKey)}
-              onToggle={() => toggleCompletion(habit.id, todayKey)}
-              onEdit={() => {
-                setEditingHabit(habit);
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => setShowTemplatePicker(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-light-secondary dark:text-text-dark-secondary rounded-lg hover:bg-surface-light-alt dark:hover:bg-surface-dark transition-colors"
+            >
+              <BookTemplate className="w-4 h-4" />
+              Use Template
+            </button>
+            <button
+              onClick={() => {
+                setEditingHabit(null);
+                setSelectedTemplate(undefined);
                 setShowModal(true);
               }}
-              onArchive={() => archiveHabit(habit.id)}
-              onDelete={() => handleDeleteHabit(habit.id)}
-              weekProgress={getWeekProgress(habit.id)}
-            />
-          ))}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create Custom
+            </button>
+          </div>
+        </div>
+      ) : groupByCategory && habitsByCategory.length > 1 ? (
+        // Grouped by category
+        habitsByCategory.map(({ category: cat, habits: catHabits }) => (
+          <CategorySection
+            key={cat}
+            category={cat}
+            habits={catHabits}
+            renderHabit={renderHabitCard}
+          />
+        ))
+      ) : (
+        // Flat list
+        <div className="space-y-3">
+          {activeHabits.map(renderHabitCard)}
         </div>
       )}
 
@@ -622,15 +845,31 @@ export function HabitsContent() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modals */}
       {showModal && (
         <HabitModal
           habit={editingHabit ?? undefined}
+          initialTemplate={selectedTemplate}
           onClose={() => {
             setShowModal(false);
             setEditingHabit(null);
+            setSelectedTemplate(undefined);
           }}
           onSave={handleSaveHabit}
+        />
+      )}
+
+      {showTemplatePicker && (
+        <HabitTemplatePicker
+          onSelect={handleSelectTemplate}
+          onClose={() => setShowTemplatePicker(false)}
+        />
+      )}
+
+      {statsHabit && (
+        <HabitStats
+          habit={statsHabit}
+          onClose={() => setStatsHabit(null)}
         />
       )}
 
