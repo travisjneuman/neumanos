@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Plus, Target, Flame, Trophy, Archive, RotateCcw, Trash2, Edit2,
   Check, MoreVertical, ChevronDown, ChevronRight, BarChart3, BookTemplate,
-  Grid3X3,
+  Grid3X3, Star, Lock, Bell, BellOff, Link2,
 } from 'lucide-react';
 import { useHabitStore } from '../stores/useHabitStore';
 import { PageContent } from '../components/PageContent';
@@ -11,13 +11,15 @@ import {
   HabitHeatmap,
   HabitStats,
   HabitTemplatePicker,
+  HabitRewardsPanel,
   useCompletionAnimation,
+  useHabitReminders,
   ConfettiEffect,
   StreakBump,
   HABIT_ANIMATION_STYLES,
 } from '../components/habits';
 import type { HabitTemplate } from '../components/habits';
-import type { Habit, HabitFrequency, HabitCategory } from '../types';
+import type { Habit, HabitFrequency, HabitCategory, HabitDifficulty } from '../types';
 
 // Helper to get date key in YYYY-M-D format
 function getDateKey(date: Date): string {
@@ -84,6 +86,16 @@ const ALL_CATEGORIES: HabitCategory[] = [
   'fitness', 'nutrition', 'creative', 'finance', 'uncategorized',
 ];
 
+// Difficulty configuration
+const DIFFICULTY_CONFIG: Record<HabitDifficulty, { label: string; xp: number; color: string }> = {
+  trivial: { label: 'Trivial', xp: 5, color: '#9ca3af' },
+  easy: { label: 'Easy', xp: 10, color: '#22c55e' },
+  medium: { label: 'Medium', xp: 20, color: '#f97316' },
+  hard: { label: 'Hard', xp: 40, color: '#ef4444' },
+};
+
+const ALL_DIFFICULTIES: HabitDifficulty[] = ['trivial', 'easy', 'medium', 'hard'];
+
 // Default colors for habits
 const HABIT_COLORS = [
   '#06b6d4', '#8b5cf6', '#ec4899', '#f97316',
@@ -98,19 +110,30 @@ const HABIT_ICONS = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '�
 interface HabitModalProps {
   habit?: Habit;
   initialTemplate?: HabitTemplate;
+  allHabits: Habit[];
   onClose: () => void;
-  onSave: (data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'order'>) => void;
+  onSave: (data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order'>) => void;
 }
 
-function HabitModal({ habit, initialTemplate, onClose, onSave }: HabitModalProps) {
+function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: HabitModalProps) {
   const [title, setTitle] = useState(habit?.title ?? initialTemplate?.title ?? '');
   const [description, setDescription] = useState(habit?.description ?? initialTemplate?.description ?? '');
   const [icon, setIcon] = useState(habit?.icon ?? initialTemplate?.icon ?? '🎯');
   const [color, setColor] = useState(habit?.color ?? initialTemplate?.color ?? HABIT_COLORS[0]);
   const [frequency, setFrequency] = useState<HabitFrequency>(habit?.frequency ?? initialTemplate?.frequency ?? 'daily');
   const [category, setCategory] = useState<HabitCategory>(habit?.category ?? initialTemplate?.category ?? 'uncategorized');
+  const [difficulty, setDifficulty] = useState<HabitDifficulty>(habit?.difficulty ?? 'easy');
   const [targetDays, setTargetDays] = useState<number[]>(habit?.targetDays ?? []);
   const [timesPerWeek, setTimesPerWeek] = useState(habit?.timesPerWeek ?? initialTemplate?.timesPerWeek ?? 3);
+  const [reminderEnabled, setReminderEnabled] = useState(habit?.reminder?.enabled ?? false);
+  const [reminderTime, setReminderTime] = useState(habit?.reminder?.time ?? '09:00');
+  const [requiredHabitIds, setRequiredHabitIds] = useState<string[]>(habit?.requiredHabitIds ?? []);
+
+  // Available habits for dependency selection (exclude self)
+  const availableForDep = useMemo(
+    () => allHabits.filter((h) => !h.archivedAt && h.id !== habit?.id),
+    [allHabits, habit?.id]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,9 +145,12 @@ function HabitModal({ habit, initialTemplate, onClose, onSave }: HabitModalProps
       icon,
       color,
       category,
+      difficulty,
       frequency,
       targetDays: frequency === 'specific-days' ? targetDays : undefined,
       timesPerWeek: frequency === 'times-per-week' ? timesPerWeek : undefined,
+      reminder: reminderEnabled ? { enabled: true, time: reminderTime } : undefined,
+      requiredHabitIds: requiredHabitIds.length > 0 ? requiredHabitIds : undefined,
       projectIds: habit?.projectIds ?? [],
     });
   };
@@ -294,6 +320,93 @@ function HabitModal({ habit, initialTemplate, onClose, onSave }: HabitModalProps
                 />
               </div>
             )}
+
+            {/* Difficulty */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary mb-1">
+                Difficulty (affects XP earned)
+              </label>
+              <div className="flex gap-2">
+                {ALL_DIFFICULTIES.map((d) => {
+                  const cfg = DIFFICULTY_CONFIG[d];
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setDifficulty(d)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
+                        difficulty === d
+                          ? 'ring-2 ring-offset-1 ring-accent-primary'
+                          : 'border-border-light dark:border-border-dark'
+                      }`}
+                      style={difficulty === d ? { borderColor: cfg.color, color: cfg.color } : undefined}
+                    >
+                      <div>{cfg.label}</div>
+                      <div className="text-xs opacity-70">+{cfg.xp} XP</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Reminder */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">
+                  Daily Reminder
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setReminderEnabled(!reminderEnabled)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    reminderEnabled
+                      ? 'bg-accent-primary/10 text-accent-primary'
+                      : 'bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary'
+                  }`}
+                >
+                  {reminderEnabled ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+                  {reminderEnabled ? 'On' : 'Off'}
+                </button>
+              </div>
+              {reminderEnabled && (
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="w-32 px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                />
+              )}
+            </div>
+
+            {/* Dependencies */}
+            {availableForDep.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary mb-1">
+                  <Link2 className="w-3.5 h-3.5 inline mr-1" />
+                  Required Habits (must complete first)
+                </label>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {availableForDep.map((h) => (
+                    <label key={h.id} className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                      <input
+                        type="checkbox"
+                        checked={requiredHabitIds.includes(h.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setRequiredHabitIds((prev) => [...prev, h.id]);
+                          } else {
+                            setRequiredHabitIds((prev) => prev.filter((id) => id !== h.id));
+                          }
+                        }}
+                        className="rounded border-border-light dark:border-border-dark accent-accent-primary"
+                      />
+                      <span>{h.icon}</span>
+                      <span className="text-text-light-primary dark:text-text-dark-primary">{h.title}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -324,6 +437,8 @@ function HabitModal({ habit, initialTemplate, onClose, onSave }: HabitModalProps
 interface HabitCardProps {
   habit: Habit;
   isCompletedToday: boolean;
+  isLocked: boolean;
+  blockingNames: string[];
   onToggle: () => void;
   onEdit: () => void;
   onArchive: () => void;
@@ -337,6 +452,8 @@ interface HabitCardProps {
 function HabitCard({
   habit,
   isCompletedToday,
+  isLocked,
+  blockingNames,
   onToggle,
   onEdit,
   onArchive,
@@ -348,6 +465,7 @@ function HabitCard({
 }: HabitCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const trackToday = shouldTrackToday(habit);
+  const canToggle = trackToday && !isLocked;
 
   return (
     <div
@@ -359,23 +477,29 @@ function HabitCard({
         <div className="relative">
           <button
             onClick={onToggle}
-            disabled={!trackToday}
+            disabled={!canToggle}
             className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all shrink-0 ${
               isCompletedToday
                 ? 'bg-status-success text-white'
+                : isLocked
+                ? 'bg-surface-light-alt dark:bg-surface-dark opacity-50 cursor-not-allowed border-2 border-amber-400/50'
                 : trackToday
                 ? 'bg-surface-light-alt dark:bg-surface-dark hover:bg-accent-primary/20 border-2 border-border-light dark:border-border-dark'
                 : 'bg-surface-light-alt dark:bg-surface-dark opacity-50 cursor-not-allowed'
             }`}
             style={isCompletedToday ? { animation: 'habit-check-pop 0.3s ease-out' } : undefined}
             title={
-              trackToday
+              isLocked
+                ? `Complete first: ${blockingNames.join(', ')}`
+                : trackToday
                 ? isCompletedToday ? 'Mark incomplete' : 'Mark complete'
                 : 'Not scheduled for today'
             }
           >
             {isCompletedToday ? (
               <Check className="w-5 h-5" style={{ animation: 'habit-check-in 0.3s ease-out' }} />
+            ) : isLocked ? (
+              <Lock className="w-4 h-4 text-amber-500" />
             ) : (
               <span>{habit.icon}</span>
             )}
@@ -390,13 +514,27 @@ function HabitCard({
               <h3 className="font-medium text-text-light-primary dark:text-text-dark-primary">
                 {habit.title}
               </h3>
-              <div className="flex items-center gap-2 text-sm text-text-light-tertiary dark:text-text-dark-tertiary">
+              <div className="flex items-center gap-2 text-sm text-text-light-tertiary dark:text-text-dark-tertiary flex-wrap">
                 <span>{getFrequencyLabel(habit)}</span>
                 {habit.category !== 'uncategorized' && (
                   <>
                     <span className="text-border-light dark:text-border-dark">|</span>
                     <span>{CATEGORY_CONFIG[habit.category].icon} {CATEGORY_CONFIG[habit.category].label}</span>
                   </>
+                )}
+                {habit.difficulty && habit.difficulty !== 'easy' && (
+                  <>
+                    <span className="text-border-light dark:text-border-dark">|</span>
+                    <span style={{ color: DIFFICULTY_CONFIG[habit.difficulty].color }}>
+                      {DIFFICULTY_CONFIG[habit.difficulty].label}
+                    </span>
+                  </>
+                )}
+                {isLocked && blockingNames.length > 0 && (
+                  <span className="text-amber-500 text-xs flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Requires: {blockingNames.join(', ')}
+                  </span>
                 )}
               </div>
             </div>
@@ -527,6 +665,11 @@ export function HabitsContent() {
   const isCompletedOnDate = useHabitStore((s) => s.isCompletedOnDate);
   const getWeekProgress = useHabitStore((s) => s.getWeekProgress);
   const getTodayProgress = useHabitStore((s) => s.getTodayProgress);
+  const isHabitUnlocked = useHabitStore((s) => s.isHabitUnlocked);
+  const getBlockingHabits = useHabitStore((s) => s.getBlockingHabits);
+
+  // Activate habit reminders
+  useHabitReminders();
 
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
@@ -536,6 +679,7 @@ export function HabitsContent() {
   const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | undefined>(undefined);
   const [statsHabit, setStatsHabit] = useState<Habit | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showRewards, setShowRewards] = useState(false);
   const [groupByCategory, setGroupByCategory] = useState(true);
 
   const { triggerAnimation, clearAnimation, getAnimation } = useCompletionAnimation();
@@ -610,7 +754,7 @@ export function HabitsContent() {
   }, [isCompletedOnDate, todayKey, toggleCompletion, habits, triggerAnimation, clearAnimation]);
 
   const handleSaveHabit = (
-    data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'order'>
+    data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order'>
   ) => {
     if (editingHabit) {
       updateHabit(editingHabit.id, data);
@@ -642,11 +786,15 @@ export function HabitsContent() {
 
   const renderHabitCard = useCallback((habit: Habit) => {
     const animation = getAnimation(habit.id);
+    const unlocked = isHabitUnlocked(habit.id, todayKey);
+    const blocking = getBlockingHabits(habit.id, todayKey);
     return (
       <HabitCard
         key={habit.id}
         habit={habit}
         isCompletedToday={isCompletedOnDate(habit.id, todayKey)}
+        isLocked={!unlocked}
+        blockingNames={blocking}
         onToggle={() => handleToggleCompletion(habit.id)}
         onEdit={() => { setEditingHabit(habit); setShowModal(true); }}
         onArchive={() => archiveHabit(habit.id)}
@@ -657,7 +805,7 @@ export function HabitsContent() {
         animatedStreak={!!animation}
       />
     );
-  }, [getAnimation, isCompletedOnDate, todayKey, handleToggleCompletion, archiveHabit, handleDeleteHabit, getWeekProgress]);
+  }, [getAnimation, isCompletedOnDate, isHabitUnlocked, getBlockingHabits, todayKey, handleToggleCompletion, archiveHabit, handleDeleteHabit, getWeekProgress]);
 
   return (
     <>
@@ -694,21 +842,39 @@ export function HabitsContent() {
         </div>
       </div>
 
-      {/* Heatmap toggle */}
+      {/* Heatmap & Rewards toggles */}
       {activeHabits.length > 0 && (
-        <div className="mb-6">
-          <button
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            className="flex items-center gap-2 text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary mb-3"
-          >
-            <Grid3X3 className="w-4 h-4" />
-            {showHeatmap ? 'Hide' : 'Show'} Activity Heatmap
-          </button>
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                showHeatmap
+                  ? 'text-accent-primary'
+                  : 'text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+              }`}
+            >
+              <Grid3X3 className="w-4 h-4" />
+              Heatmap
+            </button>
+            <button
+              onClick={() => setShowRewards(!showRewards)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                showRewards
+                  ? 'text-accent-primary'
+                  : 'text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              XP & Rewards
+            </button>
+          </div>
           {showHeatmap && (
             <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-xl p-4 border border-border-light dark:border-border-dark">
               <HabitHeatmap weeks={20} />
             </div>
           )}
+          {showRewards && <HabitRewardsPanel />}
         </div>
       )}
 
@@ -850,6 +1016,7 @@ export function HabitsContent() {
         <HabitModal
           habit={editingHabit ?? undefined}
           initialTemplate={selectedTemplate}
+          allHabits={activeHabits}
           onClose={() => {
             setShowModal(false);
             setEditingHabit(null);

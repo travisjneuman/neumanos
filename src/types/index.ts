@@ -885,6 +885,8 @@ export interface SpreadsheetSheet {
   cellStyles?: Record<string, CellStyle>; // "A1" -> style
   mergedCells?: string[];    // ["A1:B2", "C3:D4"] - merged ranges
   charts?: SpreadsheetChart[]; // Embedded charts
+  frozenRows?: number;       // Number of frozen rows (0 = none)
+  frozenCols?: number;       // Number of frozen columns (0 = none)
 }
 
 export type SpreadsheetChartType = 'bar' | 'line' | 'pie' | 'scatter';

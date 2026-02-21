@@ -8,3 +8,5 @@ export {
   useCompletionAnimation,
   HABIT_ANIMATION_STYLES,
 } from './HabitCompletionAnimation';
+export { HabitRewardsPanel } from './HabitRewards';
+export { useHabitReminders } from './HabitReminders';

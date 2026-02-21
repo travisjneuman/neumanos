@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
-import type { Habit, HabitCompletion, HabitAchievement, HabitCategory } from '../types';
+import type { Habit, HabitCompletion, HabitAchievement, HabitCategory, HabitDifficulty } from '../types';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';
@@ -9,6 +9,37 @@ import { toast } from './useToastStore';
 // Achievement milestone definitions
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 90, 180, 365];
 const TOTAL_MILESTONES = [10, 50, 100, 500, 1000];
+
+// XP system constants
+const DIFFICULTY_XP: Record<HabitDifficulty, number> = {
+  trivial: 5,
+  easy: 10,
+  medium: 20,
+  hard: 40,
+};
+
+// Streak multiplier: every 7-day streak gives +0.1x bonus (max 3x)
+function getStreakMultiplier(streak: number): number {
+  return Math.min(1 + Math.floor(streak / 7) * 0.1, 3);
+}
+
+// Calculate XP for a completion
+function calculateXp(difficulty: HabitDifficulty, currentStreak: number): number {
+  const base = DIFFICULTY_XP[difficulty];
+  const multiplier = getStreakMultiplier(currentStreak);
+  return Math.round(base * multiplier);
+}
+
+// Level from total XP (each level requires progressively more XP)
+export function getLevelFromXp(totalXp: number): { level: number; currentXp: number; nextLevelXp: number } {
+  let level = 1;
+  let remaining = totalXp;
+  while (remaining >= level * 100) {
+    remaining -= level * 100;
+    level++;
+  }
+  return { level, currentXp: remaining, nextLevelXp: level * 100 };
+}
 
 // Helper to get date key in YYYY-M-D format (non-padded per project convention)
 function getDateKey(date: Date): string {
@@ -145,7 +176,7 @@ interface HabitStore {
   achievements: HabitAchievement[];
 
   // Habit CRUD
-  addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'order'>) => string;
+  addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order'>) => string;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   archiveHabit: (id: string) => void;
@@ -174,6 +205,13 @@ interface HabitStore {
   getWeekProgress: (habitId: string) => boolean[];
   getCompletionRate: (habitId: string, days: number) => number;
   getCompletionHistory: (habitId: string, days: number) => Array<{ date: string; completed: boolean }>;
+
+  // XP & Rewards
+  getTotalXp: () => number;
+
+  // Dependencies
+  isHabitUnlocked: (habitId: string, dateKey: string) => boolean;
+  getBlockingHabits: (habitId: string, dateKey: string) => string[];
 }
 
 export const useHabitStore = create<HabitStore>()(
@@ -194,10 +232,12 @@ export const useHabitStore = create<HabitStore>()(
           ...habitData,
           id,
           category: habitData.category ?? 'uncategorized',
+          difficulty: habitData.difficulty ?? 'easy',
           createdAt: now,
           currentStreak: 0,
           longestStreak: 0,
           totalCompletions: 0,
+          totalXp: 0,
           order: habits.length,
         };
 
@@ -275,6 +315,8 @@ export const useHabitStore = create<HabitStore>()(
               habit,
               state.completions.filter((c) => c.id !== existing.id)
             );
+            // Remove XP that was earned for this completion
+            const xpLost = calculateXp(habit.difficulty, habit.currentStreak);
 
             set((s) => ({
               habits: s.habits.map((h) =>
@@ -283,6 +325,7 @@ export const useHabitStore = create<HabitStore>()(
                       ...h,
                       currentStreak: newStreak,
                       totalCompletions: newTotal,
+                      totalXp: Math.max(0, (h.totalXp ?? 0) - xpLost),
                     }
                   : h
               ),
@@ -309,6 +352,7 @@ export const useHabitStore = create<HabitStore>()(
             const newStreak = calculateStreakForHabit(habit, newCompletions);
             const newTotal = habit.totalCompletions + 1;
             const newLongest = Math.max(habit.longestStreak, newStreak);
+            const xpEarned = calculateXp(habit.difficulty, newStreak);
 
             set((s) => ({
               habits: s.habits.map((h) =>
@@ -318,10 +362,18 @@ export const useHabitStore = create<HabitStore>()(
                       currentStreak: newStreak,
                       longestStreak: newLongest,
                       totalCompletions: newTotal,
+                      totalXp: (h.totalXp ?? 0) + xpEarned,
                     }
                   : h
               ),
             }));
+
+            // Toast XP earned
+            if (xpEarned > 0) {
+              const multiplier = getStreakMultiplier(newStreak);
+              const bonusText = multiplier > 1 ? ` (${multiplier.toFixed(1)}x streak bonus)` : '';
+              toast.success(`+${xpEarned} XP${bonusText}`, habit.title);
+            }
 
             // Check for new achievements
             const newAchievements = get().checkAndUnlockAchievements(habitId);
@@ -562,6 +614,36 @@ export const useHabitStore = create<HabitStore>()(
 
         return history;
       },
+
+      // Get total XP across all habits
+      getTotalXp: () => {
+        return get().habits.reduce((sum, h) => sum + (h.totalXp ?? 0), 0);
+      },
+
+      // Check if a habit is unlocked (all required habits completed today)
+      isHabitUnlocked: (habitId, dateKey) => {
+        const state = get();
+        const habit = state.habits.find((h) => h.id === habitId);
+        if (!habit || !habit.requiredHabitIds || habit.requiredHabitIds.length === 0) {
+          return true;
+        }
+        return habit.requiredHabitIds.every((reqId) =>
+          state.completions.some((c) => c.habitId === reqId && c.date === dateKey)
+        );
+      },
+
+      // Get names of blocking habits that haven't been completed today
+      getBlockingHabits: (habitId, dateKey) => {
+        const state = get();
+        const habit = state.habits.find((h) => h.id === habitId);
+        if (!habit || !habit.requiredHabitIds || habit.requiredHabitIds.length === 0) {
+          return [];
+        }
+        return habit.requiredHabitIds
+          .filter((reqId) => !state.completions.some((c) => c.habitId === reqId && c.date === dateKey))
+          .map((reqId) => state.habits.find((h) => h.id === reqId)?.title ?? 'Unknown')
+          .filter(Boolean);
+      },
     }),
     {
       name: 'habit-store',
@@ -571,20 +653,26 @@ export const useHabitStore = create<HabitStore>()(
         completions: state.completions,
         achievements: state.achievements,
       }),
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
+        const state = persisted as Record<string, unknown>;
+        let habits = (state.habits ?? []) as Array<Record<string, unknown>>;
+
         if (version < 2) {
-          const state = persisted as Record<string, unknown>;
-          const habits = (state.habits ?? []) as Array<Record<string, unknown>>;
-          return {
-            ...state,
-            habits: habits.map((h) => ({
-              ...h,
-              category: h.category ?? 'uncategorized',
-            })),
-          };
+          habits = habits.map((h) => ({
+            ...h,
+            category: h.category ?? 'uncategorized',
+          }));
         }
-        return persisted;
+        if (version < 3) {
+          habits = habits.map((h) => ({
+            ...h,
+            difficulty: h.difficulty ?? 'easy',
+            totalXp: h.totalXp ?? 0,
+          }));
+        }
+
+        return { ...state, habits };
       },
     }
   )
