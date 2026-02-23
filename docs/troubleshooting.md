@@ -12,6 +12,11 @@ A guide to resolving common issues in NeumanOS. Most problems can be solved with
 - [Tasks & Kanban](#tasks--kanban)
 - [Calendar & Events](#calendar--events)
 - [Time Tracking](#time-tracking)
+- [Habits](#habits)
+- [Link Library](#link-library)
+- [Diagrams](#diagrams)
+- [Forms](#forms)
+- [Focus Mode](#focus-mode)
 - [General Performance](#general-performance)
 - [Data & Storage](#data--storage)
 - [Browser-Specific Issues](#browser-specific-issues)
@@ -192,6 +197,154 @@ Try these steps first -- they resolve most issues:
 2. Refresh page to recalculate
 3. Ensure time entry is marked as billable
 4. Ensure project is assigned
+
+---
+
+## Habits
+
+### Habit Not Tracking Completions
+
+1. Verify the habit is active (not paused or archived)
+2. Check if today's date falls within the habit's schedule (e.g., weekdays only)
+3. Refresh page -- completion may have saved but not displayed
+4. Check storage quota (Settings > Storage)
+
+### Streak Showing Wrong Count
+
+1. Refresh page to recalculate
+2. Verify completions were logged on consecutive days (check habit history)
+3. Check timezone settings (Settings > General > Timezone) -- midnight rollover affects streak boundaries
+
+### Habit Reminders Not Working
+
+1. Check browser notification permissions for os.neuman.dev
+2. Verify reminder time is set in the habit's settings
+3. Check system Do Not Disturb settings
+4. Ensure the app tab is open (or installed as PWA)
+
+### Can't Delete or Edit a Habit
+
+1. Refresh page
+2. Try opening the habit detail panel and editing from there
+3. Check if the habit is part of a routine (unlink it first)
+
+---
+
+## Link Library
+
+### Links Not Saving
+
+1. Verify you clicked **Save** after entering the URL
+2. Check storage quota (Settings > Storage)
+3. Ensure the URL is valid (starts with `http://` or `https://`)
+
+### Link Preview Not Loading
+
+1. Some websites block preview generation -- this is expected
+2. Check internet connection (previews require fetching the URL)
+3. Try refreshing the page
+4. Click **Refresh Preview** on the link card to retry
+
+### Can't Find a Saved Link
+
+1. Use the search bar in the Link Library
+2. Check collections/folders -- the link may be in a different collection
+3. Clear any active tag or collection filters
+4. Use Cmd+K global search
+
+### Duplicate Links
+
+Link Library warns you when adding a URL that already exists. If duplicates appear, delete the extra entry manually. Bulk select and delete is supported.
+
+---
+
+## Diagrams
+
+### Diagram Not Rendering
+
+1. Refresh page
+2. Check if the diagram type is supported (flowchart, sequence, mindmap, etc.)
+3. Try creating a new diagram to verify the editor loads
+4. Check browser console (F12 > Console) for errors
+
+### Can't Edit Diagram Elements
+
+1. Ensure you're in **Edit Mode** (click the pencil icon)
+2. Try selecting elements with a single click before dragging
+3. Zoom in if elements are too small to click accurately
+4. Refresh page if the canvas becomes unresponsive
+
+### Diagram Export Issues
+
+1. Verify the export format is supported (PNG, SVG, PDF)
+2. Try a different export format
+3. For large diagrams, try zooming to fit before exporting
+4. Check browser popup blocker settings (exports may open in a new tab)
+
+### Diagram Performance Slow
+
+1. Reduce the number of elements on a single diagram (split into multiple diagrams)
+2. Disable animations in diagram settings
+3. Close other browser tabs to free memory
+4. Try a different browser
+
+---
+
+## Forms
+
+### Form Not Saving Responses
+
+1. Refresh page
+2. Check storage quota (Settings > Storage)
+3. Verify the form is in **Published** state (draft forms don't accept responses)
+4. Check browser console for errors
+
+### Form Validation Not Working
+
+1. Verify validation rules are set on the field (e.g., required, min/max, pattern)
+2. Test by submitting with invalid data -- error messages should appear below the field
+3. Check that the field type matches the validation (e.g., number validation on a number field)
+
+### Can't Share Form Link
+
+1. Verify the form is published
+2. Click **Share** and copy the link
+3. Note that form responses are stored locally on the device where the form is hosted -- shared links only work when your NeumanOS instance is accessible
+
+### Form Responses Not Appearing
+
+1. Refresh page
+2. Check the **Responses** tab on the form (not the form editor)
+3. Verify responses were submitted on the same device/browser
+4. Export responses to CSV to verify data exists
+
+---
+
+## Focus Mode
+
+### Focus Mode Not Activating
+
+1. Verify you're using the correct shortcut or button to enter Focus Mode
+2. Refresh page
+3. Check if Focus Mode is enabled in Settings > General > Focus Mode
+
+### Notifications Still Appearing in Focus Mode
+
+1. Go to Settings > Focus Mode > verify **Block Notifications** is enabled
+2. Check if browser-level notifications are overriding Focus Mode settings
+3. System-level notifications (OS) are not controlled by NeumanOS -- use your system's Do Not Disturb
+
+### Timer Not Pausing When Exiting Focus Mode
+
+1. Focus Mode timer and the time tracking timer are independent
+2. If you want the time tracker to stop when Focus Mode ends, enable **Auto-Stop Timer** in Settings > Focus Mode
+3. Refresh page if the timer display is stuck
+
+### Blocked Modules Still Accessible
+
+1. Go to Settings > Focus Mode > verify the correct modules are selected for blocking
+2. Refresh page to apply changes
+3. Note that keyboard shortcuts may still navigate to blocked modules -- this is a known limitation; the module will redirect you back to your focus area
 
 ---
 

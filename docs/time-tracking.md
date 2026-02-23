@@ -16,6 +16,11 @@ NeumanOS provides professional time tracking with start/stop timers, project sup
 - [Billable Hours & Invoicing](#billable-hours--invoicing)
 - [Bulk Operations](#bulk-operations)
 - [Export](#export)
+- [Pomodoro Integration](#pomodoro-integration)
+- [Time Rounding](#time-rounding)
+- [Weekly Timesheet View](#weekly-timesheet-view)
+- [Auto-Tracking](#auto-tracking)
+- [Advanced Reports](#advanced-reports)
 - [Idle Detection](#idle-detection)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -254,6 +259,164 @@ Description,Project,Date,Start Time,End Time,Duration,Billable,Hourly Rate,Total
 ```
 
 Use with QuickBooks, FreshBooks, Wave, Google Sheets, or Excel.
+
+---
+
+## Pomodoro Integration
+
+Link Pomodoro focus sessions to tasks and habits for structured time management.
+
+### Starting a Pomodoro Session
+
+1. Open the timer (sidebar or Timer tab)
+2. Click the **tomato icon** to switch to Pomodoro mode
+3. Select a linked task or habit (optional)
+4. Click **Start** to begin a 25-minute focus session
+
+### Pomodoro Cycle
+
+The default cycle follows the classic pattern:
+
+| Phase | Duration | What Happens |
+|-------|----------|-------------|
+| **Focus** | 25 minutes | Timer counts down, linked task is tracked |
+| **Short Break** | 5 minutes | Notification to rest, timer pauses tracking |
+| **Focus** | 25 minutes | Next session begins |
+| **Long Break** | 15 minutes | After 4 focus sessions, a longer break |
+
+### Linking to Tasks
+
+When you start a Pomodoro session with a linked task, the focus time is automatically recorded as a time entry on that task. Completed Pomodoro sessions appear in the task's time history.
+
+### Linking to Habits
+
+Link Pomodoro sessions to habits (e.g., "Deep Work" or "Study") to track habit streaks alongside focused time. Each completed Pomodoro counts as a habit completion for the day.
+
+### Customizing Durations
+
+In Settings > Time Tracking > Pomodoro:
+- **Focus duration:** 15--60 minutes (default: 25)
+- **Short break:** 3--15 minutes (default: 5)
+- **Long break:** 10--30 minutes (default: 15)
+- **Sessions before long break:** 2--6 (default: 4)
+
+---
+
+## Time Rounding
+
+Round time entries to the nearest increment for cleaner timesheets and invoicing.
+
+### Enabling Time Rounding
+
+1. Go to **Settings** > **Time Tracking** > **Rounding**
+2. Enable **Round Time Entries**
+3. Select the rounding increment:
+
+| Increment | Example |
+|-----------|---------|
+| **5 minutes** | 1h 23m becomes 1h 25m |
+| **10 minutes** | 1h 23m becomes 1h 20m |
+| **15 minutes** | 1h 23m becomes 1h 30m |
+| **30 minutes** | 1h 23m becomes 1h 30m |
+
+### Rounding Direction
+
+- **Nearest** (default) -- Rounds to the closest increment
+- **Up** -- Always rounds up (conservative for billing)
+- **Down** -- Always rounds down
+
+### When Rounding Applies
+
+Rounding is applied at display and export time. The raw duration is always preserved in the database. Reports, invoices, and CSV exports use the rounded values. You can toggle rounding off at any time to see exact durations.
+
+---
+
+## Weekly Timesheet View
+
+A dedicated grid view designed for reviewing and submitting weekly time.
+
+### Accessing the Timesheet
+
+Go to **Schedule** > **Timer** tab > click **Timesheet** (grid icon in the top right).
+
+### Layout
+
+The timesheet displays a grid with:
+- **Rows:** One row per project (or per task, togglable)
+- **Columns:** Monday through Sunday, plus a weekly total column
+- **Cells:** Total hours for that project on that day
+
+### Editing in the Timesheet
+
+Click any cell to add or modify time for that project/day combination. Enter hours directly (e.g., "2.5" for 2 hours 30 minutes) or use the time picker. Changes are saved automatically and reflected in the main timer entries.
+
+### Navigation
+
+Use the arrow buttons to move between weeks. The current week is highlighted. Click **This Week** to jump back to the current week.
+
+### Totals
+
+- **Row totals:** Total hours per project for the week
+- **Column totals:** Total hours per day across all projects
+- **Grand total:** Total hours for the entire week (bottom-right corner)
+
+---
+
+## Auto-Tracking
+
+Receive automatic suggestions to start tracking time based on your activity.
+
+### How It Works
+
+When enabled, NeumanOS monitors your in-app activity and suggests starting a timer when:
+
+- You open a task and begin editing its description or subtasks
+- You move a task to "In Progress"
+- You start a Pomodoro session without a linked timer
+- You begin editing a note linked to an active project
+
+A non-intrusive prompt appears: "It looks like you're working on [Task/Project]. Start tracking?" Click **Start** to begin, or **Dismiss** to ignore.
+
+### Configuration
+
+In Settings > Time Tracking > Auto-Tracking:
+- **Enable/disable** auto-tracking suggestions
+- **Suggestion sensitivity:** Low (only obvious triggers), Medium, High (frequent suggestions)
+- **Auto-start:** Optionally start the timer automatically without prompting (for power users)
+
+> **Tip:** Auto-tracking suggestions learn from your dismissals. If you consistently dismiss a suggestion type, it stops appearing.
+
+---
+
+## Advanced Reports
+
+Go beyond basic summaries with detailed analytics and custom report configurations.
+
+### Report Types
+
+| Report | What It Shows |
+|--------|--------------|
+| **Time by Project** | Stacked bar chart of hours across projects, filterable by date range |
+| **Time by Day of Week** | Heatmap showing which days you log the most time |
+| **Billable vs Non-Billable** | Pie chart and trend line comparing billable and non-billable hours |
+| **Productivity Trends** | Line graph of daily/weekly hours over time with rolling averages |
+| **Project Comparison** | Side-by-side breakdown of hours, costs, and billable ratios across projects |
+| **Team Summary** | Per-member totals, averages, and billable percentages (when team members are configured) |
+
+### Custom Date Ranges
+
+All reports support custom date ranges: Today, This Week, This Month, Last 30 Days, Last 90 Days, This Quarter, This Year, or a custom start/end date.
+
+### Exporting Reports
+
+Click **Export** on any report to download as:
+- **PDF** -- Formatted report with charts and tables
+- **CSV** -- Raw data for spreadsheet analysis
+- **JSON** -- Structured data for integrations
+
+### Scheduled Reports
+
+In Settings > Time Tracking > Reports, set up **automated report emails** (weekly or monthly). Reports are generated as PDFs and saved to your backup folder.
 
 ---
 

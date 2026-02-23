@@ -21,6 +21,16 @@ NeumanOS provides a professional Kanban board for managing tasks, tracking progr
 - [Bulk Operations](#bulk-operations)
 - [Filters & Search](#filters--search)
 - [Card Attachments & Covers](#card-attachments--covers)
+- [Custom Fields](#custom-fields)
+- [Task Comments & Checklists](#task-comments--checklists)
+- [Kanban Sections](#kanban-sections)
+- [Kanban Archive](#kanban-archive)
+- [Project Context](#project-context)
+- [Risk Matrix](#risk-matrix)
+- [Smart Scheduling](#smart-scheduling)
+- [Saved Views](#saved-views)
+- [Eisenhower Matrix](#eisenhower-matrix)
+- [Note Embeds](#note-embeds)
 - [Export](#export)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -350,6 +360,272 @@ When you attach an image file (PNG, JPG, GIF), the first image automatically bec
 - **Fill Mode** -- Image cropped to fill card width
 
 Change mode in Attachments tab > **Cover Mode** dropdown.
+
+---
+
+## Custom Fields
+
+Extend task cards with your own data fields beyond the built-in properties.
+
+### Adding Custom Fields
+
+1. Go to **Settings** > **Tasks** > **Custom Fields**
+2. Click **+ Add Field**
+3. Configure the field:
+
+| Field Type | Description | Example |
+|-----------|-------------|---------|
+| **Text** | Free-form text input | "Client Name", "Sprint Goal" |
+| **Number** | Numeric value with optional unit | "Story Points", "Estimated Hours" |
+| **Date** | Date picker | "Review Date", "Ship Date" |
+| **Select** | Single choice from predefined options | "Component" (Frontend, Backend, Design) |
+| **Multi-Select** | Multiple choices from predefined options | "Skills Required" (React, Python, DevOps) |
+
+4. Enter a field name and configure options (for Select/Multi-Select)
+5. Click **Save**
+
+### Using Custom Fields
+
+Custom fields appear in the task detail panel below the standard fields. Fill them in when creating or editing a task. Custom field values are visible on the card in Board View (toggle per field in Settings).
+
+### Filtering and Sorting by Custom Fields
+
+Custom fields appear in the Filter panel and as sort options in List View. For example, sort by "Story Points" descending to see the largest tasks first, or filter by "Component = Backend" to focus on backend work.
+
+---
+
+## Task Comments & Checklists
+
+### Comments
+
+Add discussion and context directly on task cards:
+
+1. Open a task card
+2. Scroll to the **Comments** section
+3. Type your comment in the text box
+4. Click **Post** (or press **Cmd+Enter** / **Ctrl+Enter**)
+
+Comments are timestamped and appear in chronological order. Edit or delete your own comments via the three-dot menu on each comment.
+
+### Checklists
+
+Add lightweight checklists within a task for step-by-step tracking:
+
+1. Open a task card
+2. Scroll to the **Checklists** section
+3. Click **+ Add Checklist**
+4. Enter a checklist title (e.g., "Acceptance Criteria")
+5. Add items one by one -- type and press Enter
+
+Check off items as you complete them. The task card shows a progress indicator (e.g., "4 / 7") for each checklist. Multiple checklists are supported per task.
+
+> **Tip:** Checklists are lighter than subtasks -- use them for quick step lists that don't need their own priority, due date, or assignment.
+
+---
+
+## Kanban Sections
+
+Group cards within a column into logical sub-sections for better organization.
+
+### Creating Sections
+
+1. Click the three-dot menu on a column header
+2. Select **Add Section**
+3. Enter a section name (e.g., "Frontend", "Backend", "Design")
+4. The section appears as a collapsible group within the column
+
+### Managing Sections
+
+- **Reorder sections:** Drag the section header up or down within the column
+- **Rename:** Click the section name to edit inline
+- **Collapse/Expand:** Click the arrow icon on the section header to toggle visibility
+- **Delete:** Click the three-dot menu on the section header > **Delete Section** (tasks move to the column's default ungrouped area)
+
+### Dragging Tasks into Sections
+
+Drag a task card onto a section header to place it in that section. Tasks can be dragged between sections within the same column or across columns.
+
+---
+
+## Kanban Archive
+
+Move completed tasks out of the active board to keep columns clean without losing data.
+
+### Archiving Tasks
+
+- **Single task:** Open task card > three-dot menu > **Archive**
+- **Bulk archive:** In List View, select completed tasks > **Archive Selected**
+- **Auto-archive:** Settings > Tasks > **Auto-Archive** > Enable. Tasks in the "Done" column are archived after a configurable delay (default: 7 days).
+
+### Viewing Archived Tasks
+
+1. Click the **Archive** button (box icon) at the top right of the board
+2. Browse archived tasks with search and filters
+3. Archived tasks show their original column, completion date, and all details
+
+### Restoring Archived Tasks
+
+1. Open the archive panel
+2. Find the task
+3. Click **Restore** -- the task returns to its original column
+
+### Permanently Deleting Archived Tasks
+
+In the archive panel, select tasks and click **Delete Permanently**. This action is irreversible.
+
+---
+
+## Project Context
+
+Switch between project contexts to focus the board on a specific project's tasks.
+
+### Using the Project Switcher
+
+1. Click the **project dropdown** at the top of the Kanban board (shows "All Projects" by default)
+2. Select a project to filter the board
+3. Only tasks tagged with that project are displayed
+4. All views (Board, List, Calendar, Gantt) respect the active project context
+
+### Creating Projects
+
+1. Go to **Settings** > **Tasks** > **Projects**
+2. Click **+ New Project**
+3. Enter a project name, color, and optional description
+4. Click **Create**
+
+### Assigning Tasks to Projects
+
+When creating or editing a task, select a project from the **Project** dropdown. Tasks can belong to one project at a time.
+
+---
+
+## Risk Matrix
+
+Assess and visualize risk for individual tasks using an impact/probability matrix.
+
+### Adding Risk Assessment
+
+1. Open a task card
+2. Scroll to the **Risk** section
+3. Set **Impact** (1--5 scale: Negligible, Minor, Moderate, Major, Severe)
+4. Set **Probability** (1--5 scale: Rare, Unlikely, Possible, Likely, Almost Certain)
+5. A risk score is calculated automatically (Impact x Probability)
+
+### Risk Score Colors
+
+| Score Range | Level | Color |
+|------------|-------|-------|
+| 1--4 | Low | Green |
+| 5--9 | Medium | Yellow |
+| 10--15 | High | Orange |
+| 16--25 | Critical | Red |
+
+Risk scores display as colored badges on task cards when enabled (Settings > Tasks > Show Risk Badges).
+
+### Risk Matrix View
+
+Access via **Tasks** > **PM Dashboard** > **Risk Matrix** tab. Tasks are plotted on a 5x5 grid with impact on the Y-axis and probability on the X-axis. Click any cell to see the tasks in that risk zone. Use this view to identify high-risk items that need mitigation plans.
+
+---
+
+## Smart Scheduling
+
+AI-powered daily schedule generation that plans your day based on task priorities, deadlines, energy levels, and available time.
+
+### Generating a Schedule
+
+1. Click **Smart Schedule** button (calendar + sparkle icon) at the top of the board
+2. Review the AI-generated daily plan showing:
+   - Recommended task order
+   - Suggested time blocks for each task
+   - Break periods
+   - Estimated completion times
+3. Click **Apply** to create time blocks on your calendar, or **Adjust** to modify before applying
+
+### How It Works
+
+The scheduler considers:
+- **Due dates** -- Urgent tasks are prioritized
+- **Priority levels** -- High-priority tasks are scheduled for peak hours
+- **Estimated durations** -- Based on subtask count and historical completion times
+- **Dependencies** -- Blocked tasks are scheduled after their prerequisites
+- **Calendar conflicts** -- Existing events are respected
+
+### Customizing Preferences
+
+In Settings > Tasks > Smart Scheduling:
+- Set your **work hours** (e.g., 9 AM -- 5 PM)
+- Set your **peak productivity hours** (e.g., 9 AM -- 12 PM)
+- Configure **break frequency** (e.g., 5-minute break every 25 minutes)
+- Adjust **buffer time** between tasks
+
+---
+
+## Saved Views
+
+Create and save custom filter/sort configurations for quick access to the task views you use most.
+
+### Creating a Saved View
+
+1. Apply filters and sort options to the board (e.g., Priority = High, Assignee = Me, Sort by Due Date)
+2. Click the **Save View** button (bookmark icon) in the filter bar
+3. Enter a name (e.g., "My Urgent Tasks", "Sprint 12 Backend")
+4. Click **Save**
+
+### Switching Between Views
+
+Click the **Views** dropdown at the top of the board to see all saved views. Select a view to instantly apply its filter and sort configuration. The active view name appears in the dropdown.
+
+### Managing Saved Views
+
+- **Edit:** Click the pencil icon next to a saved view to update its filters
+- **Rename:** Click the view name in the dropdown to rename
+- **Delete:** Click the trash icon next to a saved view
+- **Set Default:** Right-click a view > **Set as Default** to load it automatically when opening the board
+
+---
+
+## Eisenhower Matrix
+
+A four-quadrant view that organizes tasks by urgency and importance for better prioritization.
+
+### Accessing the Eisenhower Matrix
+
+Click **Eisenhower** in the view switcher (top right of the board, alongside Board, List, Calendar).
+
+### The Four Quadrants
+
+| Quadrant | Label | Description | Action |
+|----------|-------|-------------|--------|
+| **Q1** (top-left) | Urgent & Important | Crises, deadlines, pressing problems | Do first |
+| **Q2** (top-right) | Not Urgent & Important | Planning, development, prevention | Schedule time |
+| **Q3** (bottom-left) | Urgent & Not Important | Interruptions, some meetings, some emails | Delegate |
+| **Q4** (bottom-right) | Not Urgent & Not Important | Time wasters, busywork | Eliminate |
+
+### Assigning Quadrants
+
+Tasks are placed into quadrants based on their priority and due date by default:
+- **High priority + due soon** = Q1
+- **High priority + no deadline** = Q2
+- **Low priority + due soon** = Q3
+- **Low priority + no deadline** = Q4
+
+You can manually drag tasks between quadrants to override the automatic placement. Manual placement is remembered.
+
+### Using the Matrix
+
+- Focus your day on Q1 tasks
+- Protect time for Q2 tasks (these drive long-term progress)
+- Delegate or batch Q3 tasks
+- Review Q4 tasks periodically and delete if unnecessary
+
+---
+
+## Note Embeds
+
+Tasks can be embedded directly inside notes for cross-module visibility. When you embed a task in a note using the `/embed-task` slash command, the note displays a live card showing the task's title, status, priority, and due date. Changes to the task are reflected in the embed automatically.
+
+See the **[Notes & Knowledge Management](./notes-editor.md#note-embeds)** guide for full details on embedding tasks, events, and spreadsheet data in notes.
 
 ---
 

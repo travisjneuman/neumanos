@@ -16,6 +16,13 @@ NeumanOS provides a rich text editor with markdown support, folder organization,
 - [Graph View](#graph-view)
 - [Export & Import](#export--import)
 - [Best Practices](#best-practices)
+- [Version History](#version-history)
+- [Note Attachments](#note-attachments)
+- [Bulk Operations](#bulk-operations)
+- [Daily Notes](#daily-notes)
+- [AI Writing Assist](#ai-writing-assist)
+- [Smart Templates](#smart-templates)
+- [Note Embeds](#note-embeds)
 - [Advanced Features](#advanced-features)
 - [Troubleshooting](#troubleshooting)
 - [Related Guides](#related-guides)
@@ -280,12 +287,21 @@ Notes with no wiki links and no tags are highlighted as orphans (magenta fill, o
 
 ## Export & Import
 
-### Export Single Note to Markdown
+### Export Single Note
 
 1. Open note
 2. Click three-dot menu (top right)
-3. Select **Export as Markdown**
-4. Downloads `note-title.md` file
+3. Select **Export**
+4. Choose format from the export modal:
+
+| Format | Extension | Best For |
+|--------|-----------|----------|
+| **Markdown** | `.md` | Plain text editors, GitHub, Obsidian |
+| **HTML** | `.html` | Sharing in browsers, email |
+| **PDF** | `.pdf` | Printing, formal sharing |
+| **Plain Text** | `.txt` | Maximum compatibility |
+
+5. Click **Download** to save the file
 
 ### Export All Data
 
@@ -349,6 +365,231 @@ Be consistent: decide on singular vs plural, use lowercase, and document your ta
 
 - **Weekly:** Review orphan notes (add tags or links), delete duplicates or outdated notes
 - **Monthly:** Export full backup, review tag system, check graph view for disconnected clusters
+
+---
+
+## Version History
+
+Every note maintains automatic version snapshots so you can review past states, compare changes, and restore previous versions.
+
+### Viewing Version History
+
+1. Open a note
+2. Click three-dot menu (top right) > **Version History**
+3. A timeline panel opens showing all saved snapshots
+
+Each snapshot shows the date, time, and a summary of what changed (e.g., "Added 3 paragraphs", "Deleted heading").
+
+### Comparing Versions
+
+1. In the version history panel, select two versions
+2. Click **Compare**
+3. A side-by-side diff view highlights additions (green), deletions (red), and modifications (yellow)
+
+### Restoring a Version
+
+1. Select a version in the history panel
+2. Click **Restore This Version**
+3. Confirm the action
+4. The note reverts to that snapshot
+
+The current state is saved as a new snapshot before restoring, so you never lose work.
+
+### Snapshot Frequency
+
+Snapshots are created automatically when you stop typing for 30 seconds (configurable in Settings > Notes > Version History Interval). You can also create a manual snapshot at any time by pressing **Cmd+Shift+S** (Mac) or **Ctrl+Shift+S** (Windows/Linux).
+
+---
+
+## Note Attachments
+
+Attach files directly to any note for quick reference alongside your writing.
+
+### Adding Attachments
+
+1. Open a note
+2. Click the **paperclip icon** in the toolbar, or drag and drop files onto the editor
+3. Select one or more files from your device
+4. Files appear in the **Attachments** section below the editor
+
+### Supported File Types
+
+Any file type is supported -- images, PDFs, documents, spreadsheets, archives, and more. Image attachments display inline previews. Other file types show an icon with the file name and size.
+
+### Managing Attachments
+
+- **Download:** Click the download icon next to any attachment
+- **Remove:** Click the **X** icon on an attachment and confirm
+- **Reorder:** Drag attachments to change their display order
+
+### Storage
+
+Attachments are stored locally in your browser alongside your notes. They are included in `.brain` backups and count toward your browser storage quota.
+
+> **Tip:** Keep attachments under 10 MB each for best performance. Use links for large files stored in cloud services.
+
+---
+
+## Bulk Operations
+
+Select multiple notes at once to perform actions in batch.
+
+### Selecting Notes
+
+1. Hold **Cmd** (Mac) or **Ctrl** (Windows/Linux) and click notes in the list to select individually
+2. Hold **Shift** and click to select a range
+3. Press **Cmd+A** (Mac) or **Ctrl+A** (Windows/Linux) to select all visible notes
+
+A selection toolbar appears at the top showing the count of selected notes.
+
+### Available Bulk Actions
+
+| Action | What It Does |
+|--------|-------------|
+| **Move to Folder** | Move all selected notes to a chosen folder |
+| **Add Tags** | Apply one or more tags to all selected notes |
+| **Remove Tags** | Strip specific tags from all selected notes |
+| **Delete** | Delete all selected notes (with confirmation) |
+| **Export** | Download selected notes as individual files or a combined archive |
+
+### Clearing Selection
+
+Click **Deselect All** in the selection toolbar, or press **Escape**.
+
+---
+
+## Daily Notes
+
+A dedicated feature for journaling and daily logging with a built-in calendar view.
+
+### Creating a Daily Note
+
+- **Keyboard shortcut:** Press **Ctrl+D** (Windows/Linux) or **Cmd+D** (Mac)
+- **Sidebar:** Click the **calendar icon** in the notes panel header
+- If a note for today already exists, it opens that note instead of creating a duplicate
+
+### Daily Note Format
+
+Each daily note is automatically titled with the current date (e.g., "2026-02-22 - Saturday") and placed in a **Daily Notes** folder. A default template is applied with sections for the day's goals, log, and reflections. You can customize this template in Settings > Notes > Daily Note Template.
+
+### Calendar View
+
+Click the **calendar icon** at the top of the notes panel to open the daily notes calendar:
+
+- Days with existing daily notes are highlighted with a dot
+- Click any date to open (or create) the daily note for that day
+- Navigate months with arrow buttons
+- Today's date is always highlighted
+
+### Linking Daily Notes
+
+Daily notes support all standard features -- wiki links, tags, attachments. Use them to link to project notes, meeting notes, or tasks for a connected daily record.
+
+---
+
+## AI Writing Assist
+
+A contextual AI menu that helps you write, edit, and organize note content. All processing is described in the [AI Terminal](./ai-terminal.md) documentation.
+
+### Accessing AI Writing Assist
+
+1. Select text in the editor (or place your cursor in a paragraph)
+2. Click the **sparkle icon** that appears in the toolbar, or press **Cmd+J** (Mac) / **Ctrl+J** (Windows/Linux)
+3. The AI menu appears with available actions
+
+### Available Actions
+
+| Action | What It Does |
+|--------|-------------|
+| **Summarize** | Condenses selected text into a brief summary |
+| **Extract Action Items** | Pulls out tasks and to-dos from meeting notes or freeform text |
+| **Improve Writing** | Rewrites for clarity, grammar, and tone |
+| **Generate Outline** | Creates a structured outline from a topic or rough notes |
+| **Expand** | Elaborates on a short passage with more detail |
+| **Simplify** | Rewrites in plainer, more accessible language |
+
+### Using Results
+
+After the AI generates output, you can:
+
+- **Replace** the selected text with the result
+- **Insert Below** to keep the original and add the result underneath
+- **Copy** the result to clipboard
+- **Regenerate** if the first result isn't what you need
+
+> **Tip:** For best results with "Extract Action Items," select the full body of meeting notes or brainstorm text. The AI will create a checklist you can convert directly into tasks.
+
+---
+
+## Smart Templates
+
+Pre-built and custom templates for quickly creating structured notes with consistent formatting.
+
+### Accessing Smart Templates
+
+- Press **Ctrl+Shift+T** (Windows/Linux) or **Cmd+Shift+T** (Mac) to open the template picker
+- Or click **+ New Note** > **From Template**
+
+### Built-in Templates
+
+| Template | Contents |
+|----------|---------|
+| **Meeting Notes** | Attendees, agenda, discussion points, action items, follow-ups |
+| **Project Plan** | Objectives, scope, timeline, milestones, risks, resources |
+| **Weekly Review** | Wins, challenges, lessons learned, next week priorities |
+| **Decision Log** | Context, options considered, decision, rationale, outcome |
+| **1-on-1 Notes** | Check-in, discussion topics, action items, feedback |
+| **Research Notes** | Question, sources, findings, analysis, conclusions |
+
+### Creating Custom Templates
+
+1. Open Settings > Notes > Smart Templates
+2. Click **+ New Template**
+3. Enter a template name and optional description
+4. Write the template content using the full rich text editor
+5. Click **Save Template**
+
+Custom templates appear alongside built-in templates in the template picker.
+
+### Editing and Deleting Templates
+
+In Settings > Notes > Smart Templates, click any custom template to edit its content or click the trash icon to delete. Built-in templates cannot be deleted but can be hidden.
+
+---
+
+## Note Embeds
+
+Embed live data from other modules directly inside your notes using slash commands. Embeds update in real-time as the source data changes.
+
+### Embedding a Task
+
+1. Type `/embed-task` in the editor
+2. Search for the task by title
+3. Select the task from results
+4. An inline task card appears showing title, status, priority, and due date
+
+Click the embedded task to open the full task detail panel. Changes to the task (status, priority) are reflected in the embed automatically.
+
+### Embedding a Calendar Event
+
+1. Type `/embed-event` in the editor
+2. Search for the event by title or browse upcoming events
+3. Select the event
+4. An inline event card appears showing title, date, time, and location
+
+### Embedding Spreadsheet Data
+
+1. Type `/embed-sheet` in the editor
+2. Select a spreadsheet and cell range
+3. A live table renders inline with the selected data
+
+Edits to the source spreadsheet are reflected in the embed. The embed is read-only within the note -- click it to open the source spreadsheet for editing.
+
+### Managing Embeds
+
+- **Remove an embed:** Click the embed, then click the **X** icon or press **Delete**
+- **Resize:** Drag the bottom edge of an embed to adjust its height
+- Embeds are included when exporting notes (rendered as static content in exported files)
 
 ---
 

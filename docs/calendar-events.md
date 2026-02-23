@@ -15,6 +15,11 @@ NeumanOS provides full calendar and scheduling capabilities. Create events, set 
 - [Reminders & Notifications](#reminders--notifications)
 - [Conflict Detection](#conflict-detection)
 - [Import & Export](#import--export)
+- [Drag-to-Create](#drag-to-create)
+- [Multi-Calendar Layers](#multi-calendar-layers)
+- [Meeting Notes](#meeting-notes)
+- [Natural Language Event Creation](#natural-language-event-creation)
+- [Availability Page](#availability-page)
 - [Task Integration](#task-integration)
 - [Gantt Chart](#gantt-chart)
 - [Best Practices](#best-practices)
@@ -207,6 +212,136 @@ Compatible with Google Calendar, Outlook, and Apple Calendar.
 **Imported:** Event titles, descriptions, locations, dates, times, recurring patterns, all-day events, multi-day events.
 
 **Not imported:** Attendees/guests, attachments, event colors.
+
+---
+
+## Drag-to-Create
+
+In Week and Day views, create events by clicking and dragging directly on the time grid.
+
+### How It Works
+
+1. Switch to **Week View** or **Day View**
+2. Click on the time grid at your desired start time
+3. Hold the mouse button and drag downward to the desired end time
+4. Release the mouse button
+5. A quick-create popover appears with the time range pre-filled
+6. Enter the event title and any other details
+7. Click **Create Event**
+
+The time grid snaps to 15-minute increments by default. Hold **Shift** while dragging to snap to 5-minute increments instead.
+
+> **Tip:** This is the fastest way to create events with specific time ranges -- no need to manually type start and end times.
+
+---
+
+## Multi-Calendar Layers
+
+Manage multiple calendars with independent color coding and visibility controls, similar to how Google Calendar or Apple Calendar handle separate calendars.
+
+### Creating Calendars
+
+1. In the calendar sidebar, click **+ New Calendar**
+2. Enter a name (e.g., "Work", "Personal", "Freelance")
+3. Choose a color
+4. Click **Create**
+
+### Assigning Events to Calendars
+
+When creating or editing an event, select the target calendar from the **Calendar** dropdown. Events inherit the color of their assigned calendar.
+
+### Visibility Toggles
+
+Each calendar has a checkbox in the sidebar:
+
+- **Checked** -- Events from this calendar are visible
+- **Unchecked** -- Events are hidden from all views
+
+Toggle calendars on and off to focus on specific areas of your schedule. For example, hide "Personal" during work hours or hide "Work" on weekends.
+
+### Managing Calendars
+
+- **Rename:** Click the calendar name in the sidebar to edit
+- **Change Color:** Click the color swatch next to the calendar name
+- **Delete:** Right-click > **Delete Calendar** (events are deleted too -- confirm carefully)
+- **Set Default:** Right-click > **Set as Default** so new events are assigned to this calendar automatically
+
+---
+
+## Meeting Notes
+
+Link notes directly to calendar events to keep agendas, discussion points, and action items connected to the meetings they belong to.
+
+### Linking a Note to an Event
+
+1. Open an event's detail view
+2. Click **+ Link Note** in the **Notes** section
+3. Search for an existing note or click **Create New Note**
+4. The note is now linked -- a badge appears on the event in calendar views
+
+### Accessing Linked Notes
+
+- **From the calendar:** Click an event with a note badge, then click the linked note to open it
+- **From the note:** A backlink to the event appears in the note's right panel under "Linked Events"
+
+### Auto-Created Meeting Notes
+
+Enable in Settings > Calendar > **Auto-Create Meeting Notes**. When enabled, a new note is automatically created 15 minutes before any event starts. The note is pre-populated with the event title, date, time, and a template for agenda and action items.
+
+---
+
+## Natural Language Event Creation
+
+Create events by typing a description in plain language. The parser converts your text into structured event data.
+
+### How to Use
+
+1. Click **+ New Event**
+2. In the title field, type a natural language description
+3. The parser highlights detected date, time, and recurrence in real-time
+4. Review the parsed fields below the title
+5. Adjust any fields if the parser misinterpreted your intent
+6. Click **Create Event**
+
+### Examples
+
+| You Type | Parsed Result |
+|----------|--------------|
+| "Team standup tomorrow at 9am" | Title: "Team standup", Date: tomorrow, Time: 9:00 AM |
+| "Lunch with Sarah Friday noon" | Title: "Lunch with Sarah", Date: next Friday, Time: 12:00 PM |
+| "Dentist Jan 15 at 2:30pm" | Title: "Dentist", Date: Jan 15, Time: 2:30 PM |
+| "Weekly review every Monday 4pm" | Title: "Weekly review", Recurrence: Weekly on Monday, Time: 4:00 PM |
+| "Project deadline in 3 weeks" | Title: "Project deadline", Date: 3 weeks from today, All-day: true |
+
+The parser recognizes relative dates ("tomorrow", "next Tuesday", "in 2 days"), absolute dates ("March 15", "3/15"), times ("3pm", "15:00", "noon"), and recurrence patterns ("every Monday", "daily", "monthly").
+
+---
+
+## Availability Page
+
+Share your available time slots with others so they can find a time that works without back-and-forth scheduling emails.
+
+### Setting Up Availability
+
+1. Go to **Settings** > **Calendar** > **Availability**
+2. Define your **available hours** for each day of the week (e.g., Monday--Friday, 9 AM -- 5 PM)
+3. Set **meeting duration options** (e.g., 15 min, 30 min, 60 min)
+4. Add **buffer time** between meetings (e.g., 10 minutes)
+5. Optionally set a **booking window** (e.g., allow bookings 1--30 days in advance)
+
+### Sharing Your Availability
+
+1. Click **Copy Availability Link** to get a shareable URL
+2. Send the link to anyone who needs to book time with you
+3. They see a clean calendar view showing only your open slots (no event details are exposed)
+4. They select a time and enter their name and email
+5. The event is created on your calendar automatically
+
+### How Availability Is Calculated
+
+The system checks your existing events across all visible calendars and subtracts them from your defined available hours. Blocked time, all-day events, and buffered periods are all excluded from the available slots shown to the person booking.
+
+> **Tip:** The availability page never exposes your event titles or details to the person booking -- they only see open and unavailable time blocks.
 
 ---
 

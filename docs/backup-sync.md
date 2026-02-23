@@ -45,7 +45,17 @@ Everything:
 - Calendar events (all events, recurring events, reminders)
 - Time tracking data (entries, billable hours)
 - Habits tracking (streaks, achievements)
-- Dashboard widgets (layout, configuration)
+- Link library (all saved links and collections)
+- Diagrams (all diagram data and layouts)
+- Forms (form definitions and responses)
+- Smart templates (built-in and custom templates)
+- Energy logs (energy level tracking data)
+- Activity feed (action history)
+- Daily quests (quest progress, streaks, XP)
+- Dashboard widgets (layout, configuration, custom widgets)
+- Flashcard data (decks, cards, spaced repetition state)
+- Custom CSS (theme customizations)
+- Routines (routine definitions and completion history)
 - All settings and preferences
 
 ### Backup File Format
