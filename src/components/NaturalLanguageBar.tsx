@@ -18,6 +18,7 @@ import { useCalendarStore } from '../stores/useCalendarStore';
 import { useNotesStore } from '../stores/useNotesStore';
 import { useToastStore } from '../stores/useToastStore';
 import { formatDateKey } from '../utils/dateUtils';
+import { parseTaskInput } from '../utils/naturalLanguageParser';
 
 type ParsedActionType = 'task' | 'event' | 'note' | 'unknown';
 
@@ -30,6 +31,8 @@ interface ParsedAction {
   startTime?: string;
   endTime?: string;
   content?: string;
+  assignees?: string[];
+  project?: string;
   confidence: number;
 }
 
@@ -138,48 +141,24 @@ function parseInput(text: string): ParsedAction {
     };
   }
 
-  // Task pattern: text with #tags, !priority, "due DATE"
+  // Task pattern: text with #tags, !priority, "due DATE", @assignee, ^project
   const hasTags = /#\w+/.test(trimmed);
-  const hasPriority = /!(?:high|medium|low|urgent|critical)/i.test(trimmed);
+  const hasPriority = /!(?:high|medium|low|urgent|critical|\d)/i.test(trimmed);
   const hasDue = /\bdue\s+\w+/i.test(trimmed);
+  const hasAssignee = /@\w+/.test(trimmed);
+  const hasProject = /\^\w+/.test(trimmed);
 
-  if (hasTags || hasPriority || hasDue) {
-    // Extract tags
-    const tags: string[] = [];
-    const tagMatches = trimmed.matchAll(/#(\w+)/g);
-    for (const match of tagMatches) {
-      tags.push(match[1]);
-    }
-
-    // Extract priority
-    let priority = 'medium';
-    const priorityMatch = trimmed.match(/!(\w+)/i);
-    if (priorityMatch) {
-      const p = priorityMatch[1].toLowerCase();
-      if (['high', 'urgent', 'critical'].includes(p)) priority = 'high';
-      else if (p === 'low') priority = 'low';
-    }
-
-    // Extract due date
-    let dueDate: string | undefined;
-    const dueMatch = trimmed.match(/\bdue\s+(\w+)/i);
-    if (dueMatch) {
-      dueDate = parseRelativeDate(dueMatch[1]) || undefined;
-    }
-
-    // Clean title: remove tags, priority, due date
-    const title = trimmed
-      .replace(/#\w+/g, '')
-      .replace(/!\w+/g, '')
-      .replace(/\bdue\s+\w+/gi, '')
-      .trim();
+  if (hasTags || hasPriority || hasDue || hasAssignee || hasProject) {
+    const parsed = parseTaskInput(trimmed);
 
     return {
       type: 'task',
-      title,
-      tags,
-      priority,
-      dueDate,
+      title: parsed.title,
+      tags: parsed.tags,
+      priority: parsed.priority || 'medium',
+      dueDate: parsed.dueDate || undefined,
+      assignees: parsed.assignees.length > 0 ? parsed.assignees : undefined,
+      project: parsed.project || undefined,
       confidence: 0.9,
     };
   }
@@ -463,6 +442,20 @@ export const NaturalLanguageBar: React.FC<NaturalLanguageBarProps> = ({ isOpen, 
                     {parsedAction.startTime}
                   </span>
                 )}
+                {parsedAction.assignees && parsedAction.assignees.length > 0 && (
+                  <div className="flex gap-1">
+                    {parsedAction.assignees.map((a) => (
+                      <span key={a} className="px-1.5 py-0.5 bg-accent-purple/10 text-accent-purple rounded">
+                        @{a}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {parsedAction.project && (
+                  <span className="px-1.5 py-0.5 bg-accent-primary/10 text-accent-primary rounded">
+                    ^{parsedAction.project}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -482,7 +475,7 @@ export const NaturalLanguageBar: React.FC<NaturalLanguageBarProps> = ({ isOpen, 
             <div className="grid grid-cols-3 gap-2 text-[11px] text-text-light-secondary dark:text-text-dark-tertiary">
               <div className="flex items-center gap-1.5">
                 <CheckSquare size={12} className="text-accent-blue" />
-                <span>#tag !priority due day</span>
+                <span>#tag !priority due day @name ^project</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Calendar size={12} className="text-accent-green" />

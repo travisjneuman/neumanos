@@ -144,7 +144,7 @@ export function UsageTracker({ router }: UsageTrackerProps) {
       <div className="flex items-center justify-between">
         <select
           value={timeRange}
-          onChange={(e) => setTimeRange(e.target.value as any)}
+          onChange={(e) => setTimeRange(e.target.value as 'today' | 'week' | 'month' | 'all')}
           className="px-2 py-1 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-button text-xs text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-1 focus:ring-accent-blue"
         >
           <option value="today">Today</option>

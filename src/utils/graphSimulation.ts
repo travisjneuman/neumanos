@@ -70,7 +70,7 @@ export function getSimulationData(
 } {
   return {
     nodes: simulation.nodes(),
-    links: simulation.force('link') ? (simulation.force('link') as any).links() : [],
+    links: simulation.force('link') ? (simulation.force('link') as d3.ForceLink<SimulationNode, SimulationLink>).links() : [],
   };
 }
 

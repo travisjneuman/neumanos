@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { KanbanCard } from './KanbanCard';
+import { KanbanSectionDivider } from './KanbanSectionDivider';
 import { useKanbanStore } from '../../stores/useKanbanStore';
 import type { Task, TaskStatus } from '../../types';
 
@@ -31,10 +32,27 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onCardClick,
   onEditColumn,
 }) => {
-  const { addTask } = useKanbanStore();
+  const { addTask, sections, addSection, deleteSection, renameSection, toggleSectionCollapse } = useKanbanStore();
   const { setNodeRef, isOver } = useDroppable({ id });
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [newSectionTitle, setNewSectionTitle] = useState('');
+
+  // Get sections for this column
+  const columnSections = useMemo(() =>
+    sections.filter(s => s.columnId === id).sort((a, b) => a.order - b.order),
+    [sections, id]
+  );
+
+  // Group tasks by section
+  const unsectionedTasks = useMemo(() =>
+    tasks.filter(t => !t.sectionId || !columnSections.some(s => s.id === t.sectionId)),
+    [tasks, columnSections]
+  );
+
+  const getTasksForSection = (sectionId: string) =>
+    tasks.filter(t => t.sectionId === sectionId);
 
   // Register ref for keyboard shortcut access
   useEffect(() => {
@@ -153,21 +171,85 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* Tasks List */}
-      <div className="column-tasks flex-1 p-4 space-y-3">
-        {tasks.length === 0 ? (
+      <div className="column-tasks flex-1 p-4 space-y-3 overflow-y-auto">
+        {tasks.length === 0 && columnSections.length === 0 ? (
           <div className="text-center py-8 text-text-light-secondary dark:text-text-dark-secondary text-sm">
             {isOver ? 'Drop task here' : 'No tasks'}
           </div>
         ) : (
-          tasks.map((task) => (
-            <KanbanCard
-              key={task.id}
-              task={task}
-              isSelected={task.id === selectedTaskId}
-              onRegisterRef={(ref) => onRegisterCardRef(task.id, ref)}
-              onCardClick={onCardClick}
+          <>
+            {/* Unsectioned tasks (rendered at top) */}
+            {unsectionedTasks.map((task) => (
+              <KanbanCard
+                key={task.id}
+                task={task}
+                isSelected={task.id === selectedTaskId}
+                onRegisterRef={(ref) => onRegisterCardRef(task.id, ref)}
+                onCardClick={onCardClick}
+              />
+            ))}
+
+            {/* Sections with their tasks */}
+            {columnSections.map((section) => {
+              const sectionTasks = getTasksForSection(section.id);
+              return (
+                <div key={section.id}>
+                  <KanbanSectionDivider
+                    section={section}
+                    taskCount={sectionTasks.length}
+                    onToggleCollapse={toggleSectionCollapse}
+                    onRename={renameSection}
+                    onDelete={deleteSection}
+                  />
+                  {!section.collapsed && sectionTasks.map((task) => (
+                    <div key={task.id} className="mt-3">
+                      <KanbanCard
+                        task={task}
+                        isSelected={task.id === selectedTaskId}
+                        onRegisterRef={(ref) => onRegisterCardRef(task.id, ref)}
+                        onCardClick={onCardClick}
+                      />
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Add Section */}
+        {!showAddSection ? (
+          <button
+            onClick={() => setShowAddSection(true)}
+            className="w-full text-left text-xs text-text-light-tertiary dark:text-text-dark-tertiary hover:text-accent-primary transition-colors mt-2"
+          >
+            + Add section
+          </button>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (newSectionTitle.trim()) {
+                addSection(id, newSectionTitle.trim());
+                setNewSectionTitle('');
+                setShowAddSection(false);
+              }
+            }}
+            className="mt-2 space-y-1"
+          >
+            <input
+              type="text"
+              value={newSectionTitle}
+              onChange={(e) => setNewSectionTitle(e.target.value)}
+              placeholder="Section name..."
+              className="w-full px-2 py-1 text-xs border border-border-light dark:border-border-dark rounded bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              autoFocus
             />
-          ))
+            <div className="flex gap-1">
+              <button type="submit" className="px-2 py-0.5 text-xs bg-accent-primary text-white rounded hover:opacity-80">Add</button>
+              <button type="button" onClick={() => { setShowAddSection(false); setNewSectionTitle(''); }} className="px-2 py-0.5 text-xs text-text-light-secondary dark:text-text-dark-secondary rounded hover:opacity-80">Cancel</button>
+            </div>
+          </form>
         )}
       </div>
     </div>

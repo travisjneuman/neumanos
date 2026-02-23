@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useKanbanStore } from '../../stores/useKanbanStore';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { NaturalLanguageDateInput } from '../../components/NaturalLanguageDateInput';
-import type { TaskPriority } from '../../types';
+import type { TaskPriority, TaskStatus } from '../../types';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -107,7 +107,7 @@ export function QuickAddModal({ isOpen, onClose, defaultColumn }: QuickAddModalP
     addTask({
       title: title.trim(),
       description: description.trim(),
-      status: column as any,
+      status: column as TaskStatus,
       priority,
       startDate: null,
       dueDate: dueDate || null,

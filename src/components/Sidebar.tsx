@@ -65,6 +65,7 @@ const draggableNavigation: NavItem[] = [
       { icon: '⏱️', label: 'Timer', path: '/schedule?tab=timer' },
       { icon: '🍅', label: 'Pomodoro', path: '/schedule?tab=pomodoro' },
       { icon: '⚡', label: 'Energy', path: '/energy' },
+      { icon: '📋', label: 'Availability', path: '/availability' },
     ],
   },
   {

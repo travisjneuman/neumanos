@@ -5,6 +5,9 @@ import { useSettingsStore, formatTemperature } from '../stores/useSettingsStore'
 import { getWeatherIcon } from '../utils/weatherCodes';
 import type { WeatherData } from '../types';
 
+// Leaflet loaded globally via CDN script tag in index.html
+declare const L: typeof import('leaflet');
+
 interface ForecastDay {
   date: string;
   tempMax: number;
@@ -205,9 +208,7 @@ export const WeatherMap: React.FC = () => {
   useEffect(() => {
     if (!mapRef.current || leafletMapRef.current) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet loaded globally via CDN
-    const L = (window as any).L;
-    if (!L) {
+    if (typeof L === 'undefined') {
       console.error('Leaflet not loaded');
       return;
     }
@@ -239,9 +240,7 @@ export const WeatherMap: React.FC = () => {
   // Update map when coordinates change
   useEffect(() => {
     if (leafletMapRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet loaded globally via CDN
-      const L = (window as any).L;
-      if (L) {
+      if (typeof L !== 'undefined') {
         leafletMapRef.current.setView([coords.lat, coords.lng], 10);
         leafletMapRef.current.eachLayer((layer) => {
           if (layer instanceof L.Marker) {

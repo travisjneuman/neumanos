@@ -50,19 +50,6 @@ export const generateRecurringInstances = (
   // Safety limit: max 10000 iterations to prevent infinite loops
   const maxIterations = 10000;
 
-  // Debug logging for recurring events
-  const isDebugEvent = event.title?.includes('birthday') || event.title?.includes('Birthday');
-  if (isDebugEvent) {
-    console.log('[Recurrence Debug]', {
-      title: event.title,
-      baseDate,
-      viewRange: `${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`,
-      frequency,
-      interval,
-      endType,
-    });
-  }
-
   while (occurrenceCount < maxOccurrences && iterationCount < maxIterations) {
     iterationCount++;
 
@@ -89,9 +76,6 @@ export const generateRecurringInstances = (
               id: `${event.id}-${instanceDate}`,
             },
           });
-          if (isDebugEvent) {
-            console.log('[Recurrence Debug] Added instance:', instanceDate);
-          }
         }
       } else {
         // For other frequencies, include every occurrence
@@ -104,9 +88,6 @@ export const generateRecurringInstances = (
             id: `${event.id}-${instanceDate}`,
           },
         });
-        if (isDebugEvent) {
-          console.log('[Recurrence Debug] Added instance:', instanceDate);
-        }
       }
     }
 
@@ -156,19 +137,8 @@ export const generateRecurringInstances = (
 
     // Safety: stop if we've moved far beyond the view range
     if (isAfter(currentDate, addYears(endDate, 10))) {
-      if (isDebugEvent) {
-        console.log('[Recurrence Debug] Stopped: beyond view range +10 years');
-      }
       break;
     }
-  }
-
-  if (isDebugEvent) {
-    console.log('[Recurrence Debug] Generation complete:', {
-      totalIterations: iterationCount,
-      instancesGenerated: instances.length,
-      stoppedReason: iterationCount >= maxIterations ? 'Max iterations' : occurrenceCount >= maxOccurrences ? 'Max occurrences' : 'View range limit',
-    });
   }
 
   return instances;

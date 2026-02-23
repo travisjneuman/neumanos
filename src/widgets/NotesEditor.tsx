@@ -114,6 +114,7 @@ import { NoteAliasEditor } from '../components/notes/NoteAliasEditor';
 import OutlinePanelPlugin from '../components/editor/plugins/OutlinePanelPlugin';
 import type { OutlineHeading } from '../components/editor/plugins/OutlinePanelPlugin';
 import { NoteOutlinePanel } from '../components/editor/NoteOutlinePanel';
+import { AISummarizePlugin } from '../components/editor/plugins/AISummarizePlugin';
 import { List } from 'lucide-react';
 
 /**
@@ -198,7 +199,6 @@ const ImageUploadPlugin: React.FC<{ noteId: string }> = ({ noteId }) => {
         }
       });
 
-      console.log(`✅ Image uploaded: ${imageId} (${file.name})`);
     } catch (error) {
       console.error('Failed to upload image:', error);
     }
@@ -344,21 +344,67 @@ const SlashCommandPlugin: React.FC = () => {
     editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
   }, [editor, clearSlashCommand]);
 
-  const commands = [
-    { label: 'Heading 1', icon: 'H1', action: () => {
-      editor.update(() => {
-        const selection = $getSelection();
-        if (selection) {
-          console.log('Heading 1');
+  const formatAsHeading = useCallback((tag: HeadingTagType) => {
+    clearSlashCommand();
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const anchorNode = selection.anchor.getNode();
+        const element = anchorNode.getKey() === 'root'
+          ? anchorNode
+          : anchorNode.getTopLevelElementOrThrow();
+        const heading = $createHeadingNode(tag);
+        element.replace(heading, true);
+      }
+    });
+  }, [editor, clearSlashCommand]);
+
+  const formatAsQuote = useCallback(() => {
+    clearSlashCommand();
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const anchorNode = selection.anchor.getNode();
+        const element = anchorNode.getKey() === 'root'
+          ? anchorNode
+          : anchorNode.getTopLevelElementOrThrow();
+        if (!$isListNode(element)) {
+          const quote = $createQuoteNode();
+          element.replace(quote, true);
         }
-      });
+      }
+    });
+  }, [editor, clearSlashCommand]);
+
+  const formatAsCodeBlock = useCallback(() => {
+    clearSlashCommand();
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const anchorNode = selection.anchor.getNode();
+        const element = anchorNode.getKey() === 'root'
+          ? anchorNode
+          : anchorNode.getTopLevelElementOrThrow();
+        const codeNode = new CodeNode();
+        element.replace(codeNode, true);
+      }
+    });
+  }, [editor, clearSlashCommand]);
+
+  const commands = [
+    { label: 'Heading 1', icon: 'H1', action: () => formatAsHeading('h1') },
+    { label: 'Heading 2', icon: 'H2', action: () => formatAsHeading('h2') },
+    { label: 'Heading 3', icon: 'H3', action: () => formatAsHeading('h3') },
+    { label: 'Bullet List', icon: '•', action: () => {
+      clearSlashCommand();
+      editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
     }},
-    { label: 'Heading 2', icon: 'H2', action: () => console.log('Heading 2') },
-    { label: 'Heading 3', icon: 'H3', action: () => console.log('Heading 3') },
-    { label: 'Bullet List', icon: '•', action: () => console.log('Bullet List') },
-    { label: 'Numbered List', icon: '1.', action: () => console.log('Numbered List') },
-    { label: 'Code Block', icon: '</>', action: () => console.log('Code Block') },
-    { label: 'Quote', icon: '"', action: () => console.log('Quote') },
+    { label: 'Numbered List', icon: '1.', action: () => {
+      clearSlashCommand();
+      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+    }},
+    { label: 'Code Block', icon: '</>', action: formatAsCodeBlock },
+    { label: 'Quote', icon: '"', action: formatAsQuote },
     { label: 'Horizontal Rule', icon: '—', action: insertHR },
     { label: 'Callout (Info)', icon: 'ℹ️', action: () => insertCallout('info') },
     { label: 'Callout (Warning)', icon: '⚠️', action: () => insertCallout('warning') },
@@ -662,7 +708,6 @@ const EditorToolbar: React.FC<{
         }
       });
 
-      console.log(`✅ Image uploaded: ${imageId} (${file.name})`);
     } catch (error) {
       console.error('Failed to upload image:', error);
       toast.error(
@@ -711,7 +756,7 @@ const EditorToolbar: React.FC<{
           className={btnClass}
           title="Highlight Color"
         >
-          <span className="text-sm" style={{ backgroundColor: '#fef08a', padding: '0 4px', borderRadius: '2px' }}>A</span>
+          <span className="text-sm" style={{ backgroundColor: HIGHLIGHT_COLORS[0].color, padding: '0 4px', borderRadius: '2px' }}>A</span>
         </button>
         {showHighlightPicker && (
           <div className="absolute top-full left-0 mt-1 z-50 bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-lg shadow-lg p-2 flex gap-1">
@@ -800,6 +845,11 @@ const EditorToolbar: React.FC<{
       >
         🖼️
       </button>
+
+      <div className={dividerClass} />
+
+      {/* AI Summarize */}
+      <AISummarizePlugin className={btnClass} />
 
       <div className="flex-1" />
 

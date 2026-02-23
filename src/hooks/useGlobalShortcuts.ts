@@ -18,9 +18,6 @@ import { parseKeyboardEvent, isInputElement } from '../services/shortcuts';
 interface UseGlobalShortcutsOptions {
   /** Whether the global listener is enabled (default: true) */
   enabled?: boolean;
-
-  /** Debug mode - logs matched shortcuts to console */
-  debug?: boolean;
 }
 
 /**
@@ -28,7 +25,7 @@ interface UseGlobalShortcutsOptions {
  * Call this once in Layout.tsx or App.tsx
  */
 export function useGlobalShortcuts(options: UseGlobalShortcutsOptions = {}): void {
-  const { enabled = true, debug = false } = options;
+  const { enabled = true } = options;
 
   useEffect(() => {
     if (!enabled) return;
@@ -46,28 +43,14 @@ export function useGlobalShortcuts(options: UseGlobalShortcutsOptions = {}): voi
       // Find matching shortcut
       const shortcut = useShortcutsStore.getState().findByKeys(pressedKeys);
 
-      if (!shortcut) {
-        if (debug) {
-          console.log('[Shortcuts] No match for:', pressedKeys);
-        }
-        return;
-      }
+      if (!shortcut) return;
 
       // Block if in input and shortcut doesn't allow it
-      if (inInput && !shortcut.allowInInput) {
-        if (debug) {
-          console.log('[Shortcuts] Blocked in input:', shortcut.id);
-        }
-        return;
-      }
+      if (inInput && !shortcut.allowInInput) return;
 
       // Prevent default and stop propagation
       e.preventDefault();
       e.stopPropagation();
-
-      if (debug) {
-        console.log('[Shortcuts] Matched:', shortcut.id, pressedKeys);
-      }
 
       // Execute the handler
       try {
@@ -83,7 +66,7 @@ export function useGlobalShortcuts(options: UseGlobalShortcutsOptions = {}): voi
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
-  }, [enabled, debug]);
+  }, [enabled]);
 }
 
 /**

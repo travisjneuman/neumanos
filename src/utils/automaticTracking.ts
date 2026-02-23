@@ -153,7 +153,7 @@ export function useAutomaticIdleStop() {
   return {
     onIdle: () => {
       // Stop automatic entries when user goes idle
-      if (automaticTrackingEnabled && activeEntry && (activeEntry as any).automatic) {
+      if (automaticTrackingEnabled && activeEntry && activeEntry.automatic) {
         stopTimer();
       }
     },

@@ -6,10 +6,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { History, ChevronDown, ChevronRight, RotateCcw, Trash2, Clock } from 'lucide-react';
+import { History, ChevronDown, ChevronRight, RotateCcw, Trash2, Clock, Diff } from 'lucide-react';
 import { useNoteVersionStore } from '../../stores/useNoteVersionStore';
 import { useNotesStore } from '../../stores/useNotesStore';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { VersionDiffView } from './VersionDiffView';
+import type { NoteVersion } from '../../types/notes';
 
 interface VersionHistoryPanelProps {
   noteId: string;
@@ -33,11 +35,14 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ noteId
   const [isExpanded, setIsExpanded] = useState(false);
   const [restoreConfirm, setRestoreConfirm] = useState<string | null>(null);
   const [previewVersionId, setPreviewVersionId] = useState<string | null>(null);
+  const [diffVersion, setDiffVersion] = useState<NoteVersion | null>(null);
 
   const getVersions = useNoteVersionStore((state) => state.getVersions);
   const getVersion = useNoteVersionStore((state) => state.getVersion);
   const deleteVersion = useNoteVersionStore((state) => state.deleteVersion);
   const updateNote = useNotesStore((state) => state.updateNote);
+  const getNote = useNotesStore((state) => state.getNote);
+  const note = getNote(noteId);
 
   const versions = useMemo(() => getVersions(noteId), [noteId, getVersions]);
 
@@ -106,6 +111,26 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ noteId
             </div>
           )}
 
+          {/* Diff view */}
+          {diffVersion && note && (
+            <div className="mb-3">
+              <VersionDiffView
+                oldVersion={diffVersion}
+                newVersion={{
+                  id: 'current',
+                  noteId,
+                  title: note.title,
+                  content: note.content,
+                  contentText: note.contentText,
+                  savedAt: note.updatedAt,
+                  wordCount: note.contentText.trim().split(/\s+/).filter(Boolean).length,
+                  changeSummary: 'Current version',
+                }}
+                onClose={() => setDiffVersion(null)}
+              />
+            </div>
+          )}
+
           {/* Version list */}
           <div className="space-y-1 max-h-60 overflow-y-auto">
             {versions.map((version) => (
@@ -130,6 +155,17 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({ noteId
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDiffVersion(version);
+                      setPreviewVersionId(null);
+                    }}
+                    className="p-1 rounded hover:bg-accent-blue/20 text-accent-blue transition-colors"
+                    title="Compare with current"
+                  >
+                    <Diff className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

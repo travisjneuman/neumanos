@@ -35,6 +35,7 @@ const ActivityFeed = lazy(() => import('./pages/ActivityFeed').then((m) => ({ de
 const Energy = lazy(() => import('./pages/Energy').then((m) => ({ default: m.Energy })));
 const Portfolio = lazy(() => import('./pages/Portfolio').then((m) => ({ default: m.Portfolio })));
 const WeeklyRetrospective = lazy(() => import('./pages/WeeklyRetrospective').then((m) => ({ default: m.WeeklyRetrospective })));
+const Availability = lazy(() => import('./pages/Availability'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -196,6 +197,8 @@ function App() {
             <Route path="/energy" element={<Energy />} />
             {/* Weekly Retrospective */}
             <Route path="/retrospective" element={<WeeklyRetrospective />} />
+            {/* Availability sharing */}
+            <Route path="/availability" element={<Availability />} />
             {/* Focus mode - full-screen, no layout wrapper */}
             <Route path="/focus" element={<Focus />} />
             {/* Phase 5: Redirect /habits to /tasks?tab=habits */}

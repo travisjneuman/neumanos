@@ -100,6 +100,10 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     title: 'Energy',
     subtitle: 'Track energy levels and optimize your schedule',
   },
+  '/availability': {
+    title: 'Availability',
+    subtitle: 'Share your free time blocks with others',
+  },
 };
 
 /**

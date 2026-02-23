@@ -336,7 +336,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
         // Stop active timer if disabling automatic tracking and it was auto-started
         if (!enabled) {
           const { activeEntry } = get();
-          if (activeEntry && (activeEntry as any).automatic) {
+          if (activeEntry && activeEntry.automatic) {
             get().stopTimer();
           }
         }
@@ -356,7 +356,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
           currentContext.type !== context.type ||
           currentContext.id !== context.id;
 
-        if (contextChanged && activeEntry && (activeEntry as any).automatic) {
+        if (contextChanged && activeEntry && activeEntry.automatic) {
           get().stopTimer();
         }
 
@@ -383,7 +383,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
       // ==================== TIMER ACTIONS ====================
 
       startTimer: ({ description, projectId, taskId, billable = true, automatic = false }) => {
-        const entry: TimeEntry & { automatic?: boolean } = {
+        const entry: TimeEntry = {
           id: crypto.randomUUID(),
           workspaceId: DEFAULT_WORKSPACE_ID,
           description,

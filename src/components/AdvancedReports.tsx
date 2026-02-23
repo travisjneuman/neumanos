@@ -162,7 +162,7 @@ export function AdvancedReports() {
               <XAxis dataKey="projectName" stroke="#9CA3AF" />
               <YAxis stroke="#9CA3AF" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                contentStyle={{ backgroundColor: 'var(--color-surface-dark, #1f2937)', border: '1px solid var(--color-border-dark, #374151)', borderRadius: '8px' }}
                 labelStyle={{ color: '#F3F4F6' }}
               />
               <Legend />
@@ -182,7 +182,7 @@ export function AdvancedReports() {
               <XAxis dataKey="date" stroke="#9CA3AF" />
               <YAxis stroke="#9CA3AF" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                contentStyle={{ backgroundColor: 'var(--color-surface-dark, #1f2937)', border: '1px solid var(--color-border-dark, #374151)', borderRadius: '8px' }}
                 labelStyle={{ color: '#F3F4F6' }}
               />
               <Legend />
@@ -224,7 +224,7 @@ export function AdvancedReports() {
                 <XAxis type="number" stroke="#9CA3AF" />
                 <YAxis dataKey="tag" type="category" stroke="#9CA3AF" width={100} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                  contentStyle={{ backgroundColor: 'var(--color-surface-dark, #1f2937)', border: '1px solid var(--color-border-dark, #374151)', borderRadius: '8px' }}
                   labelStyle={{ color: '#F3F4F6' }}
                 />
                 <Bar dataKey="totalHours" name="Hours">
@@ -314,7 +314,7 @@ export function AdvancedReports() {
                 <XAxis dataKey="rate" stroke="#9CA3AF" label={{ value: 'Rate ($/hr)', position: 'insideBottom', offset: -5 }} />
                 <YAxis stroke="#9CA3AF" label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                  contentStyle={{ backgroundColor: 'var(--color-surface-dark, #1f2937)', border: '1px solid var(--color-border-dark, #374151)', borderRadius: '8px' }}
                   labelStyle={{ color: '#F3F4F6' }}
                 />
                 <Bar dataKey="hours" fill="#8B5CF6" name="Hours" />
@@ -334,7 +334,7 @@ export function AdvancedReports() {
               <YAxis yAxisId="left" stroke="#9CA3AF" />
               <YAxis yAxisId="right" orientation="right" stroke="#9CA3AF" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                contentStyle={{ backgroundColor: 'var(--color-surface-dark, #1f2937)', border: '1px solid var(--color-border-dark, #374151)', borderRadius: '8px' }}
                 labelStyle={{ color: '#F3F4F6' }}
               />
               <Legend />

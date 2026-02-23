@@ -6,6 +6,7 @@ import type {
   TaskStatus,
   TaskPriority,
   KanbanColumn,
+  KanbanSection,
   ChecklistItem,
   // Phase 8.3: TaskComment now managed by useKanbanCommentsStore
   ActivityLogEntry,
@@ -211,6 +212,12 @@ interface KanbanStore extends KanbanState {
 
   // Phase 4: Card templates
   getCardTemplates: () => CardTemplate[];
+
+  // Phase 8F: Section management
+  addSection: (columnId: string, title: string) => void;
+  deleteSection: (id: string) => void;
+  renameSection: (id: string, title: string) => void;
+  toggleSectionCollapse: (id: string) => void;
 }
 
 export const useKanbanStore = create<KanbanStore>()(
@@ -219,6 +226,7 @@ export const useKanbanStore = create<KanbanStore>()(
       // Initial state
       tasks: [],
       columns: DEFAULT_COLUMNS,
+      sections: [], // Phase 8F: Kanban sections
       dependencies: [], // Phase 5: Task dependencies
       // Phase 8.1: archivedTasks moved to useKanbanArchiveStore
       nextCardNumber: 1, // Phase A: Auto-incrementing card number counter
@@ -1558,6 +1566,50 @@ export const useKanbanStore = create<KanbanStore>()(
 
       getCardTemplates: () => {
         return DEFAULT_CARD_TEMPLATES;
+      },
+
+      // ==================== PHASE 8F: SECTION MANAGEMENT ====================
+
+      addSection: (columnId, title) => {
+        const sections = get().sections;
+        const columnSections = sections.filter(s => s.columnId === columnId);
+        const newSection: KanbanSection = {
+          id: `section-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          title,
+          columnId,
+          order: columnSections.length,
+          collapsed: false,
+        };
+
+        set((state) => ({
+          sections: [...state.sections, newSection],
+        }));
+      },
+
+      deleteSection: (id) => {
+        // Unassign tasks from this section
+        set((state) => ({
+          sections: state.sections.filter(s => s.id !== id),
+          tasks: state.tasks.map(t =>
+            t.sectionId === id ? { ...t, sectionId: undefined } : t
+          ),
+        }));
+      },
+
+      renameSection: (id, title) => {
+        set((state) => ({
+          sections: state.sections.map(s =>
+            s.id === id ? { ...s, title } : s
+          ),
+        }));
+      },
+
+      toggleSectionCollapse: (id) => {
+        set((state) => ({
+          sections: state.sections.map(s =>
+            s.id === id ? { ...s, collapsed: !s.collapsed } : s
+          ),
+        }));
       },
     }),
     {

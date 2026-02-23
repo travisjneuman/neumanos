@@ -61,14 +61,14 @@ export function usePWA(): PWAState & PWAActions {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(registration) {
-      console.log('[PWA] Service worker registered:', registration);
+      if (import.meta.env.DEV) console.log('[PWA] Service worker registered:', registration);
       registrationRef.current = registration || null;
       // Check if there's actually a waiting worker
       if (registration?.waiting) {
-        console.log('[PWA] Waiting service worker found');
+        if (import.meta.env.DEV) console.log('[PWA] Waiting service worker found');
         setHasWaitingWorker(true);
       } else {
-        console.log('[PWA] No waiting service worker');
+        if (import.meta.env.DEV) console.log('[PWA] No waiting service worker');
         setHasWaitingWorker(false);
       }
     },
@@ -76,18 +76,18 @@ export function usePWA(): PWAState & PWAActions {
       console.error('[PWA] Service worker registration failed:', error);
     },
     onOfflineReady() {
-      console.log('[PWA] App ready to work offline');
+      if (import.meta.env.DEV) console.log('[PWA] App ready to work offline');
     },
     onNeedRefresh() {
-      console.log('[PWA] New content available signal received');
+      if (import.meta.env.DEV) console.log('[PWA] New content available signal received');
       // Verify there's actually a waiting worker before showing the prompt
       // vite-plugin-pwa can fire this even when there's no waiting worker
       const reg = registrationRef.current;
       if (reg?.waiting) {
-        console.log('[PWA] Confirmed: waiting worker exists, showing update prompt');
+        if (import.meta.env.DEV) console.log('[PWA] Confirmed: waiting worker exists, showing update prompt');
         setHasWaitingWorker(true);
       } else {
-        console.log('[PWA] False positive: no waiting worker, ignoring update signal');
+        if (import.meta.env.DEV) console.log('[PWA] False positive: no waiting worker, ignoring update signal');
         setHasWaitingWorker(false);
         // Dismiss the false positive
         setNeedsUpdate(false);
@@ -114,14 +114,14 @@ export function usePWA(): PWAState & PWAActions {
       e.preventDefault();
       deferredInstallPrompt = e as BeforeInstallPromptEvent;
       setCanInstall(true);
-      console.log('[PWA] Install prompt captured');
+      if (import.meta.env.DEV) console.log('[PWA] Install prompt captured');
     };
 
     const handleAppInstalled = () => {
       deferredInstallPrompt = null;
       setCanInstall(false);
       setIsInstalled(true);
-      console.log('[PWA] App was installed');
+      if (import.meta.env.DEV) console.log('[PWA] App was installed');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -150,7 +150,7 @@ export function usePWA(): PWAState & PWAActions {
   // Install action
   const install = useCallback(async (): Promise<boolean> => {
     if (!deferredInstallPrompt) {
-      console.warn('[PWA] No install prompt available');
+      if (import.meta.env.DEV) console.warn('[PWA] No install prompt available');
       return false;
     }
 
@@ -159,16 +159,16 @@ export function usePWA(): PWAState & PWAActions {
       const { outcome } = await deferredInstallPrompt.userChoice;
 
       if (outcome === 'accepted') {
-        console.log('[PWA] User accepted install prompt');
+        if (import.meta.env.DEV) console.log('[PWA] User accepted install prompt');
         deferredInstallPrompt = null;
         setCanInstall(false);
         return true;
       } else {
-        console.log('[PWA] User dismissed install prompt');
+        if (import.meta.env.DEV) console.log('[PWA] User dismissed install prompt');
         return false;
       }
     } catch (error) {
-      console.error('[PWA] Install prompt failed:', error);
+      if (import.meta.env.DEV) console.error('[PWA] Install prompt failed:', error);
       return false;
     }
   }, []);
@@ -178,12 +178,12 @@ export function usePWA(): PWAState & PWAActions {
     const reg = registrationRef.current;
     // Verify there's actually a waiting worker before attempting update
     if (!reg?.waiting) {
-      console.log('[PWA] No waiting worker to activate, dismissing notification');
+      if (import.meta.env.DEV) console.log('[PWA] No waiting worker to activate, dismissing notification');
       setNeedsUpdate(false);
       setHasWaitingWorker(false);
       return;
     }
-    console.log('[PWA] Activating waiting service worker');
+    if (import.meta.env.DEV) console.log('[PWA] Activating waiting service worker');
     updateServiceWorker(true);
   }, [updateServiceWorker, setNeedsUpdate]);
 

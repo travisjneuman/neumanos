@@ -97,10 +97,8 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   energytracker: 'EnergyTrackerWidget',
   portfolio: 'PortfolioWidget',
   weeklyinsights: 'WeeklyInsightsWidget',
-  producthunt: 'ProductHuntWidget',
   weatherforecast: 'WeatherForecastWidget',
   quickadd: 'QuickAddWidget',
-  tasksummary: 'TaskSummaryWidget',
   productivitykarma: 'ProductivityKarmaWidget',
 };
 
@@ -697,15 +695,6 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultEnabled: false,
   },
 
-  producthunt: {
-    id: 'producthunt',
-    name: 'Product Hunt',
-    description: 'Latest trending products and launches from Product Hunt',
-    icon: '🚀',
-    category: 'news',
-    apiUrl: 'https://www.producthunt.com',
-    defaultEnabled: false,
-  },
 
   weatherforecast: {
     id: 'weatherforecast',
@@ -725,14 +714,6 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultEnabled: false,
   },
 
-  tasksummary: {
-    id: 'tasksummary',
-    name: 'Task Summary',
-    description: 'Overview of task counts by status with progress ring',
-    icon: '📊',
-    category: 'core',
-    defaultEnabled: false,
-  },
 
   productivitykarma: {
     id: 'productivitykarma',

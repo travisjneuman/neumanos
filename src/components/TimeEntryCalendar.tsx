@@ -171,31 +171,11 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
 
-    // Debug: Count events with recurrence
-    let recurringEventCount = 0;
-    Object.entries(events).forEach(([_, dayEvents]) => {
-      dayEvents.forEach((event) => {
-        if (event.recurrence) recurringEventCount++;
-      });
-    });
-
-    if (import.meta.env.DEV) {
-      console.log('[ExpandedEvents Debug]', {
-        month: `${year}-${month + 1}`,
-        totalEventsInStore: Object.keys(events).length,
-        totalRecurringEvents: recurringEventCount,
-        viewRange: `${monthStart.toISOString().split('T')[0]} to ${monthEnd.toISOString().split('T')[0]}`
-      });
-    }
-
     Object.entries(events).forEach(([dateKey, dayEvents]) => {
       dayEvents.forEach((event) => {
         if (event.recurrence) {
           // Generate recurring instances for this month
           const instances = generateRecurringInstances(event, dateKey, monthStart, monthEnd);
-          if (import.meta.env.DEV && instances.length > 0) {
-            console.log('[ExpandedEvents Debug] Generated instances for', event.title, ':', instances.length);
-          }
           instances.forEach(({ date, event: instanceEvent }) => {
             // Also expand multi-day for each recurring instance
             const multiDayInstances = expandMultiDayEvent(instanceEvent, date);
@@ -203,9 +183,6 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
             multiDayInstances.forEach((multiDayEvent, multiDayDate) => {
               if (!result[multiDayDate]) result[multiDayDate] = [];
               result[multiDayDate].push(multiDayEvent);
-              if (import.meta.env.DEV) {
-                console.log('[ExpandedEvents Debug] Added instance to', multiDayDate, ':', multiDayEvent.title);
-              }
             });
           });
         } else {
@@ -218,14 +195,6 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
         }
       });
     });
-
-    const totalExpandedEvents = Object.values(result).reduce((sum, arr) => sum + arr.length, 0);
-    if (import.meta.env.DEV) {
-      console.log('[ExpandedEvents Debug] Result:', {
-        datesWithEvents: Object.keys(result).length,
-        totalExpandedEvents
-      });
-    }
 
     return result;
   }, [events, year, month]);

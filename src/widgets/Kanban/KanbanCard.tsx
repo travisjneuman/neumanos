@@ -10,7 +10,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CustomFieldDisplay } from '../../components/CustomFieldDisplay';
 import { TaskTimerButton } from '../../components/tasks/TaskTimerButton';
 import { WhenTagBadge } from '../../components/tasks/WhenTagPicker';
-import type { Task } from '../../types';
+import type { Task, TaskPriority } from '../../types';
 
 interface KanbanCardProps {
   task: Task;
@@ -51,6 +51,12 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({
   const totalSeconds = getTotalTimeForCard(task.id);
   const hasTimeTracked = totalSeconds > 0;
   const isTimerActive = activeEntry?.taskId === task.id;
+
+  // Count Pomodoro sessions for this task
+  const { entries } = useTimeTrackingStore();
+  const pomodoroCount = entries.filter(
+    (e) => e.taskId === task.id && e.tags?.includes('Pomodoro')
+  ).length;
   const [editedTask, setEditedTask] = useState({
     title: task.title,
     description: task.description,
@@ -197,7 +203,7 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({
           <select
             value={editedTask.priority}
             onChange={(e) =>
-              setEditedTask({ ...editedTask, priority: e.target.value as any })
+              setEditedTask({ ...editedTask, priority: e.target.value as TaskPriority })
             }
             className="w-full px-2 py-1 text-sm border border-border-light dark:border-border-dark rounded bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary"
           >

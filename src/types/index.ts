@@ -177,6 +177,15 @@ export interface TaskAttachment {
   uploadedBy?: string;     // Future: member ID
 }
 
+// Phase 8F: Section dividers within Kanban columns
+export interface KanbanSection {
+  id: string;
+  title: string;
+  columnId: string;          // Which column this section belongs to
+  order: number;             // Position within the column
+  collapsed?: boolean;       // Whether tasks in this section are hidden
+}
+
 // Phase 4: Column definition for custom Kanban columns
 export interface KanbanColumn {
   id: string;              // e.g., "backlog", "todo", or UUID for custom
@@ -380,11 +389,15 @@ export interface Task {
 
   // WAVE 7F: HABIT-TASK BRIDGE
   linkedHabitId?: string; // Linked habit ID (bidirectional)
+
+  // WAVE 8F: KANBAN SECTIONS
+  sectionId?: string; // Optional section within a column
 }
 
 export interface KanbanState {
   tasks: Task[];
   columns: KanbanColumn[];         // Phase 4: Dynamic columns
+  sections: KanbanSection[];       // Phase 8F: Section dividers within columns
   // NOTE: dependencies moved to Task.dependencies (task-level instead of global)
   // NOTE: archivedTasks moved to useKanbanArchiveStore (Phase 8.1)
   /** @deprecated Use useKanbanArchiveStore instead. Kept for migration compatibility. */
@@ -449,6 +462,9 @@ export interface TimeEntry {
   // Billing (future)
   billable: boolean;             // Is this billable time?
   hourlyRate?: number;           // USD per hour
+
+  // Automatic tracking
+  automatic?: boolean;           // True if auto-started by context detection
 
   // Metadata
   createdAt: string;             // ISO 8601

@@ -305,6 +305,14 @@ export const NAVIGATION_PAGES: NavigationPage[] = [
     keywords: ['retrospective', 'weekly', 'review', 'insights', 'productivity', 'score', 'retro'],
     description: 'Weekly productivity review with AI insights',
   },
+  {
+    id: 'availability',
+    name: 'Availability',
+    path: '/availability',
+    icon: '📋',
+    keywords: ['availability', 'free', 'busy', 'share', 'schedule', 'time', 'slots', 'meeting'],
+    description: 'Share your free time blocks with others',
+  },
 ];
 
 /**
