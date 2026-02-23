@@ -1,6 +1,6 @@
 # AI Terminal
 
-The AI Terminal gives you access to 8 different AI providers with automatic fallback and encrypted key storage. Get help with coding, questions, brainstorming, and more -- powered by your own API keys, running entirely in your browser.
+The AI Terminal gives you access to 9 different AI providers with automatic fallback and encrypted key storage. Get help with coding, questions, brainstorming, and more -- powered by your own API keys, running entirely in your browser.
 
 ---
 
@@ -54,6 +54,7 @@ Type your question or request and press Enter. The AI responds in real-time.
 | **OpenAI** | No | $0.15--$15/1M tokens | Yes | GPT-4o, o1 |
 | **Anthropic** | No | $1--$15/1M tokens | Yes | Best quality |
 | **xAI** | No | ~$5/1M tokens | Yes | Real-time info |
+| **DeepSeek** | Limited free | ~$0.14--$2.19/1M tokens | Yes | Cost-effective reasoning |
 
 > **Tip:** Start with OpenRouter or Groq -- both free, no credit card needed.
 
@@ -175,6 +176,18 @@ Unique personality, real-time information access. Requires proxy.
 3. Create API Key
 4. Copy and paste into NeumanOS settings
 
+#### DeepSeek
+
+Cost-effective reasoning and coding models. Requires proxy for browser use.
+
+1. Go to [platform.deepseek.com](https://platform.deepseek.com)
+2. Sign up and verify your account
+3. Go to API Keys section
+4. Create a new API key
+5. Copy and paste into NeumanOS settings
+
+**Models:** DeepSeek-V3 (general purpose), DeepSeek-R1 (reasoning). Known for strong coding performance at low cost.
+
 ---
 
 ## Understanding Models
@@ -231,6 +244,44 @@ All providers support streaming (except o1 models), so you see responses appear 
 ---
 
 ## Advanced Features
+
+### Voice Input
+
+Click the microphone icon in the AI Terminal input bar to dictate your message using your browser's built-in speech recognition. Voice input is processed entirely in your browser -- no audio is sent to NeumanOS servers. Supported in Chrome, Edge, and Safari.
+
+### Cross-Module Context
+
+The AI Terminal can see context from your other NeumanOS modules to provide more relevant responses. When enabled, the AI can reference:
+
+- **Notes** -- Your recent notes and their content
+- **Tasks** -- Your task board, statuses, and due dates
+- **Calendar** -- Upcoming events and schedule
+- **Habits** -- Your habit streaks and tracking data
+
+Toggle cross-module context on or off in AI Terminal Settings > Context. When enabled, relevant data is included in your prompt to the AI provider. This data is sent to whichever AI provider you have selected, so only enable it with providers you trust.
+
+### Natural Language Bar
+
+The AI Terminal supports a natural language action bar. Instead of navigating the UI, you can type natural commands like:
+
+- "Create a task called 'Review PR' due Friday"
+- "What's on my calendar tomorrow?"
+- "Summarize my notes from this week"
+- "Start a 25-minute focus session"
+
+The AI interprets your intent and executes the corresponding action within NeumanOS.
+
+### Local AI with Ollama
+
+For fully offline, private AI, you can connect NeumanOS to a local Ollama instance running on your machine. This keeps all AI conversations entirely on your device -- nothing is sent over the network.
+
+1. Install [Ollama](https://ollama.com) on your computer
+2. Pull a model (e.g., `ollama pull llama3.1`)
+3. Start Ollama (`ollama serve`)
+4. In NeumanOS AI Terminal Settings, select **Ollama** as provider
+5. Enter the local URL (default: `http://localhost:11434`)
+
+Ollama supports dozens of open-source models including Llama 3, Mistral, CodeLlama, and Phi. All processing happens on your hardware.
 
 ### Model Selection
 

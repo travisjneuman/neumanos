@@ -94,19 +94,81 @@ Some optional dashboard widgets fetch data from third-party APIs to display real
 
 ### Widgets That Contact External Services
 
+**Location-based widgets:**
+
 | Widget | Service | Data Sent |
 |--------|---------|-----------|
 | **IP Info** | ipapi.co | Your IP address (sent automatically by the HTTP request) |
-| **Weather** | api.open-meteo.com | Approximate location coordinates |
+| **Weather Forecast** | api.open-meteo.com | Approximate location coordinates |
+| **Weather Map** | api.open-meteo.com, OpenStreetMap tiles | Approximate location coordinates |
 | **Air Quality** | air-quality-api.open-meteo.com | Approximate location coordinates |
-| **Sports Scores** | site.api.espn.com | No personal data (public scoreboard API) |
-| **News/Reddit/HN** | Various public APIs | No personal data |
+
+**News category widgets** (all contact external APIs, no personal data sent):
+
+| Widget | Service |
+|--------|---------|
+| **Hacker News** | news.ycombinator.com API |
+| **Reddit** | reddit.com public API |
+| **AI News** | Various news aggregator APIs |
+| **Sports** | site.api.espn.com |
+| **Wikipedia** | en.wikipedia.org API |
+| **Motivational** | Quotes API |
+
+**Dev category widgets** (all contact external APIs, no personal data sent):
+
+| Widget | Service |
+|--------|---------|
+| **GitHub / GitHub Trending** | api.github.com |
+| **Dev.to** | dev.to API |
+| **Awesome Lists** | GitHub API |
+| **Repo Stats** | GitHub API |
+| **Package Stats** | npm registry API |
+| **Twitch** | Twitch API |
+| **YouTube** | YouTube public API |
+
+**Finance category widgets** (all contact external APIs, no personal data sent):
+
+| Widget | Service |
+|--------|---------|
+| **Stock Market** | Financial data APIs |
+| **Crypto** | CoinGecko or similar API |
+| **Currency Converter** | Exchange rate APIs |
+
+**Fun category widgets** (all contact external APIs, no personal data sent):
+
+| Widget | Service |
+|--------|---------|
+| **Quote of the Day** | Quotes API |
+| **Random Facts** | Facts API |
+| **Jokes** | JokeAPI |
+| **Word of the Day** | Dictionary API |
+| **Bored** | BoredAPI |
+
+**Other widgets contacting external services:**
+
+| Widget | Service | Data Sent |
+|--------|---------|-----------|
+| **Unsplash** | unsplash.com | No personal data |
+| **Dictionary** | Free dictionary API | Search terms only |
+| **Uptime** | Target URLs you configure | HTTP requests to those URLs |
+
+**General rule:** All widgets in the **news**, **dev**, **finance**, and **fun** categories contact external APIs to fetch content. Widgets in the **core** and **productivity** categories read only from your local data and make no external requests (except AI Briefing, which uses your configured AI provider).
+
+### Widgets That Stay Fully Local
+
+These widgets never contact any external service:
+
+- My Day, Task Summary, Tasks Quick Add, Upcoming Events, Recent Notes, Habit Summary, Activity Feed, Bookmarks, Quick Add
+- Pomodoro, Shortcuts, Countdown, Flashcard, Daily Quests, Energy Tracker, Productivity Karma, Weekly Insights, Clipboard, Tab Manager, Forms, Analytics, Portfolio
+- Calculator, QR Code Generator, Unit Converter, Color Palette
+- Pixel Art, Typing Test, Memory Game
 
 ### How to Control This
 
-- **Widgets are opt-in** — no external requests are made until you add a widget to your dashboard
+- **Widgets are opt-in** -- no external requests are made until you add a widget to your dashboard
 - **Remove any widget at any time** to immediately stop those requests
 - **No accounts or tokens** are shared with these services (except your own AI API keys with AI providers)
+- **Check widget categories** -- core and productivity widgets are local-only; news, dev, finance, and fun widgets contact external APIs
 
 These external requests are the only exception to the "data never leaves your device" principle. All your notes, tasks, calendar events, and other content remain entirely local.
 

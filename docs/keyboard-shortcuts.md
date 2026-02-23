@@ -1,23 +1,21 @@
 # Keyboard Shortcuts
 
-NeumanOS supports 75+ keyboard shortcuts across all features for faster navigation and productivity. This guide lists all available shortcuts organized by category.
+NeumanOS supports extensive keyboard shortcuts across all modules. This guide lists every shortcut available, sourced directly from the in-app help.
 
-**Platform note:** Throughout this guide, "Cmd" means Cmd on Mac and Ctrl on Windows/Linux.
+**Platform note:** On Mac, use Cmd instead of Ctrl for all shortcuts listed below.
 
 ---
 
 ## Table of Contents
 
 - [Global Shortcuts](#global-shortcuts)
-- [Command Palette](#command-palette-cmdk)
-- [Notes Page](#notes-page)
+- [Page Navigation (Ctrl+Number)](#page-navigation-ctrlnumber)
+- [Go To (G then key)](#go-to-g-then-key)
+- [Quick Create](#quick-create)
+- [Synapse (Command Palette)](#synapse-command-palette)
+- [Notes Editor](#notes-editor)
 - [Kanban Board](#kanban-board)
 - [Calendar](#calendar)
-- [Time Tracking](#time-tracking)
-- [AI Terminal](#ai-terminal)
-- [Dashboard](#dashboard)
-- [General UI](#general-ui)
-- [Gantt Chart](#gantt-chart)
 - [Accessibility](#accessibility)
 - [Tips for Mastering Shortcuts](#tips-for-mastering-shortcuts)
 - [Quick Reference Card](#quick-reference-card)
@@ -29,77 +27,109 @@ NeumanOS supports 75+ keyboard shortcuts across all features for faster navigati
 
 These shortcuts work on any page in NeumanOS:
 
-| Shortcut | Action | Description |
-|----------|--------|-------------|
-| **Cmd+K** | Command Palette | Universal search for notes, tasks, events, settings |
-| **Cmd+N** | New Note | Create new note |
-| **Cmd+Shift+T** | New Task | Open quick task creation modal |
-| **Esc** | Close Modal | Close any open modal, dialog, or overlay |
-| **?** | Help | Open context-sensitive help or shortcuts panel |
+| Shortcut | Action |
+|----------|--------|
+| **Ctrl+K** | Open Synapse (command palette) |
+| **F1** | Open help & support |
+| **Ctrl+/** | Open help |
+| **Ctrl+B** | Toggle sidebar |
+| **Ctrl+Shift+A** | Toggle AI Terminal |
+| **Ctrl+Shift+P** | Toggle project context |
+| **Esc** | Close modal / clear selection |
 
 ---
 
-## Command Palette (Cmd+K)
+## Page Navigation (Ctrl+Number)
 
-The command palette is your universal search interface.
+Jump directly to any page using Ctrl and a number key:
 
-### Search Modes
+| Shortcut | Page |
+|----------|------|
+| **Ctrl+1** | Dashboard |
+| **Ctrl+2** | Today |
+| **Ctrl+3** | Notes |
+| **Ctrl+4** | Tasks |
+| **Ctrl+5** | Schedule |
+| **Ctrl+6** | Create (Docs) |
+| **Ctrl+7** | Link Library |
+| **Ctrl+8** | Settings |
+
+---
+
+## Go To (G then key)
+
+Press G followed by another key to navigate. These are two-key sequences, not simultaneous presses.
+
+| Shortcut | Destination |
+|----------|-------------|
+| **G then D** | Go to Dashboard |
+| **G then T** | Go to Tasks |
+| **G then N** | Go to Notes |
+| **G then H** | Go to Habits |
+| **G then C** | Go to Calendar |
+| **G then S** | Go to Settings |
+| **G then O** | Go to Today |
+| **G then L** | Go to Links |
+| **G then F** | Go to Focus |
+
+---
+
+## Quick Create
+
+Shortcuts for creating new items from anywhere:
+
+| Shortcut | Action |
+|----------|--------|
+| **C** | Quick add task (single key, only when not in a text field) |
+| **Ctrl+N** | New note |
+| **Ctrl+T** | New task |
+| **Ctrl+E** | New event (go to calendar) |
+| **Ctrl+Shift+T** | Smart Templates |
+| **Ctrl+D** | Create daily note |
+
+---
+
+## Synapse (Command Palette)
+
+Open Synapse with **Ctrl+K**, then use these prefixes to filter:
 
 | Prefix | Mode | Example |
 |--------|------|---------|
 | (none) | Search all | "project plan" |
-| **>** | Commands only | ">create note" |
-| **?** | Help docs | "?shortcuts" |
-| **/** | Web search | "/react hooks tutorial" |
+| **>** | Enter command mode | ">create note" |
+| **?** | Enter help mode | "?shortcuts" |
+| **/** | Enter navigation mode | "/tasks" |
+| **tag:name** | Filter by tag | "tag:work" |
+| **date:today** | Filter by date | "date:today" |
 
-### Navigation
+### Synapse Navigation
 
 | Shortcut | Action |
 |----------|--------|
 | **Up/Down** | Navigate results |
 | **Enter** | Execute selected result |
-| **Esc** | Close palette |
+| **Esc** | Close Synapse |
 | **Tab** | Cycle through result categories |
-
-### Quick Actions
-
-Type these in the command palette:
-
-- `>new note` -- Create note
-- `>new task` -- Create task
-- `>new event` -- Create calendar event
-- `>export` -- Export all data
-- `>settings` -- Open settings
-- `>theme` -- Toggle light/dark theme
 
 ---
 
-## Notes Page
+## Notes Editor
 
-### Navigation & Actions
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+N** | Create new note in current folder |
-| **Cmd+K** | Search notes |
-| **Up/Down** | Navigate note list |
-| **Enter** | Open selected note |
-| **Delete** | Delete selected note (10-second undo) |
-
-### Editor
+### Editor Formatting
 
 | Shortcut | Action |
 |----------|--------|
-| **Cmd+B** | Bold |
-| **Cmd+I** | Italic |
-| **Cmd+U** | Underline |
-| **Cmd+K** | Insert link (when text selected) |
-| **/** | Slash commands menu |
-| **[[** | Wiki link autocomplete |
-| **Cmd+Z** | Undo |
-| **Cmd+Shift+Z** | Redo |
+| **Ctrl+D** | Create daily note |
+| **Ctrl+Shift+E** | Export notes |
+| **Ctrl+B** | Bold text |
+| **Ctrl+I** | Italic text |
+| **Ctrl+U** | Underline text |
+| **/** | Open slash commands |
+| **[[** | Insert wiki link |
 
 ### Slash Commands
+
+Type `/` in the editor to access:
 
 | Command | Result |
 |---------|--------|
@@ -107,51 +137,30 @@ Type these in the command palette:
 | `/list` | Bullet or numbered list |
 | `/code` | Code block |
 | `/quote` | Blockquote |
-| `/table` | 3x3 table |
-
-### Folder Management
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+Shift+N** | New folder |
-| **F2** | Rename selected folder or note |
-| **Delete** | Delete folder (10-second undo) |
+| `/table` | Insert table |
 
 ---
 
 ## Kanban Board
 
-### Navigation (When Board Focused)
+These shortcuts work when the Kanban board is focused (not when typing in an input field).
+
+### Navigation
 
 | Shortcut | Action |
 |----------|--------|
-| **J** | Move down (next task) |
-| **K** | Move up (previous task) |
-| **H** | Move left (previous column) |
-| **L** | Move right (next column) |
-| **Tab** | Next column |
-| **Shift+Tab** | Previous column |
+| **J** | Move down to next task |
+| **K** | Move up to previous task |
+| **H** | Move left to previous column |
+| **L** | Move right to next column |
 
 ### Actions
 
 | Shortcut | Action |
 |----------|--------|
-| **N** | New task in current column |
+| **N** | Create new task in current column |
 | **E** | Edit selected task |
 | **D** | Delete selected task |
-| **Enter** | Open task detail panel |
-| **?** | Show shortcuts help |
-| **Esc** | Clear selection / Close dialogs |
-| **/** | Focus search box |
-
-### Task Detail Panel
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+S** | Save and close |
-| **Esc** | Close without saving |
-| **Tab** | Next field |
-| **Shift+Tab** | Previous field |
 
 ---
 
@@ -167,7 +176,6 @@ Type these in the command palette:
 | **W** | Week view |
 | **D** | Day view |
 | **A** | Agenda view |
-| **G** | Gantt view |
 
 ### Event Actions
 
@@ -178,81 +186,6 @@ Type these in the command palette:
 | **Delete** | Delete selected event |
 | **Enter** | Open event detail |
 | **Esc** | Close modal |
-
----
-
-## Time Tracking
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+Shift+T** | Start/stop timer (global) |
-| **Space** | Pause/resume (when timer focused) |
-
----
-
-## AI Terminal
-
-### Terminal Controls
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+`** | Toggle terminal |
-| **Cmd+L** | Clear terminal |
-| **Up/Down** | Command history |
-| **Tab** | Autocomplete |
-| **Ctrl+C** | Cancel |
-
-### Terminal Modes
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+Shift+C** | Switch to AI chat mode |
-| **Cmd+Shift+S** | Switch to Phantom Shell mode |
-
----
-
-## Dashboard
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+Shift+W** | Add widget |
-| **Delete** | Remove focused widget |
-| **Tab** | Next widget |
-| **Shift+Tab** | Previous widget |
-
----
-
-## General UI
-
-### Navigation
-
-| Shortcut | Action |
-|----------|--------|
-| **Cmd+[** | Back |
-| **Cmd+]** | Forward |
-| **Cmd+R** | Refresh |
-| **F11** | Toggle fullscreen |
-
-### Modals & Dialogs
-
-| Shortcut | Action |
-|----------|--------|
-| **Esc** | Close |
-| **Enter** | Confirm (primary button) |
-| **Tab** | Next field |
-| **Shift+Tab** | Previous field |
-
----
-
-## Gantt Chart
-
-| Shortcut | Action |
-|----------|--------|
-| **+** | Zoom in |
-| **-** | Zoom out |
-| **R** | Reset zoom |
-| **Cmd+Shift+R** | Toggle resource allocation panel |
-| **Cmd+Shift+B** | Toggle billable on current task |
 
 ---
 
@@ -277,64 +210,88 @@ All shortcuts work with screen readers (NVDA, JAWS, VoiceOver). The interface us
 
 ### Start with These 5 Essentials
 
-1. **Cmd+K** -- Universal search (most powerful shortcut)
-2. **Cmd+N** -- Quick note creation
-3. **Esc** -- Close anything
-4. **J/K** -- Navigate lists (Kanban, notes)
-5. **/** -- Slash commands in editor
+1. **Ctrl+K** -- Open Synapse (most powerful shortcut)
+2. **Ctrl+N** -- Quick note creation
+3. **Ctrl+1 to Ctrl+8** -- Direct page navigation
+4. **Esc** -- Close anything
+5. **C** -- Quick add task from anywhere
 
-Master these first, then gradually add more.
+Master these first, then gradually add the G-key navigation and editor shortcuts.
+
+### Single-Key vs. Modified Shortcuts
+
+Single-key shortcuts (C, G, J, K, H, L, N, E, D) only work when you are **not** typing in an input field. If a shortcut isn't working, click outside any text input and try again.
+
+Modified shortcuts (Ctrl+K, Ctrl+N, etc.) work everywhere, including while typing.
 
 ### Context Matters
 
 Many shortcuts are context-sensitive:
 - **J/K** navigate tasks in Kanban, notes in Notes page
-- **N** creates task in Kanban, note in Notes page
+- **N** creates task in Kanban, note in Notes page, event in Calendar
 - **E** edits selected item (task, note, event)
+- **D** deletes in Kanban, switches to Day view in Calendar
 
 Same keys, different context, logical behavior.
 
 ### Discoverability
 
-Press **?** anywhere to see available shortcuts for that page. Or use the command palette (`Cmd+K`, then type `>shortcuts`).
-
-### Shortcuts While Typing
-
-Shortcuts are automatically disabled when typing in input fields (except editor formatting shortcuts like Cmd+B). If a shortcut isn't working, check if your cursor is in a text input -- click outside, then try again.
+Press **Ctrl+/** or **F1** anywhere to see available shortcuts. Or open Synapse with **Ctrl+K** and type `?shortcuts`.
 
 ---
 
 ## Quick Reference Card
 
 ```
-ESSENTIAL SHORTCUTS
-  Cmd+K           Search everything
-  Cmd+N           New note
-  Cmd+Shift+T     New task
-  Esc             Close modal
-  ?               Show help
+GLOBAL
+  Ctrl+K           Open Synapse (command palette)
+  Ctrl+B           Toggle sidebar
+  Ctrl+Shift+A     Toggle AI Terminal
+  F1 / Ctrl+/      Help
+  Esc              Close modal
 
-EDITOR
-  Cmd+B           Bold
-  Cmd+I           Italic
-  /               Slash commands
-  [[              Wiki link
+PAGE NAVIGATION
+  Ctrl+1           Dashboard
+  Ctrl+2           Today
+  Ctrl+3           Notes
+  Ctrl+4           Tasks
+  Ctrl+5           Schedule
+  Ctrl+6           Create (Docs)
+  Ctrl+7           Link Library
+  Ctrl+8           Settings
+
+QUICK CREATE
+  C                Quick add task
+  Ctrl+N           New note
+  Ctrl+T           New task
+  Ctrl+E           New event
+  Ctrl+D           Daily note
+  Ctrl+Shift+T     Smart Templates
+
+GO TO
+  G then D/T/N/H/C/S/O/L/F
+  Dashboard/Tasks/Notes/Habits/Calendar/Settings/Today/Links/Focus
+
+NOTES EDITOR
+  Ctrl+B/I/U       Bold / Italic / Underline
+  /                Slash commands
+  [[               Wiki link
 
 KANBAN
-  J / K           Navigate tasks (down/up)
-  H / L           Switch columns (left/right)
-  N               New task
-  E               Edit task
-  D               Delete task
+  J / K            Navigate tasks (down/up)
+  H / L            Switch columns (left/right)
+  N                New task
+  E                Edit task
+  D                Delete task
 
 CALENDAR
-  T               Today
-  Left/Right      Previous/Next
-  N               New event
-  G               Gantt view
+  T                Today
+  Left/Right       Previous/Next
+  M / W / D / A    Month/Week/Day/Agenda view
+  N                New event
 ```
 
-> **Tip:** Print this page (Cmd+P) and keep it near your workspace until muscle memory develops.
+> **Tip:** On Mac, use Cmd instead of Ctrl for all shortcuts above.
 
 ---
 
