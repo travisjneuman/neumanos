@@ -5,7 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { DecoratorNode } from 'lexical';
-import { useDocsStore } from '../../stores/useDocsStore';
+import { useDocsStore } from '../../../stores/useDocsStore';
 import { useNavigate } from 'react-router-dom';
 import type {
   LexicalNode,
@@ -14,7 +14,7 @@ import type {
   Spread,
   EditorConfig,
 } from 'lexical';
-import type { SpreadsheetDoc } from '../../types';
+import type { SpreadsheetDoc } from '../../../types';
 
 export type SerializedSpreadsheetEmbedNode = Spread<
   { docId: string },

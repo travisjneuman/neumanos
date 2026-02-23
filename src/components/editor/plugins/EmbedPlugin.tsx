@@ -17,9 +17,9 @@ import type { LexicalCommand } from 'lexical';
 import { useKanbanStore } from '../../../stores/useKanbanStore';
 import { useCalendarStore } from '../../../stores/useCalendarStore';
 import { useDocsStore } from '../../../stores/useDocsStore';
-import { $createTaskEmbedNode } from '../../../widgets/NotesEditor/TaskEmbedNode';
-import { $createEventEmbedNode } from '../../../widgets/NotesEditor/EventEmbedNode';
-import { $createSpreadsheetEmbedNode } from '../../../widgets/NotesEditor/SpreadsheetEmbedNode';
+import { $createTaskEmbedNode } from '../nodes/TaskEmbedNode';
+import { $createEventEmbedNode } from '../nodes/EventEmbedNode';
+import { $createSpreadsheetEmbedNode } from '../nodes/SpreadsheetEmbedNode';
 import type { Task, CalendarEvent, SpreadsheetDoc } from '../../../types';
 
 type PickerType = 'task' | 'event' | 'sheet' | null;

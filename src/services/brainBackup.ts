@@ -654,8 +654,13 @@ export const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | 
       return null;
     }
 
-    // Verify permission (TypeScript type definitions may be incomplete)
-    const permission = await (handle as any).queryPermission({ mode: 'readwrite' });
+    // Verify permission (File System Access API — not in all TS lib definitions)
+    interface FileSystemHandleWithPermissions extends FileSystemDirectoryHandle {
+      queryPermission(descriptor: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
+      requestPermission(descriptor: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
+    }
+    const permHandle = handle as FileSystemHandleWithPermissions;
+    const permission = await permHandle.queryPermission({ mode: 'readwrite' });
 
     if (permission === 'granted') {
       log.info('Restored directory handle with granted permission');
@@ -664,7 +669,7 @@ export const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | 
 
     // Permission not granted, try to request it
     log.debug('Permission not granted, requesting');
-    const newPermission = await (handle as any).requestPermission({ mode: 'readwrite' });
+    const newPermission = await permHandle.requestPermission({ mode: 'readwrite' });
 
     if (newPermission === 'granted') {
       log.info('Permission granted after request');

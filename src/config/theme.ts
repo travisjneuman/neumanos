@@ -272,7 +272,9 @@ export function getColor(path: string): string {
   for (const key of keys) {
     value = value[key];
     if (value === undefined) {
-      console.warn(`Color path "${path}" not found in theme config`);
+      if (import.meta.env.DEV) {
+        console.warn(`Color path "${path}" not found in theme config`);
+      }
       return '#000000';
     }
   }

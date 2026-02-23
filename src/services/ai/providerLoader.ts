@@ -383,7 +383,9 @@ export async function preloadConfiguredProviders(
           provider.setApiKey(apiKey);
         }
       } catch (error) {
-        console.warn(`Failed to preload provider ${id}:`, error);
+        if (import.meta.env.DEV) {
+          console.warn(`Failed to preload provider ${id}:`, error);
+        }
       }
     });
 

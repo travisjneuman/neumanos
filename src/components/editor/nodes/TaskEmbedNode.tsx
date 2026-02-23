@@ -5,7 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { DecoratorNode } from 'lexical';
-import { useKanbanStore } from '../../stores/useKanbanStore';
+import { useKanbanStore } from '../../../stores/useKanbanStore';
 import { useNavigate } from 'react-router-dom';
 import type {
   LexicalNode,

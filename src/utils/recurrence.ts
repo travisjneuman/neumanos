@@ -55,7 +55,9 @@ export const generateRecurringInstances = (
 
     // Validate date before using it
     if (isNaN(currentDate.getTime())) {
-      console.warn('Invalid date encountered in recurrence generation, skipping');
+      if (import.meta.env.DEV) {
+        console.warn('Invalid date encountered in recurrence generation, skipping');
+      }
       break;
     }
 
@@ -201,7 +203,9 @@ export const expandMultiDayEvent = (
 
   // Validate dates before processing
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    console.warn('Invalid date in multi-day event expansion, skipping', { startDateKey, endDate: event.endDate });
+    if (import.meta.env.DEV) {
+      console.warn('Invalid date in multi-day event expansion, skipping', { startDateKey, endDate: event.endDate });
+    }
     return result;
   }
 
@@ -211,7 +215,9 @@ export const expandMultiDayEvent = (
   while (!isAfter(currentDate, endDate)) {
     // Validate current date before using it
     if (isNaN(currentDate.getTime())) {
-      console.warn('Invalid date encountered in multi-day expansion, stopping');
+      if (import.meta.env.DEV) {
+        console.warn('Invalid date encountered in multi-day expansion, stopping');
+      }
       break;
     }
 

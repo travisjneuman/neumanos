@@ -5,10 +5,12 @@
  * Uses Recharts PieChart with color-coded segments.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useActivityStore } from '../../stores/useActivityStore';
 import type { ModuleType } from '../../stores/useActivityStore';
+import { useAnalyticsWorker } from '../../hooks/useAnalyticsWorker';
+import type { ActivityEvent as WorkerActivityEvent } from '../../hooks/useAnalyticsWorker';
 
 const MODULE_COLORS: Record<ModuleType, string> = {
   notes: '#f59e0b',
@@ -38,21 +40,47 @@ const MODULE_LABELS: Record<ModuleType, string> = {
 
 export const ModuleUsageChart: React.FC = () => {
   const events = useActivityStore((s) => s.events);
+  const { calculateModuleDistribution } = useAnalyticsWorker();
+
+  // Worker-computed module distribution
+  const [workerDistribution, setWorkerDistribution] = useState<Record<string, number> | null>(null);
+
+  useEffect(() => {
+    if (events.length === 0) {
+      setWorkerDistribution(null);
+      return;
+    }
+    const workerEvents: WorkerActivityEvent[] = events.map((e) => ({
+      timestamp: e.timestamp,
+      module: e.module,
+    }));
+    let cancelled = false;
+    calculateModuleDistribution(workerEvents).then((dist) => {
+      if (!cancelled) setWorkerDistribution(dist);
+    });
+    return () => { cancelled = true; };
+  }, [events, calculateModuleDistribution]);
 
   const chartData = useMemo(() => {
-    const counts: Partial<Record<ModuleType, number>> = {};
-    for (const event of events) {
-      counts[event.module] = (counts[event.module] || 0) + 1;
-    }
+    // Use worker results when available, fall back to inline computation
+    const counts: Partial<Record<ModuleType, number>> = workerDistribution
+      ? (workerDistribution as Partial<Record<ModuleType, number>>)
+      : (() => {
+          const c: Partial<Record<ModuleType, number>> = {};
+          for (const event of events) {
+            c[event.module] = (c[event.module] || 0) + 1;
+          }
+          return c;
+        })();
 
     return Object.entries(counts)
       .map(([module, count]) => ({
         name: MODULE_LABELS[module as ModuleType] || module,
-        value: count,
+        value: count as number,
         module: module as ModuleType,
       }))
       .sort((a, b) => b.value - a.value);
-  }, [events]);
+  }, [events, workerDistribution]);
 
   const total = useMemo(() => chartData.reduce((sum, d) => sum + d.value, 0), [chartData]);
 

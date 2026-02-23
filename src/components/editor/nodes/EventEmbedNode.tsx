@@ -5,7 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { DecoratorNode } from 'lexical';
-import { useCalendarStore } from '../../stores/useCalendarStore';
+import { useCalendarStore } from '../../../stores/useCalendarStore';
 import { useNavigate } from 'react-router-dom';
 import type {
   LexicalNode,

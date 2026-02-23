@@ -1453,7 +1453,7 @@ export const useNotesStore = create<NotesStore>()(
         customNoteTemplates: state.customNoteTemplates,
       }),
       migrate: (persistedState: unknown, version: number) => {
-        let state = persistedState as any;
+        let state = persistedState as Record<string, unknown>;
 
         // Version 1 -> 2: Add customNoteTemplates
         if (version < 2) {
@@ -1466,11 +1466,12 @@ export const useNotesStore = create<NotesStore>()(
         // Version 2 -> 3: Add projectIds field to all notes
         if (version < 3 && state.notes) {
           log.info('Adding projectIds field to all notes');
-          const updatedNotes: Record<string, any> = {};
-          Object.entries(state.notes).forEach(([id, note]: [string, any]) => {
+          const notes = state.notes as Record<string, Record<string, unknown>>;
+          const updatedNotes: Record<string, Record<string, unknown>> = {};
+          Object.entries(notes).forEach(([id, note]) => {
             updatedNotes[id] = {
               ...note,
-              projectIds: note.projectIds ?? [],
+              projectIds: (note.projectIds as string[] | undefined) ?? [],
             };
           });
           state = {
@@ -1482,11 +1483,12 @@ export const useNotesStore = create<NotesStore>()(
         // Version 3 -> 4: Add parentNoteId field for subnotes
         if (version < 4 && state.notes) {
           log.info('Adding parentNoteId field to all notes');
-          const updatedNotes: Record<string, any> = {};
-          Object.entries(state.notes).forEach(([id, note]: [string, any]) => {
+          const notes = state.notes as Record<string, Record<string, unknown>>;
+          const updatedNotes: Record<string, Record<string, unknown>> = {};
+          Object.entries(notes).forEach(([id, note]) => {
             updatedNotes[id] = {
               ...note,
-              parentNoteId: note.parentNoteId ?? null,
+              parentNoteId: (note.parentNoteId as string | null | undefined) ?? null,
             };
           });
           state = {

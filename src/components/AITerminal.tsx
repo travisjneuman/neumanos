@@ -38,6 +38,7 @@ import {
   ConversationSearchPanel,
 } from './terminal';
 import { getDefaultSystemPrompt } from '../services/systemPrompts';
+import { buildCrossModuleContext, contextToSystemPrompt } from '../services/ai/contextBuilder';
 import { MessageSquare, Settings2, BookOpen, Search, Sparkles, X, Mic } from 'lucide-react';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { useShortcut } from '../hooks/useShortcut';
@@ -587,7 +588,11 @@ export const AITerminal: React.FC = () => {
       const contextPrefix = activeContext
         ? `\n\n**Active Context (${activeContext.type}):**\nTitle: ${activeContext.title}\nContent:\n${activeContext.content.slice(0, 2000)}\n\n---\n\n`
         : '';
-      const systemPrompt = instructionsPrefix + baseSystemPrompt + contextPrefix;
+      // Inject cross-module context if enabled
+      const crossModulePrefix = useTerminalStore.getState().enableCrossModuleContext
+        ? `\n\n${contextToSystemPrompt(buildCrossModuleContext())}\n\n---\n\n`
+        : '';
+      const systemPrompt = instructionsPrefix + baseSystemPrompt + contextPrefix + crossModulePrefix;
       const response = await router.sendMessage({
         prompt: userMessage,
         conversationHistory: messages.map((msg) => ({

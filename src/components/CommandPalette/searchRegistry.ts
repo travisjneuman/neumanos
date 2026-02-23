@@ -1045,6 +1045,7 @@ const KEYBOARD_SHORTCUTS = [
   { keys: 'C', description: 'Quick Add Task', context: 'Global', settingsSection: null },
   { keys: 'Ctrl+N / ⌘N', description: 'New Note', context: 'Global', settingsSection: null },
   { keys: 'Ctrl+T / ⌘T', description: 'New Task', context: 'Global', settingsSection: null },
+  { keys: 'Ctrl+Shift+T', description: 'Smart Templates', context: 'Global', settingsSection: null },
   { keys: 'Ctrl+E / ⌘E', description: 'New Event', context: 'Global', settingsSection: null },
   // Notes editor
   { keys: 'Ctrl+D / ⌘D', description: 'Create Daily Note', context: 'Notes', settingsSection: 'daily-notes' },

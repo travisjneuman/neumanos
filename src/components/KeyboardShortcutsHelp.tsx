@@ -61,6 +61,7 @@ export const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({
         { keys: ['Ctrl+N'], description: 'New note' },
         { keys: ['Ctrl+T'], description: 'New task' },
         { keys: ['Ctrl+E'], description: 'New event (go to calendar)' },
+        { keys: ['Ctrl+Shift+T'], description: 'Smart Templates' },
       ],
     },
     {

@@ -1049,16 +1049,17 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
         collections: state.collections,
       }),
       migrate: (persistedState: unknown, version: number) => {
-        let state = persistedState as any;
+        let state = persistedState as Record<string, unknown>;
 
         // Version 0 -> 1: Add projectIds field to all links
         if (version < 1 && state.links) {
           if (import.meta.env.DEV) console.log('[LinkLibraryStore] Adding projectIds field to all links');
+          const links = state.links as Record<string, Record<string, unknown>>;
           const updatedLinks: Record<string, Link> = {};
-          Object.entries(state.links).forEach(([id, link]: [string, any]) => {
+          Object.entries(links).forEach(([id, link]) => {
             updatedLinks[id] = {
-              ...link,
-              projectIds: link.projectIds ?? [],
+              ...(link as unknown as Link),
+              projectIds: (link.projectIds as string[] | undefined) ?? [],
             };
           });
           state = {
@@ -1071,10 +1072,11 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
         if (version < 2 && state.links) {
           if (import.meta.env.DEV) console.log('[LinkLibraryStore] Adding sortOrder field to all links');
           // Group links by folderId and assign sortOrder by createdAt
-          const linksByFolder: Record<string, Array<[string, any]>> = {};
+          const links = state.links as Record<string, Record<string, unknown>>;
+          const linksByFolder: Record<string, Array<[string, Record<string, unknown>]>> = {};
 
-          Object.entries(state.links).forEach(([id, link]: [string, any]) => {
-            const folderId = link.folderId ?? '__root__';
+          Object.entries(links).forEach(([id, link]) => {
+            const folderId = (link.folderId as string | undefined) ?? '__root__';
             if (!linksByFolder[folderId]) {
               linksByFolder[folderId] = [];
             }
@@ -1086,14 +1088,14 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
           Object.values(linksByFolder).forEach((folderLinks) => {
             // Sort by createdAt to preserve chronological order
             folderLinks.sort((a, b) => {
-              const dateA = new Date(a[1].createdAt || 0).getTime();
-              const dateB = new Date(b[1].createdAt || 0).getTime();
+              const dateA = new Date((a[1].createdAt as string) || 0).getTime();
+              const dateB = new Date((b[1].createdAt as string) || 0).getTime();
               return dateA - dateB;
             });
 
             folderLinks.forEach(([id, link], index) => {
               updatedLinks[id] = {
-                ...link,
+                ...(link as unknown as Link),
                 sortOrder: index,
               };
             });

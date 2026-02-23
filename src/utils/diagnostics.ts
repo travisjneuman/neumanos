@@ -12,6 +12,28 @@ import { BUILD_HASH, BUILD_TIMESTAMP, formatBuildTimestamp } from './buildInfo';
 
 const log = logger.module('Diagnostics');
 
+/** Non-standard Navigator APIs available in some browsers */
+interface NavigatorWithExtensions extends Navigator {
+  deviceMemory?: number;
+  connection?: { effectiveType?: string; downlink?: number; rtt?: number };
+}
+
+/** PerformanceTiming with numeric indexing for load metrics */
+interface PerformanceTimingData {
+  loadEventEnd: number;
+  navigationStart: number;
+}
+
+/** Largest Contentful Paint entry */
+interface LargestContentfulPaintEntry extends PerformanceEntry {
+  renderTime: number;
+}
+
+/** First Input Delay entry */
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+}
+
 /**
  * Diagnostic report structure
  */
@@ -133,14 +155,14 @@ async function getSystemInfo(): Promise<SystemInfo> {
   // Memory (if available)
   let memory: string | undefined;
   if ('deviceMemory' in navigator) {
-    memory = `${(navigator as any).deviceMemory} GB`;
+    memory = `${(navigator as NavigatorWithExtensions).deviceMemory} GB`;
   }
 
   // Connection (if available)
   let connection: string | undefined;
   if ('connection' in navigator) {
-    const conn = (navigator as any).connection;
-    connection = conn.effectiveType || 'Unknown';
+    const conn = (navigator as NavigatorWithExtensions).connection;
+    connection = conn?.effectiveType || 'Unknown';
   }
 
   return {
@@ -363,7 +385,7 @@ function getPerformanceMetrics(): PerformanceMetrics {
   const metrics: PerformanceMetrics = {};
 
   if ('performance' in window && 'timing' in performance) {
-    const timing = performance.timing as any;
+    const timing = performance.timing as unknown as PerformanceTimingData;
     const loadTime = timing.loadEventEnd - timing.navigationStart;
     if (loadTime > 0) {
       metrics.pageLoadTime = `${(loadTime / 1000).toFixed(2)}s`;
@@ -376,14 +398,14 @@ function getPerformanceMetrics(): PerformanceMetrics {
       // LCP (Largest Contentful Paint)
       const lcpEntries = performance.getEntriesByType('largest-contentful-paint');
       if (lcpEntries.length > 0) {
-        const lcp = lcpEntries[lcpEntries.length - 1] as any;
+        const lcp = lcpEntries[lcpEntries.length - 1] as LargestContentfulPaintEntry;
         metrics.largestContentfulPaint = `${(lcp.renderTime / 1000).toFixed(2)}s`;
       }
 
       // FID (First Input Delay)
       const fidEntries = performance.getEntriesByType('first-input');
       if (fidEntries.length > 0) {
-        const fid = fidEntries[0] as any;
+        const fid = fidEntries[0] as FirstInputEntry;
         metrics.firstInputDelay = `${fid.processingStart - fid.startTime}ms`;
       }
     } catch (error) {

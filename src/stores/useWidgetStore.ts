@@ -363,14 +363,14 @@ export const useWidgetStore = create<WidgetState>()(
         // Migration for version 5 -> 6: Add customWidgets array
         if (version < 6) {
           if (!state.customWidgets) {
-            (state as any).customWidgets = [];
+            state.customWidgets = [];
           }
         }
 
         // Migration for version 6 -> 7: Add savedLayouts array
         if (version < 7) {
-          if (!(state as any).savedLayouts) {
-            (state as any).savedLayouts = [];
+          if (!state.savedLayouts) {
+            state.savedLayouts = [];
           }
         }
 

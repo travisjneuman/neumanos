@@ -1,5 +1,10 @@
 import type { PomodoroMode } from '../stores/usePomodoroStore';
 
+/** Window with vendor-prefixed AudioContext for older Safari */
+interface WindowWithWebkit extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 /**
  * Pomodoro Notification Utilities
  *
@@ -11,7 +16,9 @@ import type { PomodoroMode } from '../stores/usePomodoroStore';
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!('Notification' in window)) {
-    console.warn('This browser does not support desktop notifications');
+    if (import.meta.env.DEV) {
+      console.warn('This browser does not support desktop notifications');
+    }
     return false;
   }
 
@@ -78,7 +85,7 @@ export function showPomodoroNotification(mode: PomodoroMode) {
 export function playPomodoroSound() {
   try {
     // Create a simple beep sound using Web Audio API
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (window.AudioContext || (window as WindowWithWebkit).webkitAudioContext!)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 

@@ -12,7 +12,7 @@
  * - Quick switching between navigation modes
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from '../../stores/useToastStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -53,6 +53,8 @@ import type { Folder, Note } from '../../types/notes';
 import { SidebarResizer } from './SidebarResizer';
 import { useTags, useTagCounts } from '../../hooks/useTags';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { useSearchWorker } from '../../hooks/useSearchWorker';
+import type { SearchableItem } from '../../hooks/useSearchWorker';
 
 type SidebarTab = 'folders' | 'tags' | 'all';
 
@@ -434,6 +436,37 @@ export const TabbedSidebarLayout: React.FC<TabbedSidebarLayoutProps> = ({
   const notes = useMemo(() => Object.values(notesObj), [notesObj]);
   const folders = useMemo(() => Object.values(foldersObj), [foldersObj]);
 
+  // Search worker for off-main-thread note search
+  const { indexItems, search: workerSearch } = useSearchWorker();
+  const [workerMatchIds, setWorkerMatchIds] = useState<Set<string> | null>(null);
+
+  // Index notes in the search worker whenever they change
+  useEffect(() => {
+    const items: SearchableItem[] = notes.map((note) => ({
+      id: note.id,
+      title: note.title,
+      content: note.content,
+      tags: note.tags,
+    }));
+    indexItems(items);
+  }, [notes, indexItems]);
+
+  // Run worker search when query changes
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setWorkerMatchIds(null);
+      return;
+    }
+    let cancelled = false;
+    workerSearch(trimmed).then((ids) => {
+      if (!cancelled) {
+        setWorkerMatchIds(new Set(ids));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [searchQuery, workerSearch]);
+
   // Convert tag counts array to a lookup map
   const tagCounts = useMemo(
     () =>
@@ -448,14 +481,18 @@ export const TabbedSidebarLayout: React.FC<TabbedSidebarLayoutProps> = ({
   const filteredNotes = useMemo(() => {
     let result = notes;
 
-    // Filter by search query
+    // Filter by search query — use worker results when available, fall back to simple includes
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (note) =>
-          note.title.toLowerCase().includes(query) ||
-          note.content.toLowerCase().includes(query)
-      );
+      if (workerMatchIds !== null) {
+        result = result.filter((note) => workerMatchIds.has(note.id));
+      } else {
+        const query = searchQuery.toLowerCase();
+        result = result.filter(
+          (note) =>
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query)
+        );
+      }
     }
 
     // Filter by active tags
@@ -474,7 +511,7 @@ export const TabbedSidebarLayout: React.FC<TabbedSidebarLayoutProps> = ({
     return result.sort(
       (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
     );
-  }, [notes, searchQuery, activeTags, activeTab, activeFolderId]);
+  }, [notes, searchQuery, workerMatchIds, activeTags, activeTab, activeFolderId]);
 
   // Get root folders
   const rootFolders = useMemo(

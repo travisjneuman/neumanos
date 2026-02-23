@@ -291,7 +291,7 @@ export const useCalendarStore = create<CalendarStore>()(
 
           importedEvents.forEach((event) => {
             // Get the date key from _importedDate metadata
-            const dateKey = (event as any)._importedDate;
+            const dateKey = (event as CalendarEvent & { _importedDate?: string })._importedDate;
             if (!dateKey) return;
 
             // Create clean event without metadata

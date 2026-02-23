@@ -15,6 +15,9 @@ import { SpreadsheetToolbar } from './SpreadsheetToolbar';
 import { SpreadsheetSheetTabs } from './SpreadsheetSheetTabs';
 import { SpreadsheetChartDialog } from './SpreadsheetChartDialog';
 import { SpreadsheetChartRenderer } from './SpreadsheetChartRenderer';
+import { SpreadsheetSortFilter } from './SpreadsheetSortFilter';
+import { SpreadsheetPivotTable } from './SpreadsheetPivotTable';
+import { SpreadsheetConditionalFormatting } from './SpreadsheetConditionalFormatting';
 import {
   createRef,
   colToLetter,
@@ -31,6 +34,7 @@ import {
   downloadBlob,
   readFile,
 } from './spreadsheetExport';
+import { sortData, filterData } from '../../utils/spreadsheetDataOps';
 
 interface SpreadsheetEditorProps {
   /** The spreadsheet document */
@@ -46,9 +50,27 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
   const [editValue, setEditValue] = useState('');
   const [showChartDialog, setShowChartDialog] = useState(false);
   const [editingChart, setEditingChart] = useState<SpreadsheetChart | null>(null);
+  const [showSortFilterDialog, setShowSortFilterDialog] = useState(false);
+  const [showPivotDialog, setShowPivotDialog] = useState(false);
+  const [showConditionalFormat, setShowConditionalFormat] = useState(false);
+  const [sortRules, setSortRules] = useState<Array<{ column: number; direction: 'asc' | 'desc' }>>([]);
+  const [filterRules, setFilterRules] = useState<Array<{ column: number; operator: import('../../types').FilterOperator; value: string; value2?: string }>>([]);
+  const [conditionalFormats, setConditionalFormats] = useState<Array<{ range: string; condition: import('../../types').FormatCondition; style: Partial<CellStyle> }>>([]);
 
   // Get active sheet
   const activeSheet = doc.sheets[activeSheetIndex] || doc.sheets[0];
+
+  // Apply sort/filter to get displayed data (keep original data unchanged)
+  const displayedData = useMemo(() => {
+    let data = activeSheet.data;
+    if (sortRules.length > 0) {
+      data = sortData(data, sortRules);
+    }
+    if (filterRules.length > 0) {
+      data = filterData(data, filterRules);
+    }
+    return data;
+  }, [activeSheet.data, sortRules, filterRules]);
 
   // Stateless formula engine — no data sync needed
   const engine = useMemo(() => new FormulaEngine(), []);
@@ -437,6 +459,13 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
         onInsertChart={handleInsertChart}
         onExport={handleExport}
         onImport={handleImport}
+        onSort={() => setShowSortFilterDialog(true)}
+        onFilter={() => setShowSortFilterDialog(true)}
+        onPivotTable={() => setShowPivotDialog(true)}
+        onConditionalFormat={() => setShowConditionalFormat(true)}
+        hasSortRules={sortRules.length > 0}
+        hasFilterRules={filterRules.length > 0}
+        hasConditionalFormats={conditionalFormats.length > 0}
         frozenRows={activeSheet.frozenRows}
         frozenCols={activeSheet.frozenCols}
         onToggleFreeze={handleToggleFreeze}
@@ -456,7 +485,7 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
       {/* Grid with Charts overlay */}
       <div className="relative flex-1 overflow-hidden">
         <SpreadsheetGrid
-          data={activeSheet.data}
+          data={displayedData}
           getCellValue={getCellValue}
           cellStyles={activeSheet.cellStyles || {}}
           columnWidths={activeSheet.columnWidths || Array(26).fill(DEFAULT_COLUMN_WIDTH)}
@@ -506,6 +535,35 @@ export function SpreadsheetEditor({ doc, onSave }: SpreadsheetEditorProps) {
           }}
           editChart={editingChart}
           selectionRange={getSelectionRange()}
+        />
+      )}
+
+      {/* Sort & Filter Dialog */}
+      {showSortFilterDialog && (
+        <SpreadsheetSortFilter
+          data={activeSheet.data}
+          sortRules={sortRules}
+          filterRules={filterRules}
+          onSortChange={setSortRules}
+          onFilterChange={setFilterRules}
+          onClose={() => setShowSortFilterDialog(false)}
+        />
+      )}
+
+      {/* Pivot Table Dialog */}
+      {showPivotDialog && (
+        <SpreadsheetPivotTable
+          data={activeSheet.data}
+          onClose={() => setShowPivotDialog(false)}
+        />
+      )}
+
+      {/* Conditional Formatting Dialog */}
+      {showConditionalFormat && (
+        <SpreadsheetConditionalFormatting
+          conditionalFormats={conditionalFormats}
+          onChange={setConditionalFormats}
+          onClose={() => setShowConditionalFormat(false)}
         />
       )}
     </div>

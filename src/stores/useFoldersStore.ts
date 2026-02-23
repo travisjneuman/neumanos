@@ -520,7 +520,7 @@ export const useFoldersStore = create<FoldersStore>()(
             }
 
             // CRITICAL: Fix corrupted Set data
-            const expandedIds = (state as any).expandedFolderIds;
+            const expandedIds = state.expandedFolderIds as unknown;
 
             if (expandedIds instanceof Set) {
               // Already a Set (shouldn't happen after persist, but just in case)
