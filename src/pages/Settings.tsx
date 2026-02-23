@@ -77,6 +77,7 @@ import { NotificationPreferencesSection } from '../widgets/Settings/Notification
 import { DefaultViewsSection } from '../widgets/Settings/DefaultViewsSection';
 import { AppPreferencesSection } from '../widgets/Settings/AppPreferencesSection';
 import { SavedLayoutsSection } from '../widgets/Settings/SavedLayoutsSection';
+import { ImportExportPanel } from '../components/settings/ImportExportPanel';
 
 const log = logger.module('Settings');
 
@@ -535,6 +536,9 @@ export const Settings: React.FC = () => {
               {currentTab === 'data' && (
                 <>
                   <DataManagementSection
+                    onMessage={setMessage}
+                  />
+                  <ImportExportPanel
                     onMessage={setMessage}
                   />
                   <SelectiveExportSection
