@@ -246,6 +246,16 @@ export class AIProviderRouter {
    * Send message with automatic fallback
    */
   async sendMessage(options: AIMessageOptions): Promise<AIResponse> {
+    // Check connectivity before attempting any network requests
+    if (!navigator.onLine) {
+      throw new ProviderError(
+        ProviderErrorType.NETWORK_ERROR,
+        'You are offline. AI features require an internet connection.',
+        this.config.primaryProvider,
+        false
+      );
+    }
+
     const primaryProvider = await this.getPrimaryProvider();
 
     if (!primaryProvider) {
@@ -338,6 +348,16 @@ export class AIProviderRouter {
     modelId: string,
     options: AIMessageOptions
   ): Promise<AIResponse> {
+    // Check connectivity before attempting any network requests
+    if (!navigator.onLine) {
+      throw new ProviderError(
+        ProviderErrorType.NETWORK_ERROR,
+        'You are offline. AI features require an internet connection.',
+        providerId,
+        false
+      );
+    }
+
     const provider = await this.getProvider(providerId);
 
     if (!provider) {
