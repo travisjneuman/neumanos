@@ -53,7 +53,7 @@ function CreateFieldModal({ isOpen, onClose, onSave, target }: CreateFieldModalP
       return;
     }
 
-    if (type === 'select' && options.filter((opt) => opt.trim()).length === 0) {
+    if ((type === 'select' || type === 'multi-select') && options.filter((opt) => opt.trim()).length === 0) {
       toast.warning('Select fields must have at least one option');
       return;
     }
@@ -63,7 +63,7 @@ function CreateFieldModal({ isOpen, onClose, onSave, target }: CreateFieldModalP
       type,
       description: description.trim() || undefined,
       required,
-      options: type === 'select' ? options.filter((opt) => opt.trim()) : undefined,
+      options: (type === 'select' || type === 'multi-select') ? options.filter((opt) => opt.trim()) : undefined,
       visibleInCard: true, // Default: visible in cards
       visibleInList: true, // Default: visible in list view
     };
@@ -135,12 +135,15 @@ function CreateFieldModal({ isOpen, onClose, onSave, target }: CreateFieldModalP
               <option value="number">Number</option>
               <option value="date">Date</option>
               <option value="select">Select (dropdown)</option>
+              <option value="multi-select">Multi-select (tags)</option>
               <option value="checkbox">Checkbox</option>
+              <option value="url">URL (with open link)</option>
+              <option value="email">Email (with send button)</option>
             </select>
           </div>
 
           {/* Options (only for select type) */}
-          {type === 'select' && (
+          {(type === 'select' || type === 'multi-select') && (
             <div>
               <label className="block text-sm font-medium text-text-light-primary dark:text-text-dark-primary mb-2">
                 Options *
@@ -250,6 +253,12 @@ function FieldListItem({ field, onDelete, onUpdate }: FieldListItemProps) {
         return '📋';
       case 'checkbox':
         return '☑️';
+      case 'multi-select':
+        return '🏷️';
+      case 'url':
+        return '🔗';
+      case 'email':
+        return '📧';
       default:
         return '📌';
     }
@@ -265,8 +274,14 @@ function FieldListItem({ field, onDelete, onUpdate }: FieldListItemProps) {
         return 'Date';
       case 'select':
         return 'Select';
+      case 'multi-select':
+        return 'Multi-select';
       case 'checkbox':
         return 'Checkbox';
+      case 'url':
+        return 'URL';
+      case 'email':
+        return 'Email';
       default:
         return type;
     }
@@ -292,7 +307,7 @@ function FieldListItem({ field, onDelete, onUpdate }: FieldListItemProps) {
           {/* Field Type */}
           <div className="flex items-center gap-2 text-xs text-text-light-secondary dark:text-text-dark-secondary mb-1">
             <span className="font-medium">{getFieldTypeLabel(field.type)}</span>
-            {field.type === 'select' && field.options && (
+            {(field.type === 'select' || field.type === 'multi-select') && field.options && (
               <span>• {field.options.length} options</span>
             )}
           </div>
@@ -304,8 +319,8 @@ function FieldListItem({ field, onDelete, onUpdate }: FieldListItemProps) {
             </p>
           )}
 
-          {/* Options (for select type) */}
-          {field.type === 'select' && field.options && field.options.length > 0 && (
+          {/* Options (for select/multi-select type) */}
+          {(field.type === 'select' || field.type === 'multi-select') && field.options && field.options.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {field.options.map((option, idx) => (
                 <span

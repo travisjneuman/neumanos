@@ -13,7 +13,7 @@ import type { Task, TaskPriority, TaskStatus } from '../types';
 
 // ==================== TYPES ====================
 
-export type TaskFilterField = 'priority' | 'status' | 'tag' | 'assignee' | 'dueDate' | 'whenTag';
+export type TaskFilterField = 'priority' | 'status' | 'tag' | 'assignee' | 'dueDate' | 'whenTag' | `customField:${string}`;
 export type TaskFilterOperator = 'eq' | 'neq' | 'gt' | 'lt' | 'contains';
 
 export interface TaskFilter {
@@ -156,8 +156,40 @@ export function applyFilters(tasks: Task[], filters: TaskFilter[]): Task[] {
           return filter.operator === 'eq'
             ? task.whenTag === filter.value
             : task.whenTag !== filter.value;
-        default:
+        default: {
+          // Custom field filters use "customField:<fieldId>" pattern
+          if (filter.field.startsWith('customField:')) {
+            const fieldId = filter.field.slice('customField:'.length);
+            const fieldValue = task.customFields?.[fieldId];
+            const strValue = fieldValue != null ? String(fieldValue) : '';
+
+            switch (filter.operator) {
+              case 'eq':
+                // For arrays (multi-select), check if value is included
+                if (Array.isArray(fieldValue)) {
+                  return fieldValue.includes(filter.value);
+                }
+                return strValue === filter.value;
+              case 'neq':
+                if (Array.isArray(fieldValue)) {
+                  return !fieldValue.includes(filter.value);
+                }
+                return strValue !== filter.value;
+              case 'contains':
+                if (Array.isArray(fieldValue)) {
+                  return fieldValue.includes(filter.value);
+                }
+                return strValue.toLowerCase().includes(filter.value.toLowerCase());
+              case 'gt':
+                return parseFloat(strValue) > parseFloat(filter.value);
+              case 'lt':
+                return parseFloat(strValue) < parseFloat(filter.value);
+              default:
+                return true;
+            }
+          }
           return true;
+        }
       }
     });
   });
@@ -183,8 +215,29 @@ export function applySorting(tasks: Task[], sortBy: string): Task[] {
         return statusOrder[a.status] - statusOrder[b.status];
       }
       case 'created':
-      default:
         return new Date(b.created).getTime() - new Date(a.created).getTime();
+      default: {
+        // Custom field sorting uses "customField:<fieldId>" pattern
+        if (sortBy.startsWith('customField:')) {
+          const fieldId = sortBy.slice('customField:'.length);
+          const aVal = a.customFields?.[fieldId];
+          const bVal = b.customFields?.[fieldId];
+
+          // Nulls sort last
+          if (aVal == null && bVal == null) return 0;
+          if (aVal == null) return 1;
+          if (bVal == null) return -1;
+
+          // Numeric comparison
+          if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return aVal - bVal;
+          }
+
+          // String comparison
+          return String(aVal).localeCompare(String(bVal));
+        }
+        return new Date(b.created).getTime() - new Date(a.created).getTime();
+      }
     }
   });
   return sorted;

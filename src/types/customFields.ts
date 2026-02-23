@@ -13,11 +13,14 @@ export type FieldType =
   | 'number'
   | 'date'
   | 'select'
+  | 'multi-select' // P2 #3: Multi-select with tag-style picker
   | 'checkbox'
-  | 'person'      // P2: Person/user assignment
-  | 'status'      // P2: Status with visual indicators
-  | 'timeline'    // P2: Date range (start/end)
-  | 'formula';    // P2: Calculated fields
+  | 'url'          // P2 #3: URL with open link button
+  | 'email'        // P2 #3: Email with mailto button
+  | 'person'       // P2: Person/user assignment
+  | 'status'       // P2: Status with visual indicators
+  | 'timeline'     // P2: Date range (start/end)
+  | 'formula';     // P2: Calculated fields
 
 /**
  * Status option configuration for status field type
@@ -154,6 +157,38 @@ export function validateFieldValue(
       }
       return { valid: true };
 
+    case 'multi-select':
+      if (!field.options || field.options.length === 0) {
+        return { valid: false, error: 'No options defined for this field' };
+      }
+      if (!Array.isArray(value)) {
+        return { valid: false, error: 'Value must be an array of selected options' };
+      }
+      if (!value.every((v: string) => field.options!.includes(v))) {
+        return { valid: false, error: 'All values must be from the predefined options' };
+      }
+      return { valid: true };
+
+    case 'url':
+      if (typeof value !== 'string') {
+        return { valid: false, error: 'Value must be a URL string' };
+      }
+      try {
+        new URL(value);
+      } catch {
+        return { valid: false, error: 'Value must be a valid URL' };
+      }
+      return { valid: true };
+
+    case 'email':
+      if (typeof value !== 'string') {
+        return { valid: false, error: 'Value must be an email string' };
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return { valid: false, error: 'Value must be a valid email address' };
+      }
+      return { valid: true };
+
     case 'checkbox':
       if (typeof value !== 'boolean') {
         return { valid: false, error: 'Value must be true or false' };
@@ -228,8 +263,14 @@ export function getDefaultFieldValue(field: FieldDefinition): any {
       return new Date();
     case 'select':
       return field.options?.[0] || '';
+    case 'multi-select':
+      return [];
     case 'checkbox':
       return false;
+    case 'url':
+      return '';
+    case 'email':
+      return '';
     case 'person':
       return field.allowMultiple ? [] : '';
     case 'status':

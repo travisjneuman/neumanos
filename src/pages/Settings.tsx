@@ -18,6 +18,8 @@ import {
   Keyboard,
   Info,
   PenTool,
+  ChevronDown,
+  Code,
 } from 'lucide-react';
 import {
   exportBrainFile,
@@ -78,6 +80,7 @@ import { DefaultViewsSection } from '../widgets/Settings/DefaultViewsSection';
 import { AppPreferencesSection } from '../widgets/Settings/AppPreferencesSection';
 import { SavedLayoutsSection } from '../widgets/Settings/SavedLayoutsSection';
 import { ImportExportPanel } from '../components/settings/ImportExportPanel';
+import { CustomCSSEditor } from '../components/settings/CustomCSSEditor';
 
 const log = logger.module('Settings');
 
@@ -102,6 +105,52 @@ const SETTINGS_TABS = [
 ] as const;
 
 type SettingsTabId = (typeof SETTINGS_TABS)[number]['id'];
+
+/**
+ * Collapsible Advanced Customization section for the Appearance tab.
+ */
+const AdvancedCustomizationSection: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="bento-card overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-3 p-6 text-left hover:bg-surface-light-elevated/50 dark:hover:bg-surface-dark-elevated/50 transition-colors"
+      >
+        <Code className="w-5 h-5 text-accent-primary" />
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">
+            Advanced Customization
+          </h2>
+          <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mt-0.5">
+            Inject custom CSS for power users
+          </p>
+        </div>
+        <ChevronDown
+          className={`w-5 h-5 text-text-light-tertiary dark:text-text-dark-tertiary transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-6">
+              <CustomCSSEditor />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 /**
  * Settings Page - Modern Tab-Based Layout
@@ -469,6 +518,7 @@ export const Settings: React.FC = () => {
                 <>
                   <ThemeSettings />
                   <AccentColorSection />
+                  <AdvancedCustomizationSection />
                 </>
               )}
 

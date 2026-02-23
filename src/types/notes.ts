@@ -65,6 +65,9 @@ export interface Note {
   /** Phase 4: Backlinks - Notes that this note links TO (via [[Note Title]] syntax) */
   linkedNotes?: string[];
 
+  /** Wave 5D: Linked calendar events (bidirectional linking) */
+  linkedEventIds?: string[];
+
   /** P2 #3: Custom fields - User-defined metadata */
   customFields?: CustomFieldsMap;
 

@@ -24,6 +24,7 @@ import {
   HabitStreakCalendar,
   FlashcardReview,
   FlashcardCreator,
+  DailyQuestsPanel,
 } from '../components/habits';
 import type { HabitTemplate } from '../components/habits';
 import { useSpacedRepetitionStore } from '../stores/useSpacedRepetitionStore';
@@ -1018,6 +1019,9 @@ export function HabitsContent() {
           </div>
         </div>
       </div>
+
+      {/* Daily Quests */}
+      {activeHabits.length > 0 && <DailyQuestsPanel />}
 
       {/* Heatmap & Rewards toggles */}
       {activeHabits.length > 0 && (

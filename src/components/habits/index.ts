@@ -16,3 +16,4 @@ export { HabitJournal } from './HabitJournal';
 export { HabitStreakCalendar } from './HabitStreakCalendar';
 export { FlashcardReview } from './FlashcardReview';
 export { FlashcardCreator } from './FlashcardCreator';
+export { DailyQuestsPanel } from './DailyQuestsPanel';

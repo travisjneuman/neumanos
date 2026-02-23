@@ -93,6 +93,7 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   activityfeed: 'ActivityFeedWidget',
   aibriefing: 'AIBriefingWidget',
   flashcard: 'FlashcardWidget',
+  dailyquests: 'DailyQuestsWidget',
 };
 
 /**
@@ -648,6 +649,15 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: 'Flashcards',
     description: 'Spaced repetition flashcard review with SM-2 algorithm',
     icon: '🧠',
+    category: 'productivity',
+    defaultEnabled: false,
+  },
+
+  dailyquests: {
+    id: 'dailyquests',
+    name: 'Daily Quests',
+    description: 'Gamified daily habit challenges with XP rewards',
+    icon: '📜',
     category: 'productivity',
     defaultEnabled: false,
   },

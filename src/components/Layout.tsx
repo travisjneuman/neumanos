@@ -13,6 +13,7 @@ import { useNotesStore } from '../stores/useNotesStore';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useShortcut } from '../hooks/useShortcut';
 import { useSwipeNavigation } from '../hooks/useSwipeNavigation';
+import { useCustomCSS } from '../hooks/useCustomCSS';
 import { BottomNav } from './BottomNav';
 import { isInputElement } from '../services/shortcuts';
 
@@ -82,6 +83,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         break;
     }
   }, []);
+
+  // Inject user custom CSS when enabled
+  useCustomCSS();
 
   // Enable swipe-from-left-edge gesture to open sidebar on mobile
   useSwipeNavigation();

@@ -7,6 +7,7 @@ import { REMINDER_OPTIONS } from '../services/eventReminders';
 import { detectConflicts, formatConflictMessage, getConflictDetails } from '../utils/conflictDetection';
 import { EVENT_COLOR_CATEGORIES } from '../utils/eventColors';
 import type { CalendarEvent, EventColorCategory } from '../types';
+import { MeetingNotesButton } from './calendar/MeetingNotesButton';
 
 interface EventCreateModalProps {
   dateKey: string;
@@ -676,6 +677,14 @@ export function EventCreateModal({ dateKey, event, onClose, isDuplicate = false 
               ))}
             </div>
           </div>
+
+          {/* Meeting Notes (only for existing events, not duplicates) */}
+          {event && !isDuplicate && (
+            <MeetingNotesButton
+              eventId={event.id}
+              eventTitle={event.title}
+            />
+          )}
         </div>
 
         {/* Footer */}

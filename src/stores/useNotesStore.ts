@@ -188,6 +188,10 @@ interface NotesStore {
   setParentNote: (noteId: string, parentNoteId: string | null) => void;
   canSetParentNote: (noteId: string, parentNoteId: string | null) => boolean;
   isDescendantNote: (noteId: string, potentialAncestorId: string) => boolean;
+
+  // Calendar-Notes bidirectional linking (Wave 5D)
+  linkEventToNote: (noteId: string, eventId: string) => void;
+  unlinkEventFromNote: (noteId: string, eventId: string) => void;
 }
 
 /**
@@ -1369,6 +1373,49 @@ export const useNotesStore = create<NotesStore>()(
         if (!note || !note.parentNoteId) return false;
         if (note.parentNoteId === potentialAncestorId) return true;
         return get().isDescendantNote(note.parentNoteId, potentialAncestorId);
+      },
+
+      // ==================== CALENDAR-NOTES LINKING (Wave 5D) ====================
+
+      linkEventToNote: (noteId: string, eventId: string) => {
+        const note = get().notes[noteId];
+        if (!note) {
+          log.warn('Note not found for linking event', { noteId });
+          return;
+        }
+        const existing = note.linkedEventIds ?? [];
+        if (existing.includes(eventId)) return;
+
+        set((state) => ({
+          notes: {
+            ...state.notes,
+            [noteId]: {
+              ...note,
+              linkedEventIds: [...existing, eventId],
+            },
+          },
+        }));
+        log.debug('Linked event to note', { noteId, eventId });
+      },
+
+      unlinkEventFromNote: (noteId: string, eventId: string) => {
+        const note = get().notes[noteId];
+        if (!note) {
+          log.warn('Note not found for unlinking event', { noteId });
+          return;
+        }
+        const filtered = (note.linkedEventIds ?? []).filter((id) => id !== eventId);
+
+        set((state) => ({
+          notes: {
+            ...state.notes,
+            [noteId]: {
+              ...note,
+              linkedEventIds: filtered.length > 0 ? filtered : undefined,
+            },
+          },
+        }));
+        log.debug('Unlinked event from note', { noteId, eventId });
       },
     }),
     {

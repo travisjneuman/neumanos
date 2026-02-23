@@ -40,6 +40,10 @@ interface CalendarStore extends CalendarState {
   updateICSSubscription: (id: string, updates: Partial<Pick<ICSSubscription, 'name' | 'url' | 'color' | 'autoSyncMinutes' | 'enabled'>>) => void;
   removeICSSubscription: (id: string) => void;
   syncICSSubscription: (id: string, parsedEvents: (CalendarEvent & { _importedDate?: string })[]) => number;
+  // Calendar-Notes bidirectional linking
+  linkNoteToEvent: (eventId: string, noteId: string) => void;
+  unlinkNoteFromEvent: (eventId: string, noteId: string) => void;
+  getLinkedNotes: (eventId: string) => string[];
 }
 
 export const useCalendarStore = create<CalendarStore>()(
@@ -418,6 +422,56 @@ export const useCalendarStore = create<CalendarStore>()(
             events: newEvents,
           };
         }),
+
+      // Calendar-Notes bidirectional linking
+      linkNoteToEvent: (eventId, noteId) =>
+        set((state) => {
+          const newEvents = { ...state.events };
+          for (const dateKey of Object.keys(newEvents)) {
+            const dayEvents = newEvents[dateKey];
+            const idx = dayEvents.findIndex((e) => e.id === eventId);
+            if (idx !== -1) {
+              const event = dayEvents[idx];
+              const existing = event.linkedNoteIds ?? [];
+              if (!existing.includes(noteId)) {
+                newEvents[dateKey] = dayEvents.map((e, i) =>
+                  i === idx ? { ...e, linkedNoteIds: [...existing, noteId] } : e
+                );
+              }
+              break;
+            }
+          }
+          return { events: newEvents };
+        }),
+
+      unlinkNoteFromEvent: (eventId, noteId) =>
+        set((state) => {
+          const newEvents = { ...state.events };
+          for (const dateKey of Object.keys(newEvents)) {
+            const dayEvents = newEvents[dateKey];
+            const idx = dayEvents.findIndex((e) => e.id === eventId);
+            if (idx !== -1) {
+              const event = dayEvents[idx];
+              const filtered = (event.linkedNoteIds ?? []).filter((id) => id !== noteId);
+              newEvents[dateKey] = dayEvents.map((e, i) =>
+                i === idx ? { ...e, linkedNoteIds: filtered.length > 0 ? filtered : undefined } : e
+              );
+              break;
+            }
+          }
+          return { events: newEvents };
+        }),
+
+      getLinkedNotes: (eventId) => {
+        const { events } = get();
+        for (const dateKey of Object.keys(events)) {
+          const event = events[dateKey].find((e) => e.id === eventId);
+          if (event) {
+            return event.linkedNoteIds ?? [];
+          }
+        }
+        return [];
+      },
 
       syncICSSubscription: (id, parsedEvents) => {
         let count = 0;

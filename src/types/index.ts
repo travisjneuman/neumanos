@@ -109,6 +109,9 @@ export interface CalendarEvent {
   // Color category
   colorCategory?: EventColorCategory;
 
+  // Linked notes (bidirectional linking with notes)
+  linkedNoteIds?: string[];
+
   // Multi-day rendering flags (internal, not persisted)
   _isMultiDayPart?: boolean;
   _isMultiDayFirst?: boolean;

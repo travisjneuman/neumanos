@@ -87,8 +87,11 @@ import { SpreadsheetEmbedNode } from './NotesEditor/SpreadsheetEmbedNode';
 import { CalloutNode, $createCalloutNode } from '../components/editor/nodes/CalloutNode';
 import type { CalloutType } from '../components/editor/nodes/CalloutNode';
 import { ToggleNode, $createToggleNode } from '../components/editor/nodes/ToggleNode';
+import { MathBlockNode, $createMathBlockNode } from '../components/editor/nodes/MathBlockNode';
+import { MermaidBlockNode, $createMermaidBlockNode } from '../components/editor/nodes/MermaidBlockNode';
 import { indexedDBService } from '../services/indexedDB';
 import { BacklinksPanel } from '../components/BacklinksPanel';
+import { LinkedEventsPanel } from '../components/notes/LinkedEventsPanel';
 import { VersionHistoryPanel } from '../components/notes/VersionHistoryPanel';
 import { useNoteVersionStore } from '../stores/useNoteVersionStore';
 import { toast } from '../stores/useToastStore';
@@ -100,6 +103,10 @@ import HashtagPlugin from '../components/editor/plugins/HashtagPlugin';
 import EmbedPlugin from '../components/editor/plugins/EmbedPlugin';
 import { WikiLinkNode } from '../components/editor/WikiLinkNode';
 import { HashtagNode } from '../components/editor/nodes/HashtagNode';
+import { TableOfContentsNode, $createTableOfContentsNode } from '../components/editor/nodes/TableOfContentsNode';
+import TableOfContentsPlugin from '../components/editor/plugins/TableOfContentsPlugin';
+import FileAttachmentPlugin from '../components/editor/plugins/FileAttachmentPlugin';
+import { NoteAttachmentsList } from '../components/notes/NoteAttachmentsList';
 
 /**
  * Keyboard Shortcuts Plugin
@@ -350,6 +357,36 @@ const SlashCommandPlugin: React.FC = () => {
     { label: 'Callout (Tip)', icon: '💡', action: () => insertCallout('tip') },
     { label: 'Callout (Danger)', icon: '🚨', action: () => insertCallout('danger') },
     { label: 'Toggle Block', icon: '▶', action: insertToggle },
+    { label: 'Table of Contents', icon: '📑', action: () => {
+      clearSlashCommand();
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const tocNode = $createTableOfContentsNode();
+          selection.insertNodes([tocNode]);
+        }
+      });
+    }},
+    { label: 'Math Block', icon: '∑', action: () => {
+      clearSlashCommand();
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const mathNode = $createMathBlockNode({});
+          selection.insertNodes([mathNode]);
+        }
+      });
+    }},
+    { label: 'Mermaid Diagram', icon: '◇', action: () => {
+      clearSlashCommand();
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const mermaidNode = $createMermaidBlockNode({});
+          selection.insertNodes([mermaidNode]);
+        }
+      });
+    }},
   ];
 
   const filteredCommands = commands.filter(cmd =>
@@ -960,6 +997,9 @@ const getEditorConfig = (initialContent?: string) => ({
     HorizontalRuleNode,
     CalloutNode,
     ToggleNode,
+    TableOfContentsNode,
+    MathBlockNode,
+    MermaidBlockNode,
   ],
   onError: (error: Error) => {
     console.error('Lexical error:', error);
@@ -1176,6 +1216,8 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
             {viewMode === 'edit' && <SlashCommandPlugin />}
             {viewMode === 'edit' && <ImageUploadPlugin noteId={noteId} />}
             {viewMode === 'edit' && <EmbedPlugin />}
+            <TableOfContentsPlugin />
+            {viewMode === 'edit' && <FileAttachmentPlugin noteId={noteId} />}
             <AutoSavePlugin noteId={noteId} />
             <WikiLinkAutocompletePlugin notes={notesArray} currentFolderId={note.folderId} />
             <WikiLinkTransformPlugin notes={notes} />
@@ -1193,9 +1235,19 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
         </div>
       </LexicalComposer>
 
+      {/* Attachments Panel */}
+      <div className="flex-shrink-0">
+        <NoteAttachmentsList noteId={noteId} />
+      </div>
+
       {/* Backlinks Panel */}
       <div className="flex-shrink-0">
         <BacklinksPanel noteId={noteId} />
+      </div>
+
+      {/* Linked Calendar Events Panel */}
+      <div className="flex-shrink-0">
+        <LinkedEventsPanel noteId={noteId} />
       </div>
 
       {/* Version History Panel */}

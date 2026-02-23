@@ -205,6 +205,136 @@ export function CustomFieldEditor({ field, value, onChange, className = '' }: Cu
     );
   }
 
+  // Multi-select field
+  if (field.type === 'multi-select') {
+    const selectedValues: string[] = Array.isArray(localValue) ? localValue : [];
+
+    const toggleOption = (option: string) => {
+      const newValues = selectedValues.includes(option)
+        ? selectedValues.filter((v) => v !== option)
+        : [...selectedValues, option];
+      handleChange(newValues);
+    };
+
+    return (
+      <div className={className}>
+        <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-lg">
+          {field.options?.map((option) => {
+            const isSelected = selectedValues.includes(option);
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleOption(option)}
+                className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                  isSelected
+                    ? 'bg-accent-blue text-white'
+                    : 'bg-surface-light dark:bg-surface-dark text-text-light-secondary dark:text-text-dark-secondary hover:bg-accent-blue/10 hover:text-accent-blue'
+                }`}
+              >
+                {option}
+              </button>
+            );
+          })}
+          {(!field.options || field.options.length === 0) && (
+            <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary italic">
+              No options defined
+            </span>
+          )}
+        </div>
+        {error && (
+          <p id={`${field.id}-error`} className="mt-1 text-xs text-status-error-text dark:text-status-error-text-dark">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // URL field
+  if (field.type === 'url') {
+    return (
+      <div className={className}>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={localValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            onBlur={handleBlur}
+            placeholder={field.description || 'https://example.com'}
+            className={`flex-1 px-3 py-2 bg-surface-light-elevated dark:bg-surface-dark-elevated border ${
+              error
+                ? 'border-status-error dark:border-status-error'
+                : 'border-border-light dark:border-border-dark'
+            } rounded-lg text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 ${
+              error ? 'focus:ring-status-error' : 'focus:ring-accent-blue'
+            }`}
+            aria-label={field.name}
+            aria-required={field.required}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? `${field.id}-error` : undefined}
+          />
+          {localValue && !error && (
+            <a
+              href={localValue}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-accent-blue hover:bg-accent-blue-hover text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+            >
+              Open
+            </a>
+          )}
+        </div>
+        {error && (
+          <p id={`${field.id}-error`} className="mt-1 text-xs text-status-error-text dark:text-status-error-text-dark">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Email field
+  if (field.type === 'email') {
+    return (
+      <div className={className}>
+        <div className="flex gap-2">
+          <input
+            type="email"
+            value={localValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            onBlur={handleBlur}
+            placeholder={field.description || 'name@example.com'}
+            className={`flex-1 px-3 py-2 bg-surface-light-elevated dark:bg-surface-dark-elevated border ${
+              error
+                ? 'border-status-error dark:border-status-error'
+                : 'border-border-light dark:border-border-dark'
+            } rounded-lg text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 ${
+              error ? 'focus:ring-status-error' : 'focus:ring-accent-blue'
+            }`}
+            aria-label={field.name}
+            aria-required={field.required}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? `${field.id}-error` : undefined}
+          />
+          {localValue && !error && (
+            <a
+              href={`mailto:${localValue}`}
+              className="px-3 py-2 bg-accent-blue hover:bg-accent-blue-hover text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+            >
+              Send
+            </a>
+          )}
+        </div>
+        {error && (
+          <p id={`${field.id}-error`} className="mt-1 text-xs text-status-error-text dark:text-status-error-text-dark">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   // Checkbox field
   if (field.type === 'checkbox') {
     return (
