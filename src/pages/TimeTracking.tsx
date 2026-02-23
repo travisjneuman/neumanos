@@ -27,6 +27,7 @@ import { ActivityTimeline } from '../components/ActivityTimeline';
 import { WeeklyTimesheetView } from '../components/WeeklyTimesheetView';
 import { AutoTrackingSettings } from '../components/AutoTrackingSettings';
 import { TimeRoundingSettings } from '../components/TimeRoundingSettings';
+import { IdleDetectionSettings } from '../components/IdleDetectionSettings';
 import { BillableRateSettings } from '../components/BillableRateSettings';
 import { ProjectBillingSummary } from '../components/ProjectBillingSummary';
 import { ExportTimeEntriesModal } from '../components/ExportTimeEntriesModal';
@@ -137,8 +138,23 @@ export function TimeTracking() {
   };
 
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
-  const [eventModalData, setEventModalData] = useState<{ dateKey: string; event?: CalendarEvent } | null>(null);
+  const [eventModalData, setEventModalData] = useState<{ dateKey: string; event?: CalendarEvent; isDuplicate?: boolean } | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+
+  // Listen for duplicate event custom events from EventCreateModal
+  useEffect(() => {
+    const handleDuplicate = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { event: CalendarEvent; dateKey: string };
+      if (detail?.event && detail?.dateKey) {
+        // Small delay to let the current modal close first
+        setTimeout(() => {
+          setEventModalData({ dateKey: detail.dateKey, event: detail.event, isDuplicate: true });
+        }, 50);
+      }
+    };
+    window.addEventListener('calendar:duplicate-event', handleDuplicate);
+    return () => window.removeEventListener('calendar:duplicate-event', handleDuplicate);
+  }, []);
 
   return (
     <PageContent page="time-tracking">
@@ -232,6 +248,9 @@ export function TimeTracking() {
                     <TimeRoundingSettings />
                   </div>
                   <div className="border-t border-border-light dark:border-border-dark pt-8">
+                    <IdleDetectionSettings />
+                  </div>
+                  <div className="border-t border-border-light dark:border-border-dark pt-8">
                     <AutoTrackingSettings />
                   </div>
                 </div>
@@ -252,11 +271,12 @@ export function TimeTracking() {
         />
       )}
 
-      {/* Create/Edit Event Modal */}
+      {/* Create/Edit/Duplicate Event Modal */}
       {eventModalData && (
         <EventCreateModal
           dateKey={eventModalData.dateKey}
           event={eventModalData.event}
+          isDuplicate={eventModalData.isDuplicate}
           onClose={() => setEventModalData(null)}
         />
       )}

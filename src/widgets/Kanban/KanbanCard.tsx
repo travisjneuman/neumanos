@@ -7,6 +7,8 @@ import { useTimeTrackingStore } from '../../stores/useTimeTrackingStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CustomFieldDisplay } from '../../components/CustomFieldDisplay';
+import { TaskTimerButton } from '../../components/tasks/TaskTimerButton';
+import { WhenTagBadge } from '../../components/tasks/WhenTagPicker';
 import type { Task } from '../../types';
 
 interface KanbanCardProps {
@@ -289,7 +291,8 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({
             </span>
           )}
         </div>
-        <div className="relative">
+        <div className="relative flex items-center gap-1">
+          <TaskTimerButton taskId={task.id} taskTitle={task.title} size="sm" />
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -380,6 +383,9 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({
             🔁 {task.isRecurringParent ? 'Recurring' : 'Instance'}
           </span>
         )}
+
+        {/* When Tag (Wave 4E) */}
+        {task.whenTag && <WhenTagBadge tag={task.whenTag} />}
 
         {/* Estimated Hours */}
         {task.estimatedHours && (

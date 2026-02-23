@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
-import { Play, Pause, Square, SkipForward, Settings } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Play, Pause, Square, SkipForward, Settings, Link2, Unlink, Search } from 'lucide-react';
 import { usePomodoroStore } from '../stores/usePomodoroStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
+import { useKanbanStore } from '../stores/useKanbanStore';
 import { notifyPomodoroComplete } from '../utils/pomodoroNotifications';
 
 /**
@@ -34,6 +35,16 @@ export function PomodoroTimer() {
 
   const pomodoroSettings = useSettingsStore((s) => s.pomodoroSettings);
   const addManualEntry = useTimeTrackingStore((s) => s.addManualEntry);
+  const tasks = useKanbanStore((s) => s.tasks);
+
+  const [showTaskPicker, setShowTaskPicker] = useState(false);
+  const [taskSearch, setTaskSearch] = useState('');
+
+  const filteredTasks = useMemo(() => {
+    if (!taskSearch.trim()) return tasks.slice(0, 20);
+    const q = taskSearch.toLowerCase();
+    return tasks.filter((t) => t.title.toLowerCase().includes(q)).slice(0, 20);
+  }, [tasks, taskSearch]);
 
   // Handle session completion (create time entry for focus sessions)
   useEffect(() => {
@@ -136,6 +147,71 @@ export function PomodoroTimer() {
             <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary">
               {linkedTaskName}
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Task Linking */}
+      <div className="flex items-center gap-2">
+        {linkedTaskName ? (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+            <Link2 className="w-4 h-4 text-accent-primary" />
+            <span className="text-sm font-medium text-accent-primary">
+              {linkedTaskName}
+            </span>
+            <button
+              onClick={() => usePomodoroStore.getState().unlinkTask()}
+              className="ml-1 p-0.5 rounded hover:bg-accent-primary/20 text-accent-primary transition-colors"
+              title="Unlink task"
+            >
+              <Unlink className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setShowTaskPicker(!showTaskPicker)}
+              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-surface-light-secondary/50 dark:bg-surface-dark-secondary/50 border border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors text-text-light-secondary dark:text-text-dark-secondary"
+            >
+              <Link2 className="w-4 h-4" />
+              Link to Task
+            </button>
+            {showTaskPicker && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-lg shadow-xl z-20 p-2">
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary" />
+                  <input
+                    type="text"
+                    value={taskSearch}
+                    onChange={(e) => setTaskSearch(e.target.value)}
+                    placeholder="Search tasks..."
+                    className="w-full pl-8 pr-3 py-2 text-sm bg-surface-light-elevated dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-md focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary placeholder-text-light-tertiary dark:placeholder-text-dark-tertiary"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                  {filteredTasks.length === 0 ? (
+                    <p className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary text-center py-3">
+                      No tasks found
+                    </p>
+                  ) : (
+                    filteredTasks.map((task) => (
+                      <button
+                        key={task.id}
+                        onClick={() => {
+                          usePomodoroStore.getState().linkToTask(task.id, task.title);
+                          setShowTaskPicker(false);
+                          setTaskSearch('');
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-surface-light-elevated dark:hover:bg-surface-dark text-text-light-primary dark:text-text-dark-primary transition-colors truncate"
+                      >
+                        {task.title}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

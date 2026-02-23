@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CustomFieldDisplay } from '../../components/CustomFieldDisplay';
+import { TaskTimerButton } from '../../components/tasks/TaskTimerButton';
 import { useKanbanStore } from '../../stores/useKanbanStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import type { Task, KanbanColumn, TaskPriority, TaskStatus } from '../../types';
@@ -292,6 +293,9 @@ export const ListView: React.FC<ListViewProps> = ({ tasks, columns, onTaskClick 
               <th className="p-3 text-left font-semibold text-text-light-primary dark:text-text-dark-primary">
                 Progress
               </th>
+              <th className="p-3 text-center font-semibold text-text-light-primary dark:text-text-dark-primary w-12">
+                Timer
+              </th>
               {/* Custom Field Columns (P1 Feature) */}
               {visibleFieldDefinitions.map(field => (
                 <th key={field.id} className="p-3 text-left font-semibold text-text-light-primary dark:text-text-dark-primary">
@@ -370,6 +374,9 @@ export const ListView: React.FC<ListViewProps> = ({ tasks, columns, onTaskClick 
                         </span>
                       )}
                     </td>
+                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <TaskTimerButton taskId={task.id} taskTitle={task.title} size="sm" />
+                    </td>
                     {/* Custom Field Cells (P1 Feature) */}
                     {visibleFieldDefinitions.map(field => {
                       const value = task.customFields?.[field.id];
@@ -388,7 +395,7 @@ export const ListView: React.FC<ListViewProps> = ({ tasks, columns, onTaskClick 
               })
             ) : (
               <tr>
-                <td colSpan={7 + visibleFieldDefinitions.length} className="p-12 text-center text-text-light-secondary dark:text-text-dark-secondary">
+                <td colSpan={8 + visibleFieldDefinitions.length} className="p-12 text-center text-text-light-secondary dark:text-text-dark-secondary">
                   No tasks to display
                 </td>
               </tr>
