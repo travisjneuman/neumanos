@@ -35,6 +35,15 @@ export interface TokenUsage {
 }
 
 /**
+ * Conversation folder for organizing conversations
+ */
+export interface ConversationFolder {
+  id: string;
+  name: string;
+  conversationIds: string[];
+}
+
+/**
  * Conversation with history persistence
  */
 export interface Conversation {
@@ -47,6 +56,7 @@ export interface Conversation {
   updatedAt: number;
   totalTokens: number;
   totalCost: number;
+  folderId?: string;
 }
 
 /**
@@ -179,6 +189,12 @@ interface TerminalState {
   activeContext: AIContext | null;
   enableCrossModuleContext: boolean;
 
+  // Custom Instructions (global, persisted across conversations)
+  customInstructions: string;
+
+  // Conversation Folders
+  conversationFolders: ConversationFolder[];
+
   // UI Actions
   setOpen: (open: boolean) => void;
   toggleTerminal: () => void;
@@ -242,8 +258,17 @@ interface TerminalState {
   setActiveContext: (context: AIContext | null) => void;
   setEnableCrossModuleContext: (enabled: boolean) => void;
 
+  // Custom Instructions Actions
+  setCustomInstructions: (instructions: string) => void;
+
+  // Conversation Folder Actions
+  createConversationFolder: (name: string) => string;
+  renameConversationFolder: (folderId: string, name: string) => void;
+  deleteConversationFolder: (folderId: string) => void;
+  moveConversationToFolder: (conversationId: string, folderId: string | null) => void;
+
   // Conversation Search
-  searchConversations: (query: string) => ConversationSearchResult[];
+  searchConversations: (query: string, filters?: { dateFrom?: number; dateTo?: number; model?: string }) => ConversationSearchResult[];
 
   // Legacy Compatibility
   model: string; // Deprecated: use activeModel instead
@@ -320,6 +345,12 @@ export const useTerminalStore = create<TerminalState>()(
       // Context-Aware AI
       activeContext: null,
       enableCrossModuleContext: false,
+
+      // Custom Instructions
+      customInstructions: '',
+
+      // Conversation Folders
+      conversationFolders: [],
 
       // Legacy State (backward compatibility)
       model: 'gemini-1.5-flash',
@@ -700,8 +731,76 @@ export const useTerminalStore = create<TerminalState>()(
       setActiveContext: (context) => set({ activeContext: context }),
       setEnableCrossModuleContext: (enabled) => set({ enableCrossModuleContext: enabled }),
 
+      // Custom Instructions Actions
+      setCustomInstructions: (instructions) => set({ customInstructions: instructions }),
+
+      // Conversation Folder Actions
+      createConversationFolder: (name) => {
+        const id = `folder-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        set((state) => ({
+          conversationFolders: [...state.conversationFolders, { id, name, conversationIds: [] }],
+        }));
+        return id;
+      },
+
+      renameConversationFolder: (folderId, name) => {
+        set((state) => ({
+          conversationFolders: state.conversationFolders.map((f) =>
+            f.id === folderId ? { ...f, name } : f
+          ),
+        }));
+      },
+
+      deleteConversationFolder: (folderId) => {
+        set((state) => {
+          // Remove folder and clear folderId from conversations
+          const updatedConversations = { ...state.conversations };
+          for (const [id, conv] of Object.entries(updatedConversations)) {
+            if (conv.folderId === folderId) {
+              updatedConversations[id] = { ...conv, folderId: undefined };
+            }
+          }
+          return {
+            conversationFolders: state.conversationFolders.filter((f) => f.id !== folderId),
+            conversations: updatedConversations,
+          };
+        });
+      },
+
+      moveConversationToFolder: (conversationId, folderId) => {
+        set((state) => {
+          const conv = state.conversations[conversationId];
+          if (!conv) return state;
+
+          // Remove from old folder's conversationIds
+          const updatedFolders = state.conversationFolders.map((f) => ({
+            ...f,
+            conversationIds: f.conversationIds.filter((id) => id !== conversationId),
+          }));
+
+          // Add to new folder's conversationIds
+          if (folderId) {
+            const folderIndex = updatedFolders.findIndex((f) => f.id === folderId);
+            if (folderIndex >= 0) {
+              updatedFolders[folderIndex] = {
+                ...updatedFolders[folderIndex],
+                conversationIds: [...updatedFolders[folderIndex].conversationIds, conversationId],
+              };
+            }
+          }
+
+          return {
+            conversationFolders: updatedFolders,
+            conversations: {
+              ...state.conversations,
+              [conversationId]: { ...conv, folderId: folderId ?? undefined },
+            },
+          };
+        });
+      },
+
       // Conversation Search
-      searchConversations: (query) => {
+      searchConversations: (query, filters) => {
         const { conversations } = get();
         if (!query.trim()) return [];
 
@@ -711,6 +810,12 @@ export const useTerminalStore = create<TerminalState>()(
         Object.values(conversations).forEach((conv) => {
           conv.messages.forEach((msg) => {
             if (msg.role === 'system') return;
+
+            // Apply filters
+            if (filters?.dateFrom && msg.timestamp < filters.dateFrom) return;
+            if (filters?.dateTo && msg.timestamp > filters.dateTo) return;
+            if (filters?.model && msg.model !== filters.model) return;
+
             const lowerContent = msg.content.toLowerCase();
             const matchIndex = lowerContent.indexOf(lowerQuery);
             if (matchIndex === -1) return;
@@ -795,6 +900,12 @@ export const useTerminalStore = create<TerminalState>()(
 
         // Persist cross-module context setting
         enableCrossModuleContext: state.enableCrossModuleContext,
+
+        // Persist custom instructions
+        customInstructions: state.customInstructions,
+
+        // Persist conversation folders
+        conversationFolders: state.conversationFolders,
 
         // Legacy compatibility
         model: state.model,

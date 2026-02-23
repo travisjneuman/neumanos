@@ -14,7 +14,7 @@ interface SystemPromptPanelProps {
 }
 
 export const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onClose }) => {
-  const { customSystemPrompt, setConversationSystemPrompt, activeConversationId, conversations } = useTerminalStore();
+  const { customSystemPrompt, setConversationSystemPrompt, activeConversationId, conversations, customInstructions, setCustomInstructions } = useTerminalStore();
 
   const activeConversation = activeConversationId ? conversations[activeConversationId] : null;
   const currentPreset = activeConversation?.systemPromptPreset ?? null;
@@ -22,6 +22,8 @@ export const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onClose })
   const [editedPrompt, setEditedPrompt] = useState(customSystemPrompt ?? '');
   const [selectedPreset, setSelectedPreset] = useState<SystemPromptPreset | null>(currentPreset);
   const [isCustom, setIsCustom] = useState(!currentPreset && !!customSystemPrompt);
+  const [editedInstructions, setEditedInstructions] = useState(customInstructions);
+  const [showInstructions, setShowInstructions] = useState(!!customInstructions);
 
   const handleSelectPreset = useCallback((presetId: SystemPromptPreset) => {
     const preset = getSystemPromptPreset(presetId);
@@ -143,6 +145,51 @@ export const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onClose })
               {customSystemPrompt.substring(0, 200)}
               {customSystemPrompt.length > 200 && '...'}
             </div>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div className="border-t border-border-dark pt-3">
+          <button
+            onClick={() => setShowInstructions(!showInstructions)}
+            className={`w-full p-2 text-left rounded-lg border transition-all ${
+              showInstructions
+                ? 'bg-accent-primary/10 border-accent-primary/40 text-accent-primary'
+                : 'bg-surface-dark border-border-dark hover:border-accent-primary/30 text-text-dark-primary hover:text-accent-primary'
+            }`}
+          >
+            <div className="text-xs font-medium">Custom Instructions (Global)</div>
+            <div className="text-[10px] text-text-dark-tertiary mt-0.5">
+              Persistent instructions prepended to every conversation
+            </div>
+          </button>
+        </div>
+
+        {showInstructions && (
+          <div>
+            <textarea
+              value={editedInstructions}
+              onChange={(e) => setEditedInstructions(e.target.value)}
+              placeholder="e.g., Always respond in bullet points. Use formal tone. Focus on TypeScript."
+              className="w-full h-28 px-3 py-2 text-xs bg-surface-dark-elevated border border-border-dark rounded-lg text-text-dark-primary placeholder-text-dark-tertiary focus:outline-none focus:ring-1 focus:ring-accent-primary resize-none font-mono"
+            />
+            <button
+              onClick={() => setCustomInstructions(editedInstructions.trim())}
+              className="mt-2 w-full px-3 py-1.5 text-xs bg-accent-primary/20 text-accent-primary hover:bg-accent-primary/30 rounded transition-all font-medium"
+            >
+              {customInstructions ? 'Update Instructions' : 'Save Instructions'}
+            </button>
+            {customInstructions && (
+              <button
+                onClick={() => {
+                  setCustomInstructions('');
+                  setEditedInstructions('');
+                }}
+                className="mt-1 w-full px-3 py-1 text-[10px] text-accent-red/60 hover:text-accent-red transition-all"
+              >
+                Clear Instructions
+              </button>
+            )}
           </div>
         )}
       </div>

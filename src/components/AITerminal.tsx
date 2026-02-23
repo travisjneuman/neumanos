@@ -555,12 +555,16 @@ export const AITerminal: React.FC = () => {
       }
 
       // Send message using router (with automatic fallback)
-      // Inject context if active
+      // Inject custom instructions and context if active
+      const customInstructions = useTerminalStore.getState().customInstructions;
+      const instructionsPrefix = customInstructions.trim()
+        ? `**User Custom Instructions:**\n${customInstructions.trim()}\n\n---\n\n`
+        : '';
       const baseSystemPrompt = customSystemPrompt || getDefaultSystemPrompt();
       const contextPrefix = activeContext
         ? `\n\n**Active Context (${activeContext.type}):**\nTitle: ${activeContext.title}\nContent:\n${activeContext.content.slice(0, 2000)}\n\n---\n\n`
         : '';
-      const systemPrompt = contextPrefix ? baseSystemPrompt + contextPrefix : baseSystemPrompt;
+      const systemPrompt = instructionsPrefix + baseSystemPrompt + contextPrefix;
       const response = await router.sendMessage({
         prompt: userMessage,
         conversationHistory: messages.map((msg) => ({

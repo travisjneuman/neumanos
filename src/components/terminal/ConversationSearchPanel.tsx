@@ -14,6 +14,8 @@ interface ConversationSearchPanelProps {
 
 export const ConversationSearchPanel: React.FC<ConversationSearchPanelProps> = ({ onClose }) => {
   const [query, setQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<'all' | '7d' | '30d' | '90d'>('all');
+  const [modelFilter, setModelFilter] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const searchConversations = useTerminalStore((s) => s.searchConversations);
   const switchConversation = useTerminalStore((s) => s.switchConversation);
@@ -23,9 +25,22 @@ export const ConversationSearchPanel: React.FC<ConversationSearchPanelProps> = (
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
+  const filters = useMemo(() => {
+    const f: { dateFrom?: number; dateTo?: number; model?: string } = {};
+    if (dateFilter !== 'all') {
+      const now = Date.now();
+      const days = dateFilter === '7d' ? 7 : dateFilter === '30d' ? 30 : 90;
+      f.dateFrom = now - days * 24 * 60 * 60 * 1000;
+    }
+    if (modelFilter) {
+      f.model = modelFilter;
+    }
+    return f;
+  }, [dateFilter, modelFilter]);
+
   const results: ConversationSearchResult[] = useMemo(
-    () => (query.length >= 2 ? searchConversations(query) : []),
-    [query, searchConversations]
+    () => (query.length >= 2 ? searchConversations(query, filters) : []),
+    [query, searchConversations, filters]
   );
 
   // Group results by conversation
@@ -92,6 +107,27 @@ export const ConversationSearchPanel: React.FC<ConversationSearchPanelProps> = (
         >
           <X size={14} />
         </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-dark/50 flex-shrink-0">
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)}
+          className="text-[10px] bg-surface-dark border border-border-dark rounded px-1.5 py-0.5 text-text-dark-secondary focus:outline-none"
+        >
+          <option value="all">All time</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+        </select>
+        <input
+          type="text"
+          value={modelFilter}
+          onChange={(e) => setModelFilter(e.target.value)}
+          placeholder="Filter by model..."
+          className="text-[10px] bg-surface-dark border border-border-dark rounded px-1.5 py-0.5 text-text-dark-secondary placeholder-text-dark-tertiary focus:outline-none w-28"
+        />
       </div>
 
       {/* Results */}
