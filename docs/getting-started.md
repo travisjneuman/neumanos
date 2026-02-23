@@ -31,8 +31,13 @@ NeumanOS is a privacy-first, local-only productivity platform that helps you org
 - **Tasks** -- Professional Kanban boards with dependencies, subtasks, and Gantt view
 - **Calendar** -- Full scheduling with events, reminders, and recurring patterns
 - **Time Tracking** -- Timer with projects, billable hours, and invoice generation
-- **Dashboard** -- 44+ customizable widgets
-- **AI Terminal** -- 8 AI providers with encrypted API key storage
+- **Dashboard** -- 60+ customizable widgets
+- **AI Terminal** -- 9 AI providers with encrypted API key storage
+- **Habits** -- Daily habit tracking with streaks and analytics
+- **Focus Mode** -- Distraction-free deep work environment with Pomodoro integration
+- **Link Library** -- Bookmark management and link organization
+- **Activity Feed** -- Track recent actions and changes across all modules
+- **Energy Tracker** -- Monitor daily energy levels and optimize your schedule
 - **PM Dashboard** -- Burndown charts, resource utilization, and project health metrics
 - **Documents** -- Rich text documents with export support
 - **Spreadsheets** -- Full spreadsheet editor with formulas and charts
@@ -143,7 +148,7 @@ The main navigation is on the left sidebar, organized into expandable categories
 
 1. Click **Dashboard** in the sidebar
 2. Click **+ Add Widget** button
-3. Browse 44+ widgets across categories:
+3. Browse 60+ widgets across categories:
    - Productivity (TaskSummary, RecentNotes, Pomodoro)
    - Information (Weather, HackerNews, Quotes)
    - Utilities (Calculator, QRCode, Currency)
@@ -160,15 +165,25 @@ Learn these shortcuts to work faster:
 
 ### Global Shortcuts
 
-- **Cmd+K / Ctrl+K** -- Open command palette (search everything)
-- **Cmd+N / Ctrl+N** -- Create new note
+- **Ctrl+K** -- Open Synapse (command palette)
+- **Ctrl+B** -- Toggle sidebar
+- **Ctrl+N** -- Create new note
+- **Ctrl+T** -- Create new task
+- **Ctrl+E** -- Create new event (go to calendar)
+- **Ctrl+D** -- Create daily note
+- **Ctrl+Shift+T** -- Smart Templates
+- **Ctrl+Shift+A** -- Toggle AI Terminal
 - **Esc** -- Close modals and dialogs
+
+### Page Navigation
+
+- **Ctrl+1** through **Ctrl+8** -- Jump directly to Dashboard, Today, Notes, Tasks, Schedule, Create, Link Library, or Settings
 
 ### Notes Shortcuts
 
-- **Cmd+B / Ctrl+B** -- Bold text
-- **Cmd+I / Ctrl+I** -- Italic text
-- **Cmd+U / Ctrl+U** -- Underline text
+- **Ctrl+B** -- Bold text (when in editor)
+- **Ctrl+I** -- Italic text
+- **Ctrl+U** -- Underline text
 - **/** -- Trigger slash commands menu
 
 ### Kanban Shortcuts (when focused)
@@ -180,7 +195,8 @@ Learn these shortcuts to work faster:
 - **N** -- Create new task in current column
 - **E** -- Edit selected task
 - **D** -- Delete selected task
-- **?** -- Show keyboard shortcuts help
+
+> **Note:** On Mac, use Cmd instead of Ctrl for all shortcuts.
 
 See [Keyboard Shortcuts Guide](./keyboard-shortcuts.md) for the complete list.
 

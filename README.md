@@ -42,7 +42,11 @@ Rich text editing, full markdown support, and wiki-style `[[links]]` between not
 
 ### Task & Project Management
 
-Kanban boards with drag-and-drop columns, custom workflow stages, task dependencies (4 types with lag time), subtasks, priority levels, recurring tasks, and a Gantt timeline view with critical path highlighting. A PM dashboard provides burndown charts, resource utilization, and velocity tracking. Billable time tracking with invoice generation supports freelancers and agencies. A daily habit tracker with streaks sits alongside your projects, so routines and goals live in the same place.
+Kanban boards with drag-and-drop columns, custom workflow stages, task dependencies (4 types with lag time), subtasks, priority levels, recurring tasks, and a Gantt timeline view with critical path highlighting. A PM dashboard provides burndown charts, resource utilization, and velocity tracking. Billable time tracking with invoice generation supports freelancers and agencies.
+
+### Habits & Personal Development
+
+Daily habit tracking with streaks and heatmaps, spaced repetition flashcards using the SM-2 algorithm, daily quests with XP and rewards, a routine builder, and journal integration. Routines and goals live alongside your projects so everything stays in one place.
 
 ### Time Tracking
 
@@ -54,19 +58,31 @@ Month, week, day, and agenda views with drag-and-drop rescheduling. Recurring ev
 
 ### Dashboard & Widgets
 
-A fully customizable home screen with 44+ widgets spanning productivity, information, utilities, and finance. Weather, world clocks, calculators, countdown timers, stock tickers, news feeds, Pomodoro timer, and live summaries of your notes, tasks, and events — arranged exactly how you want them.
+A fully customizable home screen with 60+ widgets spanning productivity, information, utilities, and finance. Weather, world clocks, calculators, countdown timers, stock tickers, news feeds, Pomodoro timer, and live summaries of your notes, tasks, and events — arranged exactly how you want them.
+
+### Activity Feed & Analytics
+
+A cross-module activity stream that surfaces recent actions across notes, tasks, calendar, and habits. A personal analytics dashboard provides heatmaps and productivity trends so you can see patterns in how you work.
 
 ### AI Terminal
 
-Connect to 8+ AI providers — OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, xAI Grok, DeepSeek, and more — using your own API keys. Keys are stored with AES-256-GCM encryption and never leave your device. A built-in browser terminal with AI command integration rounds out the developer experience.
+Connect to 9 AI providers — OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, xAI Grok, DeepSeek, HuggingFace, and Ollama (local models) — using your own API keys. Keys are stored with AES-256-GCM encryption and never leave your device. Voice input, cross-module context awareness, and a built-in browser terminal with AI command integration round out the developer experience.
 
 ### Office Suite
 
-Create documents, spreadsheets, presentations, diagrams, and forms without leaving the platform. The spreadsheet engine supports 400+ Excel-compatible formulas. Presentations include a full canvas editor, 8 slide templates, animations, and presenter mode. Export to PDF, HTML, Markdown, CSV, or PPTX.
+Create documents, spreadsheets, presentations, diagrams, and forms without leaving the platform. The spreadsheet engine supports 400+ Excel-compatible formulas with sort, filter, conditional formatting, and pivot tables. Presentations include a full canvas editor, 8 slide templates, animations, and presenter mode. Export to PDF, HTML, Markdown, CSV, or PPTX.
 
 ### Focus & Daily Planning
 
-A distraction-free focus mode with a full-screen timer, current task display, and keyboard controls for deep work sessions. The Today page provides a Sunsama-inspired daily planning view — today's schedule, tasks, and time tracking in one focused layout.
+The Today page is your daily command center — a Sunsama-inspired planning view that brings today's schedule, tasks, habits, and time tracking into one focused layout. A distraction-free focus mode with a full-screen timer, current task display, and keyboard controls supports deep work sessions.
+
+### Smart Templates
+
+Workflow templates that create notes, tasks, and events in one action (Ctrl+Shift+T). Define reusable templates for recurring workflows like project kickoffs, weekly reviews, or sprint planning.
+
+### Energy Tracking
+
+Daily energy level logging with correlation to productivity metrics. Track how your energy fluctuates throughout the day and week, and see how it relates to your task completion and focus session patterns.
 
 ### Automations
 
