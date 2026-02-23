@@ -125,4 +125,13 @@ export const HABIT_ANIMATION_STYLES = `
   60% { transform: scale(1.1) rotate(0deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .habit-check-pop,
+  .habit-confetti,
+  .habit-streak-bump,
+  .habit-check-in {
+    animation: none !important;
+  }
+}
 `;

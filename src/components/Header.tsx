@@ -37,8 +37,9 @@ export const Header: React.FC = () => {
               onClick={toggleTheme}
               className="p-2 rounded-button border border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all duration-standard ease-smooth"
               title={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}
+              aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <span className="text-xl">
+              <span className="text-xl" aria-hidden="true">
                 {mode === 'dark' ? '☀️' : '🌙'}
               </span>
             </button>

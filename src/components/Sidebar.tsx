@@ -180,6 +180,7 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ item, isCollapsed, is
           }
         `}
         title={isCollapsed ? item.label : undefined}
+        aria-current={isActive ? 'page' : undefined}
       >
         {/* Active indicator (left accent) */}
         {isActive && (
@@ -282,6 +283,7 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ item, isCollapsed, is
                       : 'text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
                   }
                 `}
+                aria-current={location.pathname === child.path ? 'page' : undefined}
               >
                 {/* Active indicator (left accent) */}
                 {location.pathname === child.path && (
@@ -289,7 +291,7 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ item, isCollapsed, is
                 )}
 
                 {/* Icon */}
-                <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-sm">
+                <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-sm" aria-hidden="true">
                   {child.icon}
                 </span>
 
@@ -523,6 +525,7 @@ export const Sidebar: React.FC = () => {
                       }
                     `}
                     title={isCollapsed ? item.label : undefined}
+                    aria-current={parentActive ? 'page' : undefined}
                   >
                     {/* Active indicator (left accent) */}
                     {parentActive && (
@@ -573,6 +576,8 @@ export const Sidebar: React.FC = () => {
                               transition-transform duration-200
                             "
                             title={expanded ? 'Collapse' : 'Expand'}
+                            aria-label={expanded ? `Collapse ${item.label}` : `Expand ${item.label}`}
+                            aria-expanded={expanded}
                           >
                             <span
                               className={`text-xs transition-transform duration-200 ${
@@ -619,6 +624,7 @@ export const Sidebar: React.FC = () => {
                                 : 'text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
                             }
                           `}
+                          aria-current={isActive(child.path) ? 'page' : undefined}
                         >
                           {/* Active indicator (left accent) */}
                           {isActive(child.path) && (
@@ -626,7 +632,7 @@ export const Sidebar: React.FC = () => {
                           )}
 
                           {/* Icon */}
-                          <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-sm">
+                          <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-sm" aria-hidden="true">
                             {child.icon}
                           </span>
 
@@ -688,6 +694,7 @@ export const Sidebar: React.FC = () => {
             group relative
           `}
           title={isCollapsed ? 'Settings' : undefined}
+          aria-current={isActive('/settings') ? 'page' : undefined}
         >
           {/* Active indicator (left accent) */}
           {isActive('/settings') && (
@@ -724,8 +731,9 @@ export const Sidebar: React.FC = () => {
             group relative
           `}
           title={isCollapsed ? (mode === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
+          aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-lg">
+          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-lg" aria-hidden="true">
             {mode === 'dark' ? '☀️' : '🌙'}
           </span>
           {!isCollapsed && (
@@ -757,8 +765,9 @@ export const Sidebar: React.FC = () => {
             group relative
           `}
           title={isCollapsed ? 'Expand Sidebar' : undefined}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-lg">
+          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 text-lg" aria-hidden="true">
             {isCollapsed ? '▶' : '◀'}
           </span>
           {!isCollapsed && (

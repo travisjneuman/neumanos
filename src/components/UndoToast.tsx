@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface UndoToastProps {
   message: string;
@@ -20,6 +21,7 @@ export const UndoToast: React.FC<UndoToastProps> = ({
   duration = 10000,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(duration);
+  const prefersReducedMotion = useReducedMotion();
 
   // Countdown timer
   useEffect(() => {
@@ -51,10 +53,12 @@ export const UndoToast: React.FC<UndoToastProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 50, scale: 0.9 }}
+      animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+      exit={prefersReducedMotion ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
       className="fixed bottom-6 right-6 z-50 min-w-[200px] max-w-sm"
+      role="status"
+      aria-live="polite"
     >
       {/* Toast Card */}
       <div className="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-button shadow-lg overflow-hidden">

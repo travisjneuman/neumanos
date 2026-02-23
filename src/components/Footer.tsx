@@ -2,6 +2,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { useSaveStatus } from '../stores/useSaveStatus';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // Lazy load modals to prevent main bundle bloat
 const AboutModal = lazy(() => import('./AboutModal').then(m => ({ default: m.AboutModal })));
@@ -17,6 +18,7 @@ export const Footer: React.FC = () => {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   // Simplified status text
   const getStatusText = () => {
@@ -36,9 +38,9 @@ export const Footer: React.FC = () => {
     <>
       {/* Main Footer - Centered Floating Pill */}
       <motion.footer
-        initial={{ opacity: 0, y: 50, x: "-50%" }}
+        initial={prefersReducedMotion ? { opacity: 1, y: 0, x: "-50%" } : { opacity: 0, y: 50, x: "-50%" }}
         animate={{ opacity: 1, y: 0, x: "-50%" }}
-        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         className="fixed bottom-[72px] md:bottom-4 left-1/2 z-30 pointer-events-none"
       >
         <div className="flex items-center justify-center gap-2 px-3 py-1.5 sm:gap-4 sm:px-4 sm:py-2 bg-surface-light/90 dark:bg-surface-dark/90 backdrop-blur-lg rounded-full border border-border-light dark:border-border-dark pointer-events-auto shadow-lg">
@@ -72,7 +74,11 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Save Status (hidden on mobile) - Visually balanced */}
-          <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-border-light dark:border-border-dark">
+          <div
+            className="hidden sm:flex items-center gap-2 pl-4 border-l border-border-light dark:border-border-dark"
+            role="status"
+            aria-live="polite"
+          >
             {/* Status Dot */}
             <span
               className={`w-2.5 h-2.5 rounded-full ${status === 'saving'
@@ -81,6 +87,7 @@ export const Footer: React.FC = () => {
                     ? 'bg-accent-red'
                     : 'bg-accent-neon-green animate-neon-pulse'
                 }`}
+              aria-hidden="true"
             />
 
             {/* Status Text */}

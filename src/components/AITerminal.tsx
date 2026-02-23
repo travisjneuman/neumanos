@@ -1016,7 +1016,7 @@ export const AITerminal: React.FC = () => {
 
             {/* Streaming message */}
             {isStreaming && streamingContent && (
-              <div className="flex gap-3 justify-start">
+              <div className="flex gap-3 justify-start" role="status" aria-live="polite" aria-label="AI response streaming">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-accent-blue to-accent-primary flex items-center justify-center text-white flex-shrink-0">
                   🤖
                 </div>
@@ -1069,6 +1069,7 @@ export const AITerminal: React.FC = () => {
                 onClick={() => setActiveContext(null)}
                 className="text-accent-primary/60 hover:text-accent-primary transition-colors"
                 title="Clear context"
+                aria-label="Clear active context"
               >
                 <X size={12} />
               </button>
@@ -1096,6 +1097,7 @@ export const AITerminal: React.FC = () => {
                 type="submit"
                 disabled={configuredProviderCount === 0 || !input.trim() || isStreaming}
                 className="px-4 py-2 bg-accent-blue hover:bg-accent-blue-hover disabled:bg-surface-light-elevated dark:disabled:bg-surface-dark-elevated text-white rounded-button font-medium transition-all duration-standard ease-smooth disabled:cursor-not-allowed"
+                aria-label={isStreaming ? 'Generating response' : 'Send message'}
               >
                 {isStreaming ? '⋯' : '→'}
               </button>
@@ -1108,6 +1110,7 @@ export const AITerminal: React.FC = () => {
                   }}
                   className="px-3 py-2 bg-surface-light-elevated dark:bg-surface-dark hover:bg-surface-light dark:hover:bg-surface-dark-elevated text-text-light-primary dark:text-text-dark-primary rounded-button text-sm transition-all duration-standard ease-smooth"
                   title="New conversation"
+                  aria-label="Start new conversation"
                 >
                   +
                 </button>
@@ -1130,6 +1133,7 @@ export const AITerminal: React.FC = () => {
                     onClick={handleBackToList}
                     className="p-1.5 hover:bg-surface-dark rounded transition-all text-text-dark-secondary hover:text-white"
                     title="Back to list"
+                    aria-label="Back to notes list"
                   >
                     ←
                   </button>
@@ -1175,6 +1179,7 @@ export const AITerminal: React.FC = () => {
                       onClick={() => navigate(`/notes?note=${selectedNote.id}`)}
                       className="px-2 py-1 text-xs bg-surface-dark hover:bg-surface-dark-elevated text-text-dark-secondary hover:text-white rounded transition-all"
                       title="Open in full Notes page"
+                      aria-label="Open note in full Notes page"
                     >
                       ↗
                     </button>
@@ -1249,6 +1254,7 @@ export const AITerminal: React.FC = () => {
                       onClick={() => setNotesSortOrder(notesSortOrder === 'desc' ? 'asc' : 'desc')}
                       className="text-xs text-text-dark-secondary hover:text-text-dark-primary transition-colors"
                       title={notesSortOrder === 'desc' ? 'Descending' : 'Ascending'}
+                      aria-label={notesSortOrder === 'desc' ? 'Sort descending' : 'Sort ascending'}
                     >
                       {notesSortOrder === 'desc' ? '↓' : '↑'}
                     </button>
@@ -1384,6 +1390,7 @@ export const AITerminal: React.FC = () => {
                       disabled={!quickNoteInput.trim() || isAddingQuickNote}
                       className="px-3 py-1.5 text-sm bg-accent-yellow/20 text-accent-yellow hover:bg-accent-yellow/30 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-all"
                       title="Add to Quick Note"
+                      aria-label="Add to quick note"
                     >
                       {isAddingQuickNote ? '...' : '+'}
                     </button>
@@ -1436,6 +1443,7 @@ export const AITerminal: React.FC = () => {
             <button
               onClick={() => setShowModelSelector(false)}
               className="p-1 hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated rounded-button"
+              aria-label="Close model selector"
             >
               ✕
             </button>
@@ -1464,6 +1472,7 @@ export const AITerminal: React.FC = () => {
             <button
               onClick={() => setShowUsageTracker(false)}
               className="p-1 hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated rounded-button"
+              aria-label="Close usage tracker"
             >
               ✕
             </button>

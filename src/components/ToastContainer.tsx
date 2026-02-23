@@ -15,6 +15,7 @@ import {
   Info,
   X,
 } from 'lucide-react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 /**
  * Icon and color config for each toast type
@@ -60,13 +61,14 @@ interface ToastItemProps {
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
   const config = TOAST_CONFIG[toast.type];
   const Icon = config.icon;
+  const prefersReducedMotion = useReducedMotion();
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, x: -50, scale: 0.9 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -50, scale: 0.9, transition: { duration: 0.2 } }}
+      layout={!prefersReducedMotion}
+      initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, x: -50, scale: 0.9 }}
+      animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1 }}
+      exit={prefersReducedMotion ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, x: -50, scale: 0.9, transition: { duration: 0.2 } }}
       className="pointer-events-auto"
     >
       <div
