@@ -78,6 +78,9 @@ import { TagPicker } from '../components/TagPicker';
 import { CustomFieldEditor } from '../components/CustomFieldEditor';
 import { NOTE_CONSTANTS } from '../types/notes';
 import { ImageNode, $createImageNode } from './NotesEditor/ImageNode';
+import { TaskEmbedNode } from './NotesEditor/TaskEmbedNode';
+import { EventEmbedNode } from './NotesEditor/EventEmbedNode';
+import { SpreadsheetEmbedNode } from './NotesEditor/SpreadsheetEmbedNode';
 import { indexedDBService } from '../services/indexedDB';
 import { BacklinksPanel } from '../components/BacklinksPanel';
 import { VersionHistoryPanel } from '../components/notes/VersionHistoryPanel';
@@ -88,6 +91,7 @@ import WikiLinkTransformPlugin from '../components/editor/WikiLinkTransformPlugi
 import HoverPreviewPlugin from '../components/editor/plugins/HoverPreviewPlugin';
 import BlockReferencePlugin from '../components/editor/plugins/BlockReferencePlugin';
 import HashtagPlugin from '../components/editor/plugins/HashtagPlugin';
+import EmbedPlugin from '../components/editor/plugins/EmbedPlugin';
 import { WikiLinkNode } from '../components/editor/WikiLinkNode';
 import { HashtagNode } from '../components/editor/nodes/HashtagNode';
 
@@ -821,6 +825,9 @@ const getEditorConfig = (initialContent?: string) => ({
     TableCellNode,
     TableRowNode,
     ImageNode,
+    TaskEmbedNode,
+    EventEmbedNode,
+    SpreadsheetEmbedNode,
     WikiLinkNode,
     HashtagNode,
   ],
@@ -1037,6 +1044,7 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
             <WordCountPlugin onUpdate={handleWordCountUpdate} />
             {viewMode === 'edit' && <SlashCommandPlugin />}
             {viewMode === 'edit' && <ImageUploadPlugin noteId={noteId} />}
+            {viewMode === 'edit' && <EmbedPlugin />}
             <AutoSavePlugin noteId={noteId} />
             <WikiLinkAutocompletePlugin notes={notesArray} currentFolderId={note.folderId} />
             <WikiLinkTransformPlugin notes={notes} />
