@@ -31,6 +31,7 @@ const Focus = lazy(() => import('./pages/Focus').then((m) => ({ default: m.Focus
 const Create = lazy(() => import('./pages/Docs').then((m) => ({ default: m.Docs })));
 // PM Dashboard - Project management overview
 const PMDashboard = lazy(() => import('./pages/PMDashboard').then((m) => ({ default: m.PMDashboard })));
+const ActivityFeed = lazy(() => import('./pages/ActivityFeed').then((m) => ({ default: m.ActivityFeed })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -184,6 +185,8 @@ function App() {
                 </StoreErrorBoundary>
               }
             />
+            {/* Activity Feed */}
+            <Route path="/activity" element={<ActivityFeed />} />
             {/* Focus mode - full-screen, no layout wrapper */}
             <Route path="/focus" element={<Focus />} />
             {/* Phase 5: Redirect /habits to /tasks?tab=habits */}

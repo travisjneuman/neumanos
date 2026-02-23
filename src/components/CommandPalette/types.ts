@@ -273,6 +273,14 @@ export const NAVIGATION_PAGES: NavigationPage[] = [
     keywords: ['settings', 'preferences', 'config', 'options', 'theme'],
     description: 'App settings and preferences',
   },
+  {
+    id: 'activity',
+    name: 'Activity Feed',
+    path: '/activity',
+    icon: '📊',
+    keywords: ['activity', 'feed', 'history', 'log', 'analytics', 'heatmap'],
+    description: 'Activity feed and personal analytics',
+  },
 ];
 
 /**

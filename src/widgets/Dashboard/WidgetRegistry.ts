@@ -11,8 +11,9 @@
  */
 
 import { lazy, type LazyExoticComponent, type FC } from 'react';
+import type { CustomWidgetConfig } from '../../stores/useWidgetStore';
 
-export type WidgetCategory = 'core' | 'productivity' | 'news' | 'fun' | 'finance' | 'visual' | 'dev' | 'utility';
+export type WidgetCategory = 'core' | 'productivity' | 'news' | 'fun' | 'finance' | 'visual' | 'dev' | 'utility' | 'custom';
 
 // Props interface for widget components
 export interface WidgetComponentProps {
@@ -89,6 +90,7 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   forms: 'FormWidget',
   habitsummary: 'HabitSummaryWidget',
   bookmarks: 'BookmarksWidget',
+  activityfeed: 'ActivityFeedWidget',
 };
 
 /**
@@ -620,7 +622,38 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     category: 'productivity',
     defaultEnabled: false,
   },
+
+  activityfeed: {
+    id: 'activityfeed',
+    name: 'Activity Feed',
+    description: 'Recent activity across all modules',
+    icon: '📊',
+    category: 'core',
+    defaultEnabled: false,
+  },
 };
+
+/**
+ * Register a custom widget in the registry at runtime.
+ * Called when custom widgets are loaded from persisted state.
+ */
+export function registerCustomWidget(config: CustomWidgetConfig): void {
+  WIDGET_REGISTRY[config.id] = {
+    id: config.id,
+    name: config.name,
+    description: config.description,
+    icon: config.icon,
+    category: 'custom',
+    defaultEnabled: false,
+  };
+}
+
+/**
+ * Remove a custom widget from the registry at runtime.
+ */
+export function unregisterCustomWidget(id: string): void {
+  delete WIDGET_REGISTRY[id];
+}
 
 // Helper to get widgets by category
 export function getWidgetsByCategory(category: WidgetCategory): WidgetDefinition[] {
@@ -644,11 +677,34 @@ export function getDefaultEnabledWidgets(): string[] {
     .map((w) => w.id);
 }
 
+// Lazy-loaded CustomWidget component for custom widgets
+// Uses a separate glob path since CustomWidget is not named *Widget.tsx pattern for registry
+const customWidgetModule = import.meta.glob<{ CustomWidget: FC<WidgetComponentProps> }>(
+  './CustomWidget.tsx'
+);
+
+let _cachedCustomWidgetLazy: LazyExoticComponent<FC<WidgetComponentProps>> | undefined;
+
+function getCustomWidgetLazy(): LazyExoticComponent<FC<WidgetComponentProps>> {
+  if (!_cachedCustomWidgetLazy) {
+    const loader = customWidgetModule['./CustomWidget.tsx'];
+    if (loader) {
+      _cachedCustomWidgetLazy = lazy(() =>
+        loader().then((m) => ({ default: m.CustomWidget }))
+      );
+    }
+  }
+  return _cachedCustomWidgetLazy!;
+}
+
 /**
  * Get the lazy-loaded component for a widget
  * Returns undefined if widget not found
  */
 export function getWidgetComponent(id: string): LazyExoticComponent<FC<WidgetComponentProps>> | undefined {
+  if (id.startsWith('custom-')) {
+    return getCustomWidgetLazy();
+  }
   return createLazyWidget(id);
 }
 
@@ -660,9 +716,14 @@ export function getWidgetComponentMap(): Record<string, LazyExoticComponent<FC<W
   const map: Record<string, LazyExoticComponent<FC<WidgetComponentProps>>> = {};
 
   for (const id of Object.keys(WIDGET_REGISTRY)) {
-    const component = createLazyWidget(id);
-    if (component) {
-      map[id] = component;
+    if (id.startsWith('custom-')) {
+      // Custom widgets all use the same component
+      map[id] = getCustomWidgetLazy();
+    } else {
+      const component = createLazyWidget(id);
+      if (component) {
+        map[id] = component;
+      }
     }
   }
 
