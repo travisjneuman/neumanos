@@ -25,6 +25,10 @@ import {
   Square,
   Minus,
   Rows3,
+  ArrowUpDown,
+  Filter,
+  Palette,
+  TableProperties,
 } from 'lucide-react';
 import type { CellStyle, BorderStyle } from '../../types';
 
@@ -41,6 +45,20 @@ interface SpreadsheetToolbarProps {
   onExport?: (format: 'xlsx' | 'csv') => void;
   /** Called when import is requested */
   onImport?: () => void;
+  /** Called when sort dialog is opened */
+  onSort?: () => void;
+  /** Called when filter dialog is opened */
+  onFilter?: () => void;
+  /** Called when conditional formatting dialog is opened */
+  onConditionalFormat?: () => void;
+  /** Called when pivot table dialog is opened */
+  onPivotTable?: () => void;
+  /** Whether sort rules are active */
+  hasSortRules?: boolean;
+  /** Whether filter rules are active */
+  hasFilterRules?: boolean;
+  /** Whether conditional formats are active */
+  hasConditionalFormats?: boolean;
   /** Current frozen rows count */
   frozenRows?: number;
   /** Current frozen cols count */
@@ -129,6 +147,13 @@ export function SpreadsheetToolbar({
   onInsertChart,
   onExport,
   onImport,
+  onSort,
+  onFilter,
+  onConditionalFormat,
+  onPivotTable,
+  hasSortRules = false,
+  hasFilterRules = false,
+  hasConditionalFormats = false,
   frozenRows = 0,
   frozenCols = 0,
   onToggleFreeze,
@@ -346,6 +371,46 @@ export function SpreadsheetToolbar({
             <format.icon className="w-4 h-4" />
           </button>
         ))}
+      </div>
+
+      {/* Sort, Filter, Conditional Format, Pivot */}
+      <div className="flex items-center gap-0.5 border-r border-border-light dark:border-border-dark pr-2 mr-1">
+        {onSort && (
+          <button
+            onClick={onSort}
+            className={buttonClass(hasSortRules)}
+            title="Sort"
+          >
+            <ArrowUpDown className="w-4 h-4" />
+          </button>
+        )}
+        {onFilter && (
+          <button
+            onClick={onFilter}
+            className={buttonClass(hasFilterRules)}
+            title="Filter"
+          >
+            <Filter className="w-4 h-4" />
+          </button>
+        )}
+        {onConditionalFormat && (
+          <button
+            onClick={onConditionalFormat}
+            className={buttonClass(hasConditionalFormats)}
+            title="Conditional Formatting"
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+        )}
+        {onPivotTable && (
+          <button
+            onClick={onPivotTable}
+            className="p-1.5 rounded transition-colors text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-alt dark:hover:bg-surface-dark-elevated hover:text-accent-primary"
+            title="Pivot Table"
+          >
+            <TableProperties className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Freeze Panes */}

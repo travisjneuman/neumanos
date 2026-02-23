@@ -931,6 +931,25 @@ export interface SpreadsheetSheet {
   charts?: SpreadsheetChart[]; // Embedded charts
   frozenRows?: number;       // Number of frozen rows (0 = none)
   frozenCols?: number;       // Number of frozen columns (0 = none)
+  sortRules?: Array<{ column: number; direction: 'asc' | 'desc' }>;
+  filterRules?: Array<{ column: number; operator: FilterOperator; value: string; value2?: string }>;
+  conditionalFormats?: Array<{ range: string; condition: FormatCondition; style: Partial<CellStyle> }>;
+}
+
+export type FilterOperator = 'contains' | 'not-contains' | 'equals' | 'not-equals' | 'greater-than' | 'less-than' | 'between' | 'empty' | 'not-empty';
+
+export interface FormatCondition {
+  type: 'value' | 'text' | 'custom';
+  operator: FilterOperator;
+  value: string;
+  value2?: string; // For 'between'
+}
+
+export interface PivotTableConfig {
+  rowField: number;       // Column index for row grouping
+  columnField?: number;   // Column index for column grouping
+  valueField: number;     // Column index for values
+  aggregation: 'sum' | 'count' | 'avg' | 'min' | 'max';
 }
 
 export type SpreadsheetChartType = 'bar' | 'line' | 'pie' | 'scatter';
