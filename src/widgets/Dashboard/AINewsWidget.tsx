@@ -83,7 +83,7 @@ export const AINewsWidget: React.FC = () => {
     } catch (err) {
       // Retry once on failure
       if (retryCount === 0) {
-        console.log('arXiv API failed, retrying...');
+        if (import.meta.env.DEV) console.log('arXiv API failed, retrying...');
         setTimeout(() => fetchPapers(1), 1000);
       } else {
         setError('Failed to load papers. Please try refreshing.');

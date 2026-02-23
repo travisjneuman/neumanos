@@ -239,7 +239,7 @@ export const useAchievementsStore = create<AchievementsState>()(
         const newlyUnlocked = get().checkAchievements();
         if (newlyUnlocked.length > 0) {
           // Achievement unlocked will be handled by UI
-          console.debug('Achievements unlocked:', newlyUnlocked.map(a => a.name));
+          if (import.meta.env.DEV) console.debug('Achievements unlocked:', newlyUnlocked.map(a => a.name));
         }
       },
 
@@ -261,7 +261,7 @@ export const useAchievementsStore = create<AchievementsState>()(
         // Check for newly unlocked achievements
         const newlyUnlocked = get().checkAchievements();
         if (newlyUnlocked.length > 0) {
-          console.debug('Achievements unlocked:', newlyUnlocked.map(a => a.name));
+          if (import.meta.env.DEV) console.debug('Achievements unlocked:', newlyUnlocked.map(a => a.name));
         }
       },
 
@@ -283,7 +283,7 @@ export const useAchievementsStore = create<AchievementsState>()(
         // Check for newly unlocked achievements
         const newlyUnlocked = get().checkAchievements();
         if (newlyUnlocked.length > 0) {
-          console.debug('Achievements unlocked:', newlyUnlocked.map(a => a.name));
+          if (import.meta.env.DEV) console.debug('Achievements unlocked:', newlyUnlocked.map(a => a.name));
         }
       },
 

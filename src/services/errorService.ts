@@ -302,6 +302,8 @@ class ErrorService {
    * Log error to console (development)
    */
   private logError(error: AppError): void {
+    if (!import.meta.env.DEV) return;
+
     const prefix = `[${error.category.toUpperCase()}]`;
     const style = this.getLogStyle(error.severity);
 

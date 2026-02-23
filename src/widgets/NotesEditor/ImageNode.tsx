@@ -204,7 +204,7 @@ function ImageComponent({
         }
       });
 
-      console.log(`✅ Deleted image: ${imageId}`);
+      if (import.meta.env.DEV) console.log(`✅ Deleted image: ${imageId}`);
     } catch (error) {
       console.error('Failed to delete image:', error);
     } finally {
@@ -222,7 +222,7 @@ function ImageComponent({
       }
     });
     setShowAltEditor(false);
-    console.log(`✅ Updated alt text: "${editedAltText}"`);
+    if (import.meta.env.DEV) console.log(`✅ Updated alt text: "${editedAltText}"`);
   };
 
   return (

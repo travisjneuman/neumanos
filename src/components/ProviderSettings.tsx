@@ -36,6 +36,8 @@ export function ProviderSettings({ isOpen, onClose, router }: ProviderSettingsPr
     clearProviderApiKey,
     setEncryptionPassword,
     setActiveProvider,
+    enableCrossModuleContext,
+    setEnableCrossModuleContext,
   } = useTerminalStore();
 
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
@@ -346,6 +348,40 @@ export function ProviderSettings({ isOpen, onClose, router }: ProviderSettingsPr
                 </div>
               );
             })}
+          </div>
+
+          {/* AI Context Settings */}
+          <div className="pt-3 border-t border-border-light dark:border-border-dark space-y-2">
+            <h3 className="text-xs font-semibold text-text-light-primary dark:text-text-dark-primary">
+              AI Context
+            </h3>
+            <div className="flex items-start justify-between gap-4 p-3 bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button">
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-text-light-primary dark:text-text-dark-primary">
+                  Cross-module context
+                </div>
+                <div className="text-[11px] text-text-light-secondary dark:text-text-dark-secondary mt-0.5">
+                  Include data from notes, tasks, calendar, and habits in AI conversations
+                </div>
+              </div>
+              <button
+                role="switch"
+                aria-checked={enableCrossModuleContext}
+                onClick={() => setEnableCrossModuleContext(!enableCrossModuleContext)}
+                className={`flex-shrink-0 relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
+                  enableCrossModuleContext
+                    ? 'bg-accent-blue'
+                    : 'bg-surface-dark dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark'
+                }`}
+                aria-label="Toggle cross-module context"
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                    enableCrossModuleContext ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Footer Actions */}

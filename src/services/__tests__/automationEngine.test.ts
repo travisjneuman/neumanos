@@ -57,6 +57,8 @@ function createMockStoreActions(): AutomationStoreActions {
     addComment: vi.fn(),
     archiveTask: vi.fn(),
     deleteTask: vi.fn(),
+    addTask: vi.fn(),
+    notify: vi.fn(),
   };
 }
 
@@ -500,23 +502,29 @@ describe('automationEngine', () => {
       });
     });
 
-    describe('unimplemented actions', () => {
-      it('should return true for duplicate action (not implemented)', async () => {
+    describe('duplicate action', () => {
+      it('should call addTask with a copy of the task', async () => {
         const action: AutomationAction = {
           type: 'duplicate',
           config: {},
         };
         const result = await executeAction(action, task, mockActions);
-        expect(result).toBe(true); // Returns true even though not implemented
+        expect(result).toBe(true);
+        expect(mockActions.addTask).toHaveBeenCalledWith(
+          expect.objectContaining({ title: 'Test Task (copy)' })
+        );
       });
+    });
 
-      it('should return true for notify action (not implemented)', async () => {
+    describe('notify action', () => {
+      it('should call notify with the configured message', async () => {
         const action: AutomationAction = {
           type: 'notify',
           config: { message: 'Test notification' },
         };
         const result = await executeAction(action, task, mockActions);
         expect(result).toBe(true);
+        expect(mockActions.notify).toHaveBeenCalledWith('Automation', 'Test notification');
       });
     });
 

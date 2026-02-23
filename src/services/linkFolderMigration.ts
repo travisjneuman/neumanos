@@ -143,9 +143,11 @@ export function runCategoryMigration(): {
 
   markMigrationCompleted();
 
-  console.log(
-    `[LinkFolderMigration] Migration complete: ${foldersCreated} folders created, ${linksUpdated} links updated`
-  );
+  if (import.meta.env.DEV) {
+    console.log(
+      `[LinkFolderMigration] Migration complete: ${foldersCreated} folders created, ${linksUpdated} links updated`
+    );
+  }
 
   return { foldersCreated, linksUpdated };
 }

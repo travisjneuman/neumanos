@@ -93,6 +93,7 @@ const BaseWidgetComponent: React.FC<BaseWidgetProps> = ({
               disabled={isRefreshing || loading}
               className="p-1.5 hover:bg-surface-light-elevated dark:hover:bg-surface-dark rounded transition-all duration-standard ease-smooth disabled:opacity-50"
               title="Refresh"
+              aria-label="Refresh widget"
             >
               <span className={`text-lg ${isRefreshing ? 'animate-spin inline-block' : ''}`}>
                 🔄
@@ -106,6 +107,7 @@ const BaseWidgetComponent: React.FC<BaseWidgetProps> = ({
               onClick={onSettings}
               className="p-1.5 hover:bg-surface-light-elevated dark:hover:bg-surface-dark rounded transition-all duration-standard ease-smooth"
               title="Settings"
+              aria-label="Widget settings"
             >
               <span className="text-lg">⚙️</span>
             </button>

@@ -433,6 +433,16 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({
           </span>
         )}
 
+        {/* Pomodoro Sessions Count */}
+        {pomodoroCount > 0 && (
+          <span
+            className="text-xs px-2 py-0.5 rounded bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-medium"
+            title={`${pomodoroCount} Pomodoro session${pomodoroCount !== 1 ? 's' : ''} completed`}
+          >
+            🍅 {pomodoroCount}
+          </span>
+        )}
+
         {/* Tags */}
         {task.tags && task.tags.length > 0 && task.tags.map((tag) => (
           <span

@@ -635,9 +635,11 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
 
         // Log import stats for user feedback
         if (skippedDuplicates.length > 0) {
-          console.log(
-            `Imported ${newLinks.length} new bookmarks, skipped ${skippedDuplicates.length} duplicates`
-          );
+          if (import.meta.env.DEV) {
+            console.log(
+              `Imported ${newLinks.length} new bookmarks, skipped ${skippedDuplicates.length} duplicates`
+            );
+          }
         }
 
         return newLinks;
@@ -1051,7 +1053,7 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
 
         // Version 0 -> 1: Add projectIds field to all links
         if (version < 1 && state.links) {
-          console.log('[LinkLibraryStore] Adding projectIds field to all links');
+          if (import.meta.env.DEV) console.log('[LinkLibraryStore] Adding projectIds field to all links');
           const updatedLinks: Record<string, Link> = {};
           Object.entries(state.links).forEach(([id, link]: [string, any]) => {
             updatedLinks[id] = {
@@ -1067,7 +1069,7 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
 
         // Version 1 -> 2: Add sortOrder field to all links
         if (version < 2 && state.links) {
-          console.log('[LinkLibraryStore] Adding sortOrder field to all links');
+          if (import.meta.env.DEV) console.log('[LinkLibraryStore] Adding sortOrder field to all links');
           // Group links by folderId and assign sortOrder by createdAt
           const linksByFolder: Record<string, Array<[string, any]>> = {};
 
@@ -1106,7 +1108,7 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
         // Version 2 -> 3: Add deletedAt field (soft delete)
         // No migration needed - deletedAt is optional and defaults to undefined
         if (version < 3) {
-          console.log('[LinkLibraryStore] v3: deletedAt field available for soft delete');
+          if (import.meta.env.DEV) console.log('[LinkLibraryStore] v3: deletedAt field available for soft delete');
         }
 
         return state;

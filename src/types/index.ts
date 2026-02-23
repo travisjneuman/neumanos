@@ -432,12 +432,6 @@ export interface WeatherState {
   error: string | null;
 }
 
-export interface MapState {
-  coords: Coordinates;
-  locationName: string;
-  zoom: number;
-}
-
 // ==================== TIME TRACKING TYPES ====================
 
 export interface TimeEntry {

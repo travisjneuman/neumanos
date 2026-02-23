@@ -116,6 +116,7 @@ import type { OutlineHeading } from '../components/editor/plugins/OutlinePanelPl
 import { NoteOutlinePanel } from '../components/editor/NoteOutlinePanel';
 import { AISummarizePlugin } from '../components/editor/plugins/AISummarizePlugin';
 import { List } from 'lucide-react';
+import { useAnnounce } from '../hooks/useAnnounce';
 
 /**
  * Keyboard Shortcuts Plugin
@@ -920,6 +921,7 @@ const ReadOnlyPlugin: React.FC<{ isReadOnly: boolean }> = ({ isReadOnly }) => {
 const AutoSavePlugin: React.FC<{ noteId: string }> = ({ noteId }) => {
   const [isSaving, setIsSaving] = useState(false);
   const updateNote = useNotesStore((state) => state.updateNote);
+  const announce = useAnnounce();
 
   // Track timeout ID and last saved content to prevent redundant saves
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -959,6 +961,9 @@ const AutoSavePlugin: React.FC<{ noteId: string }> = ({ noteId }) => {
           lastContentRef.current = contentJson;
           lastTextRef.current = contentText;
 
+          // Announce save to screen readers
+          announce('Note saved');
+
           // Version history: save snapshot periodically when content changes significantly
           const now = Date.now();
           const versionStore = useNoteVersionStore.getState();
@@ -988,7 +993,7 @@ const AutoSavePlugin: React.FC<{ noteId: string }> = ({ noteId }) => {
         }
       }, NOTE_CONSTANTS.AUTOSAVE_DEBOUNCE_MS);
     });
-  }, [noteId, updateNote]);
+  }, [noteId, updateNote, announce]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

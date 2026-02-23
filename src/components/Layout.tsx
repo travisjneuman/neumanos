@@ -6,6 +6,7 @@ import { Footer as SaveStatusFooter } from './Footer';
 import { ErrorToastContainer } from './ErrorToast';
 import { PWAPrompts } from './PWAPrompts';
 import { OfflineIndicator } from './OfflineIndicator';
+import { NaturalLanguageBar } from './NaturalLanguageBar';
 import { useSidebarStore } from '../stores/useSidebarStore';
 import { useTerminalStore } from '../stores/useTerminalStore';
 import { useProjectContextStore } from '../stores/useProjectContextStore';
@@ -52,6 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showQuickAddTask, setShowQuickAddTask] = useState(false);
   const [showSmartTemplatePicker, setShowSmartTemplatePicker] = useState(false);
   const [showSmartTemplateBuilder, setShowSmartTemplateBuilder] = useState(false);
+  const [showNaturalLanguageBar, setShowNaturalLanguageBar] = useState(false);
 
   // Handler for opening support modal from command palette
   const handleOpenSupportModal = (tab: 'report' | 'help' | 'docs') => {
@@ -274,6 +276,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     priority: 40,
   });
 
+  useShortcut({
+    id: 'open-natural-language-bar',
+    keys: ['mod', 'shift', 'n'],
+    label: 'Natural language input',
+    description: 'Create tasks, events, or notes from natural language',
+    handler: useCallback(() => setShowNaturalLanguageBar(true), []),
+    priority: 55,
+  });
+
   // G-then-key sequence shortcuts (Linear-style navigation)
   const gKeyPendingRef = useRef(false);
   const gKeyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -477,6 +488,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           />
         )}
       </Suspense>
+
+      {/* Natural Language Bar (Ctrl+Shift+N) */}
+      <NaturalLanguageBar
+        isOpen={showNaturalLanguageBar}
+        onClose={() => setShowNaturalLanguageBar(false)}
+      />
 
       {/* PWA Install and Update Prompts */}
       <PWAPrompts />

@@ -22,10 +22,22 @@ const BRAND_COLORS = [
 ];
 
 /**
- * Check if user prefers reduced motion
+ * Module-level cache for the reduced-motion preference.
+ * Initialised once and updated automatically whenever the OS setting changes.
+ */
+const _reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+let _reducedMotion: boolean = _reducedMotionQuery.matches;
+_reducedMotionQuery.addEventListener('change', (e: MediaQueryListEvent) => {
+  _reducedMotion = e.matches;
+});
+
+/**
+ * Returns whether the user currently prefers reduced motion.
+ * Uses a cached value that is updated via a MediaQueryList change listener,
+ * so repeated calls do not re-query the browser on every invocation.
  */
 function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return _reducedMotion;
 }
 
 /**

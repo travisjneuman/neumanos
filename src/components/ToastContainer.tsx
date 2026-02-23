@@ -5,7 +5,7 @@
  * Positioned at bottom-left to avoid overlap with UndoToast (bottom-right)
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToasts, useToastStore, type Toast, type ToastType } from '../stores/useToastStore';
 import {
@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useAnnounce } from '../hooks/useAnnounce';
 
 /**
  * Icon and color config for each toast type
@@ -130,6 +131,19 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
 export const ToastContainer: React.FC = () => {
   const toasts = useToasts();
   const dismissToast = useToastStore((state) => state.dismissToast);
+  const announce = useAnnounce();
+  const prevToastIdsRef = useRef<Set<string>>(new Set());
+
+  // Announce new toasts to screen readers
+  useEffect(() => {
+    const currentIds = new Set(toasts.map((t) => t.id));
+    for (const toast of toasts) {
+      if (!prevToastIdsRef.current.has(toast.id)) {
+        announce(toast.message);
+      }
+    }
+    prevToastIdsRef.current = currentIds;
+  }, [toasts, announce]);
 
   if (toasts.length === 0) return null;
 

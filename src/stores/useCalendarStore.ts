@@ -535,7 +535,7 @@ export const useCalendarStore = create<CalendarStore>()(
 
         // Version 0 -> 1: Add projectIds field to all events
         if (version < 1 && state.events) {
-          console.log('[CalendarStore] Adding projectIds field to all events');
+          if (import.meta.env.DEV) console.log('[CalendarStore] Adding projectIds field to all events');
           const updatedEvents: Record<string, CalendarEvent[]> = {};
           const eventEntries = Object.entries(state.events as Record<string, unknown[]>) as [string, Record<string, unknown>[]][];
           eventEntries.forEach(([dateKey, events]) => {
@@ -552,7 +552,7 @@ export const useCalendarStore = create<CalendarStore>()(
 
         // Version 1 -> 2: Add calendars and icsSubscriptions
         if (version < 2) {
-          console.log('[CalendarStore] Adding calendars and ICS subscriptions');
+          if (import.meta.env.DEV) console.log('[CalendarStore] Adding calendars and ICS subscriptions');
           state = {
             ...state,
             calendars: (state as Record<string, unknown>).calendars ?? DEFAULT_CALENDARS,

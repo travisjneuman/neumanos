@@ -68,12 +68,12 @@ function App() {
 
       // Run migration if needed
       if (isMigrationNeeded()) {
-        console.log('🚀 Migration needed, starting...');
+        if (import.meta.env.DEV) console.log('🚀 Migration needed, starting...');
         const result = await migrateToIndexedDB();
         if (result.success) {
-          console.log('✅ Migration complete');
+          if (import.meta.env.DEV) console.log('✅ Migration complete');
         } else {
-          console.error('❌ Migration failed:', result.errors);
+          if (import.meta.env.DEV) console.error('❌ Migration failed:', result.errors);
         }
       }
 
