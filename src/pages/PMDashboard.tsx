@@ -29,6 +29,7 @@ import { ProjectHealthCard } from '../components/pm/ProjectHealthCard';
 import { BurndownChart } from '../components/charts/BurndownChart';
 import { ResourceUtilizationChart } from '../components/charts/ResourceUtilizationChart';
 import { PageContent } from '../components/PageContent';
+import { RiskMatrixPanel } from '../components/pm/RiskMatrixPanel';
 
 // Sprint date range (default to current month)
 function getDefaultSprintDates(): { start: Date; end: Date } {
@@ -386,6 +387,11 @@ export function PMDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Risk Matrix Section */}
+      <div className="mt-6">
+        <RiskMatrixPanel />
       </div>
     </PageContent>
   );

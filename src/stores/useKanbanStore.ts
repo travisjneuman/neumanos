@@ -171,6 +171,7 @@ interface KanbanStore extends KanbanState {
 
   // Phase A: Archive management
   archiveTask: (id: string) => void;
+  notify: (title: string, body: string) => void;
   restoreTask: (id: string) => void;
   deleteArchivedTask: (id: string) => void;
   getArchivedTasks: () => Task[];
@@ -1248,6 +1249,13 @@ export const useKanbanStore = create<KanbanStore>()(
           field: 'archived',
           newValue: 'true',
         });
+      },
+
+      notify: (title, body) => {
+        toast.info(body, title);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body });
+        }
       },
 
       restoreTask: (id) => {

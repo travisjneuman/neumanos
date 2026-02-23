@@ -178,14 +178,20 @@ export async function executeAction(
         }
         break;
 
-      case 'duplicate':
-        // Not implemented yet - requires addTask with template
-        log.warn('Duplicate action not yet implemented', { taskId: task.id });
+      case 'duplicate': {
+        const { id: _id, created: _c, ...taskData } = task;
+        storeActions.addTask({
+          ...taskData,
+          title: `${task.title} (copy)`,
+        });
         break;
+      }
 
       case 'notify':
-        // Not implemented yet - requires notification system
-        log.warn('Notify action not yet implemented', { taskId: task.id });
+        storeActions.notify(
+          'Automation',
+          (action.config.message as string) || (action.config.text as string) || `Task "${task.title}" triggered a notification.`
+        );
         break;
 
       default:

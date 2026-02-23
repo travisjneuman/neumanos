@@ -111,6 +111,10 @@ import TableOfContentsPlugin from '../components/editor/plugins/TableOfContentsP
 import FileAttachmentPlugin from '../components/editor/plugins/FileAttachmentPlugin';
 import { NoteAttachmentsList } from '../components/notes/NoteAttachmentsList';
 import { NoteAliasEditor } from '../components/notes/NoteAliasEditor';
+import OutlinePanelPlugin from '../components/editor/plugins/OutlinePanelPlugin';
+import type { OutlineHeading } from '../components/editor/plugins/OutlinePanelPlugin';
+import { NoteOutlinePanel } from '../components/editor/NoteOutlinePanel';
+import { List } from 'lucide-react';
 
 /**
  * Keyboard Shortcuts Plugin
@@ -487,7 +491,9 @@ const EditorToolbar: React.FC<{
   noteId: string;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
-}> = ({ wordCount, charCount, noteId, viewMode, onViewModeChange }) => {
+  outlineOpen: boolean;
+  onToggleOutline: () => void;
+}> = ({ wordCount, charCount, noteId, viewMode, onViewModeChange, outlineOpen, onToggleOutline }) => {
   const [editor] = useLexicalComposerContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
@@ -796,6 +802,16 @@ const EditorToolbar: React.FC<{
       </button>
 
       <div className="flex-1" />
+
+      {/* Outline Toggle */}
+      <button
+        onClick={onToggleOutline}
+        className={`${btnClass} ${outlineOpen ? 'text-accent-primary bg-accent-primary/10' : ''}`}
+        title="Toggle Outline"
+        aria-pressed={outlineOpen}
+      >
+        <List size={16} />
+      </button>
 
       {/* View Mode Toggle */}
       <div className="flex items-center gap-1 mr-4">
@@ -1136,6 +1152,8 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('edit');
+  const [outlineOpen, setOutlineOpen] = useState(false);
+  const [outlineHeadings, setOutlineHeadings] = useState<OutlineHeading[]>([]);
 
   // Keyboard shortcut for toggling view mode (Cmd+E)
   useEffect(() => {
@@ -1159,6 +1177,14 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
   const handleWordCountUpdate = useCallback((words: number, chars: number) => {
     setWordCount(words);
     setCharCount(chars);
+  }, []);
+
+  const handleOutlineHeadingsChange = useCallback((headings: OutlineHeading[]) => {
+    setOutlineHeadings(headings);
+  }, []);
+
+  const handleToggleOutline = useCallback(() => {
+    setOutlineOpen((prev) => !prev);
   }, []);
 
   if (!note) {
@@ -1205,10 +1231,13 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
               noteId={noteId}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
+              outlineOpen={outlineOpen}
+              onToggleOutline={handleToggleOutline}
             />
           </div>
 
-          {/* Editor Content */}
+          {/* Editor Content + Outline Panel */}
+          <div className="flex-1 flex min-h-0">
           <div className="flex-1 overflow-y-auto p-4">
             <div className={`relative h-full border rounded-lg p-6 bg-surface-light dark:bg-surface-dark ${
               viewMode === 'preview'
@@ -1253,6 +1282,7 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
             {viewMode === 'edit' && <ImageUploadPlugin noteId={noteId} />}
             {viewMode === 'edit' && <EmbedPlugin />}
             <TableOfContentsPlugin />
+            <OutlinePanelPlugin onHeadingsChange={handleOutlineHeadingsChange} />
             {viewMode === 'edit' && <FileAttachmentPlugin noteId={noteId} />}
             <AutoSavePlugin noteId={noteId} />
             <WikiLinkAutocompletePlugin notes={notesArray} currentFolderId={note.folderId} />
@@ -1267,6 +1297,10 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
               />
             )}
             </div>
+          </div>
+
+          {/* Outline Panel */}
+          <NoteOutlinePanel headings={outlineHeadings} isOpen={outlineOpen} />
           </div>
         </div>
       </LexicalComposer>

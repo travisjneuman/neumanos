@@ -48,9 +48,11 @@ import { useSettingsStore, formatTemperature } from '../stores/useSettingsStore'
 import { useFocusModeStore } from '../stores/useFocusModeStore';
 import { useDailyPlanningStore } from '../stores/useDailyPlanningStore';
 import { useNotesStore } from '../stores/useNotesStore';
+import { useProductivityStore } from '../stores/useProductivityStore';
 import { useShortcut } from '../hooks/useShortcut';
 import type { CalendarEvent, WeatherData } from '../types';
 import { PageContent } from '../components/PageContent';
+import { SmartScheduleButton } from '../components/SmartScheduleButton';
 
 /**
  * TodayMetrics - Shows today's summary statistics
@@ -366,6 +368,17 @@ export const Today: React.FC = () => {
   const weatherLoading = useWeatherStore((state) => state.loading);
   const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
 
+  // Productivity karma
+  const refreshKarma = useProductivityStore((state) => state.refreshToday);
+  const getTodayKarma = useProductivityStore((state) => state.getTodayKarma);
+  const cumulativeKarma = useProductivityStore((state) => state.cumulativeKarma);
+
+  useEffect(() => {
+    refreshKarma();
+  }, [refreshKarma]);
+
+  const todayKarma = useMemo(() => getTodayKarma(), [getTodayKarma, cumulativeKarma]);
+
   // Focus mode
   const focusedTaskId = useFocusModeStore((state) => state.linkedTaskId);
   const focusIsActive = useFocusModeStore((state) => state.isActive);
@@ -496,8 +509,25 @@ export const Today: React.FC = () => {
           temperatureUnit={temperatureUnit}
         />
 
-        {/* Page-specific toolbar */}
+        {/* Karma + Page-specific toolbar */}
         <div className="flex items-center gap-2">
+          {/* Karma score pill */}
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors text-sm font-medium"
+            style={{
+              borderColor: todayKarma.score >= 75 ? 'rgba(34,197,94,0.3)' : todayKarma.score >= 50 ? 'rgba(234,179,8,0.3)' : todayKarma.score >= 25 ? 'rgba(249,115,22,0.3)' : 'rgba(239,68,68,0.3)',
+              backgroundColor: todayKarma.score >= 75 ? 'rgba(34,197,94,0.1)' : todayKarma.score >= 50 ? 'rgba(234,179,8,0.1)' : todayKarma.score >= 25 ? 'rgba(249,115,22,0.1)' : 'rgba(239,68,68,0.1)',
+              color: todayKarma.score >= 75 ? '#22c55e' : todayKarma.score >= 50 ? '#eab308' : todayKarma.score >= 25 ? '#f97316' : '#ef4444',
+            }}
+            title={`Tasks: ${todayKarma.breakdown.tasks}% | Habits: ${todayKarma.breakdown.habits}% | Time: ${todayKarma.breakdown.timeTracked}% | Energy: ${todayKarma.breakdown.energy}%`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>{todayKarma.score}</span>
+            <span className="text-xs opacity-70">karma</span>
+          </div>
+          {/* Smart Schedule button */}
+          <SmartScheduleButton dateKey={todayKey} />
+
           {/* Morning Ritual button */}
           {!isMorningRitualCompleted && (
             <button

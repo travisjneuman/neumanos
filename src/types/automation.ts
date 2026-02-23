@@ -19,6 +19,8 @@ export interface AutomationStoreActions {
   addComment: (taskId: string, text: string) => void;
   archiveTask: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'created'>) => void;
+  notify: (title: string, body: string) => void;
 }
 
 // ============================================================================

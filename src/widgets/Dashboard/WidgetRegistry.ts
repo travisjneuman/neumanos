@@ -97,6 +97,11 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   energytracker: 'EnergyTrackerWidget',
   portfolio: 'PortfolioWidget',
   weeklyinsights: 'WeeklyInsightsWidget',
+  producthunt: 'ProductHuntWidget',
+  weatherforecast: 'WeatherForecastWidget',
+  quickadd: 'QuickAddWidget',
+  tasksummary: 'TaskSummaryWidget',
+  productivitykarma: 'ProductivityKarmaWidget',
 };
 
 /**
@@ -688,6 +693,52 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: 'Weekly Insights',
     description: 'Productivity score, top win, and improvement from your weekly retrospective',
     icon: '📊',
+    category: 'productivity',
+    defaultEnabled: false,
+  },
+
+  producthunt: {
+    id: 'producthunt',
+    name: 'Product Hunt',
+    description: 'Latest trending products and launches from Product Hunt',
+    icon: '🚀',
+    category: 'news',
+    apiUrl: 'https://www.producthunt.com',
+    defaultEnabled: false,
+  },
+
+  weatherforecast: {
+    id: 'weatherforecast',
+    name: 'Weather Forecast',
+    description: 'Multi-day weather forecast with temperature, conditions, and precipitation',
+    icon: '🌤️',
+    category: 'utility',
+    defaultEnabled: false,
+  },
+
+  quickadd: {
+    id: 'quickadd',
+    name: 'Quick Add',
+    description: 'Quickly create notes, tasks, and events from a single widget',
+    icon: '⚡',
+    category: 'core',
+    defaultEnabled: false,
+  },
+
+  tasksummary: {
+    id: 'tasksummary',
+    name: 'Task Summary',
+    description: 'Overview of task counts by status with progress ring',
+    icon: '📊',
+    category: 'core',
+    defaultEnabled: false,
+  },
+
+  productivitykarma: {
+    id: 'productivitykarma',
+    name: 'Productivity Karma',
+    description: 'Unified productivity score combining tasks, habits, time tracking, and energy',
+    icon: '🔮',
     category: 'productivity',
     defaultEnabled: false,
   },

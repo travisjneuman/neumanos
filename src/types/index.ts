@@ -377,6 +377,9 @@ export interface Task {
 
   // WAVE 6E: ENERGY-BASED SCHEDULING
   energyCost?: 1 | 2 | 3 | 4 | 5; // Energy cost (1=Trivial, 5=Draining)
+
+  // WAVE 7F: HABIT-TASK BRIDGE
+  linkedHabitId?: string; // Linked habit ID (bidirectional)
 }
 
 export interface KanbanState {
@@ -606,6 +609,13 @@ export interface Habit {
   // Streak freeze
   freezesPerWeek: number;           // Max freezes allowed per week (default 1)
   freezesUsed: StreakFreezeRecord[]; // History of applied freezes
+
+  // Pomodoro integration
+  trackViaPomodoro?: boolean;       // Auto-complete when Pomodoro session finishes
+  pomodoroSessionsRequired?: number; // Sessions needed to auto-complete (default 1)
+
+  // Habit-Task bridge
+  linkedTaskId?: string;            // Linked kanban task ID (bidirectional)
 
   // Metadata
   projectIds: string[];             // Project context support

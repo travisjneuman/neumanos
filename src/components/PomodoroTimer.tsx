@@ -5,6 +5,7 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useKanbanStore } from '../stores/useKanbanStore';
 import { notifyPomodoroComplete } from '../utils/pomodoroNotifications';
+import { onPomodoroComplete } from '../services/pomodoroHabitBridge';
 
 /**
  * Pomodoro Timer Component
@@ -82,6 +83,10 @@ export function PomodoroTimer() {
             tags: ['Pomodoro'],
             projectIds: [],
           });
+
+          // Bridge: auto-complete Pomodoro-tracked habits
+          const updatedSessions = usePomodoroStore.getState().totalSessionsToday;
+          onPomodoroComplete(updatedSessions);
         }
       },
     });

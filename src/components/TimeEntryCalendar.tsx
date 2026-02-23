@@ -14,6 +14,7 @@ import { DayDetailModal } from './DayDetailModal';
 import { MiniCalendar } from './MiniCalendar';
 import { MonthlyCalendarGrid } from './shared/MonthlyCalendarGrid';
 import { CalendarHeader } from './shared/CalendarHeader';
+import { CalendarLayersSidebar } from './calendar/CalendarLayersSidebar';
 import { EVENT_COLOR_CATEGORIES } from '../utils/eventColors';
 import type { TimeEntry, CalendarEvent, ViewMode, Task, EventColorCategory } from '../types';
 
@@ -571,7 +572,10 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
         )}
       </div>
 
-      {/* View Content */}
+      {/* View Content with Calendar Layers Sidebar */}
+      <div className="flex">
+        <CalendarLayersSidebar />
+        <div className="flex-1 min-w-0">
       {viewMode === 'monthly' ? (
         /* Monthly View - Using shared MonthlyCalendarGrid component */
         <MonthlyCalendarGrid
@@ -663,6 +667,8 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
           onEventClick={handleEventClick}
         />
       )}
+        </div>
+      </div>
 
       {/* Legend */}
       {projects.filter(p => p.active && !p.archived).length > 0 && (

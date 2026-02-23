@@ -5,6 +5,7 @@ import { Paperclip } from 'lucide-react';
 import { useKanbanStore } from '../../stores/useKanbanStore';
 import { useTimeTrackingStore } from '../../stores/useTimeTrackingStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { convertTaskToHabit } from '../../services/habitTaskBridge';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CustomFieldDisplay } from '../../components/CustomFieldDisplay';
 import { TaskTimerButton } from '../../components/tasks/TaskTimerButton';
@@ -314,6 +315,18 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({
               >
                 Edit
               </button>
+              {!task.linkedHabitId && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    convertTaskToHabit(task.id);
+                    setShowMenu(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-surface-light-elevated dark:hover:bg-surface-dark text-text-light-secondary dark:text-text-dark-secondary"
+                >
+                  Track as Habit
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent card click

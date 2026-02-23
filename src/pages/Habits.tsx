@@ -6,6 +6,7 @@ import {
   TrendingUp, Search, MessageSquare, Brain, Play, Clock, Repeat, X,
 } from 'lucide-react';
 import { useHabitStore } from '../stores/useHabitStore';
+import { convertHabitToTask } from '../services/habitTaskBridge';
 import { PageContent } from '../components/PageContent';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
@@ -142,6 +143,8 @@ function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: Habi
   const [reminderTime, setReminderTime] = useState(habit?.reminder?.time ?? '09:00');
   const [requiredHabitIds, setRequiredHabitIds] = useState<string[]>(habit?.requiredHabitIds ?? []);
   const [freezesPerWeek, setFreezesPerWeek] = useState(habit?.freezesPerWeek ?? 1);
+  const [trackViaPomodoro, setTrackViaPomodoro] = useState(habit?.trackViaPomodoro ?? false);
+  const [pomodoroSessionsRequired, setPomodoroSessionsRequired] = useState(habit?.pomodoroSessionsRequired ?? 1);
 
   // Available habits for dependency selection (exclude self)
   const availableForDep = useMemo(
@@ -166,6 +169,8 @@ function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: Habi
       reminder: reminderEnabled ? { enabled: true, time: reminderTime } : undefined,
       requiredHabitIds: requiredHabitIds.length > 0 ? requiredHabitIds : undefined,
       freezesPerWeek,
+      trackViaPomodoro: trackViaPomodoro || undefined,
+      pomodoroSessionsRequired: trackViaPomodoro ? pomodoroSessionsRequired : undefined,
       projectIds: habit?.projectIds ?? [],
     });
   };
@@ -414,6 +419,42 @@ function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: Habi
               </div>
             </div>
 
+            {/* Pomodoro Integration */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">
+                  <span className="mr-1">🍅</span>
+                  Track via Pomodoro
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setTrackViaPomodoro(!trackViaPomodoro)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    trackViaPomodoro
+                      ? 'bg-red-500/10 text-red-500'
+                      : 'bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary'
+                  }`}
+                >
+                  {trackViaPomodoro ? 'On' : 'Off'}
+                </button>
+              </div>
+              {trackViaPomodoro && (
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+                    Sessions required:
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={pomodoroSessionsRequired}
+                    onChange={(e) => setPomodoroSessionsRequired(Number(e.target.value))}
+                    className="w-16 px-2 py-1 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-accent-primary text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Dependencies */}
             {availableForDep.length > 0 && (
               <div className="mb-4">
@@ -479,6 +520,7 @@ interface HabitCardProps {
   onEdit: () => void;
   onArchive: () => void;
   onDelete: () => void;
+  onConvertToTask: () => void;
   onViewStats: () => void;
   onViewJournal: () => void;
   onViewStreakCalendar: () => void;
@@ -499,6 +541,7 @@ function HabitCard({
   onEdit,
   onArchive,
   onDelete,
+  onConvertToTask,
   onViewStats,
   onViewJournal,
   onViewStreakCalendar,
@@ -586,6 +629,14 @@ function HabitCard({
                     </span>
                   </>
                 )}
+                {habit.trackViaPomodoro && (
+                  <>
+                    <span className="text-border-light dark:text-border-dark">|</span>
+                    <span className="text-red-500" title={`Pomodoro-tracked (${habit.pomodoroSessionsRequired ?? 1} session${(habit.pomodoroSessionsRequired ?? 1) > 1 ? 's' : ''})`}>
+                      🍅
+                    </span>
+                  </>
+                )}
                 {isLocked && blockingNames.length > 0 && (
                   <span className="text-amber-500 text-xs flex items-center gap-1">
                     <Lock className="w-3 h-3" />
@@ -646,6 +697,21 @@ function HabitCard({
                         <Edit2 className="w-4 h-4" />
                         Edit
                       </button>
+                      {!habit.linkedTaskId && (
+                        <button
+                          onClick={() => { setShowMenu(false); onConvertToTask(); }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
+                        >
+                          <Link2 className="w-4 h-4" />
+                          Convert to Task
+                        </button>
+                      )}
+                      {habit.linkedTaskId && (
+                        <div className="px-3 py-2 text-xs text-accent-primary flex items-center gap-2">
+                          <Link2 className="w-3.5 h-3.5" />
+                          Linked to task
+                        </div>
+                      )}
                       <button
                         onClick={() => { setShowMenu(false); onArchive(); }}
                         className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
@@ -1018,6 +1084,7 @@ export function HabitsContent() {
         onEdit={() => { setEditingHabit(habit); setShowModal(true); }}
         onArchive={() => archiveHabit(habit.id)}
         onDelete={() => handleDeleteHabit(habit.id)}
+        onConvertToTask={() => convertHabitToTask(habit.id)}
         onViewStats={() => setStatsHabit(habit)}
         onViewJournal={() => setJournalHabit(habit)}
         onViewStreakCalendar={() => setStreakCalendarHabit(habit)}
