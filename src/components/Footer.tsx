@@ -39,7 +39,7 @@ export const Footer: React.FC = () => {
         initial={{ opacity: 0, y: 50, x: "-50%" }}
         animate={{ opacity: 1, y: 0, x: "-50%" }}
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed bottom-4 left-1/2 z-30 pointer-events-none"
+        className="fixed bottom-[72px] md:bottom-4 left-1/2 z-30 pointer-events-none"
       >
         <div className="flex items-center justify-center gap-2 px-3 py-1.5 sm:gap-4 sm:px-4 sm:py-2 bg-surface-light/90 dark:bg-surface-dark/90 backdrop-blur-lg rounded-full border border-border-light dark:border-border-dark pointer-events-auto shadow-lg">
           {/* Footer Links - Centered */}

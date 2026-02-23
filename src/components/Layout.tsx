@@ -12,6 +12,8 @@ import { useProjectContextStore } from '../stores/useProjectContextStore';
 import { useNotesStore } from '../stores/useNotesStore';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useShortcut } from '../hooks/useShortcut';
+import { useSwipeNavigation } from '../hooks/useSwipeNavigation';
+import { BottomNav } from './BottomNav';
 import { isInputElement } from '../services/shortcuts';
 
 // Lazy load heavy components to reduce initial bundle size
@@ -25,6 +27,8 @@ const AboutModal = lazy(() => import('./AboutModal').then(m => ({ default: m.Abo
 const PrivacyModal = lazy(() => import('./PrivacyModal').then(m => ({ default: m.PrivacyModal })));
 const OnboardingModal = lazy(() => import('./OnboardingModal').then(m => ({ default: m.OnboardingModal })));
 const QuickAddModal = lazy(() => import('../widgets/Kanban/QuickAddModal').then(m => ({ default: m.QuickAddModal })));
+const SmartTemplatePicker = lazy(() => import('./SmartTemplatePicker').then(m => ({ default: m.SmartTemplatePicker })));
+const SmartTemplateBuilder = lazy(() => import('./SmartTemplateBuilder').then(m => ({ default: m.SmartTemplateBuilder })));
 
 /**
  * Layout Component with Sidebar Navigation
@@ -45,6 +49,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showQuickAddTask, setShowQuickAddTask] = useState(false);
+  const [showSmartTemplatePicker, setShowSmartTemplatePicker] = useState(false);
+  const [showSmartTemplateBuilder, setShowSmartTemplateBuilder] = useState(false);
 
   // Handler for opening support modal from command palette
   const handleOpenSupportModal = (tab: 'report' | 'help' | 'docs') => {
@@ -76,6 +82,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         break;
     }
   }, []);
+
+  // Enable swipe-from-left-edge gesture to open sidebar on mobile
+  useSwipeNavigation();
 
   // Initialize global keyboard shortcut listener
   // This single listener dispatches to all registered shortcuts
@@ -244,6 +253,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
 
   useShortcut({
+    id: 'open-smart-templates',
+    keys: ['mod', 'shift', 't'],
+    label: 'Smart Templates',
+    description: 'Open smart template picker',
+    handler: useCallback(() => setShowSmartTemplatePicker(true), []),
+    priority: 55,
+  });
+
+  useShortcut({
     id: 'toggle-sidebar',
     keys: ['mod', 'b'],
     label: 'Toggle sidebar',
@@ -319,13 +337,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         Skip to main content
       </a>
 
-      {/* Mobile hamburger button */}
+      {/* Mobile hamburger button - hidden on small screens (BottomNav handles it) and on desktop (sidebar always visible) */}
       <button
         onClick={toggleMobileMenu}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-button bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark shadow-lg transition-all duration-standard ease-smooth"
+        className="hidden md:block lg:hidden fixed top-4 left-4 z-50 p-2 min-w-[44px] min-h-[44px] rounded-button bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark shadow-lg transition-all duration-standard ease-smooth"
         aria-label="Toggle navigation menu"
       >
-        <span className="text-xl" aria-hidden="true">☰</span>
+        <span className="text-xl" aria-hidden="true">{'\u2630'}</span>
       </button>
 
       <Sidebar />
@@ -336,9 +354,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           flex-1 flex flex-col transition-all duration-200 overflow-x-hidden overflow-y-hidden
           ${/* Mobile: no margin (sidebars are overlays) */ ''}
           ml-0 mr-0
-          ${/* Desktop: left margin for navigation sidebar */ ''}
-          ${isCollapsed ? 'lg:ml-[60px]' : 'lg:ml-[210px]'}
-          ${/* Desktop: right margin for AI terminal */ ''}
+          ${/* Desktop (md+): left margin for navigation sidebar */ ''}
+          ${isCollapsed ? 'md:ml-[60px]' : 'md:ml-[210px]'}
+          ${/* Desktop (lg+): right margin for AI terminal */ ''}
           ${isTerminalOpen ? 'lg:mr-[375px]' : 'lg:mr-0'}
         `}
       >
@@ -353,11 +371,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           tabIndex={-1}
           className="flex-1 flex flex-col min-h-0 overflow-hidden focus:outline-none"
         >
-          <div className="w-full h-full flex-1 flex flex-col min-h-0 px-6 pb-4">
+          <div className="w-full h-full flex-1 flex flex-col min-h-0 px-4 md:px-6 pb-20 md:pb-4">
             {children}
           </div>
         </main>
       </div>
+
+      {/* Bottom navigation bar for mobile (below md breakpoint) */}
+      <BottomNav />
 
       {/* Save Status Footer (floating pill at bottom-center) */}
       <SaveStatusFooter />
@@ -429,6 +450,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <QuickAddModal
             isOpen={showQuickAddTask}
             onClose={() => setShowQuickAddTask(false)}
+          />
+        )}
+
+        {/* Smart Template Picker (Ctrl+Shift+T) */}
+        {showSmartTemplatePicker && (
+          <SmartTemplatePicker
+            isOpen={showSmartTemplatePicker}
+            onClose={() => setShowSmartTemplatePicker(false)}
+            onOpenBuilder={() => {
+              setShowSmartTemplatePicker(false);
+              setShowSmartTemplateBuilder(true);
+            }}
+          />
+        )}
+
+        {/* Smart Template Builder */}
+        {showSmartTemplateBuilder && (
+          <SmartTemplateBuilder
+            isOpen={showSmartTemplateBuilder}
+            onClose={() => setShowSmartTemplateBuilder(false)}
           />
         )}
       </Suspense>

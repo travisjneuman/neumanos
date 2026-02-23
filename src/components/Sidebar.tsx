@@ -41,6 +41,7 @@ const fixedNavigation: NavItem[] = [
     children: [
       { icon: '📆', label: 'Today', path: '/today' },
       { icon: '🔗', label: 'Link Library', path: '/links' },
+      { icon: '📊', label: 'Activity', path: '/activity' },
     ],
   },
 ];
@@ -169,7 +170,7 @@ const SortableNavItem: React.FC<SortableNavItemProps> = ({ item, isCollapsed, is
           }
         }}
         className={`
-          flex items-center gap-3 px-3 h-10 rounded-button
+          flex items-center gap-3 px-3 h-11 rounded-button
           transition-all duration-standard ease-smooth
           relative group
           ${
@@ -449,7 +450,7 @@ export const Sidebar: React.FC = () => {
       {/* Mobile backdrop */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="md:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -467,8 +468,8 @@ export const Sidebar: React.FC = () => {
           ${isCollapsed ? 'w-[60px]' : 'w-[210px]'}
 
           ${/* Mobile: slide in/out as drawer */ ''}
-          lg:translate-x-0
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          md:translate-x-0
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
       {/* Logo Section */}
@@ -512,7 +513,7 @@ export const Sidebar: React.FC = () => {
                   <Link
                     to={item.path}
                     className={`
-                      flex-1 flex items-center gap-3 px-3 h-10 rounded-button
+                      flex-1 flex items-center gap-3 px-3 h-11 rounded-button
                       transition-all duration-standard ease-smooth
                       relative group
                       ${
@@ -678,7 +679,7 @@ export const Sidebar: React.FC = () => {
         <Link
           to="/settings"
           className={`
-            w-full flex items-center gap-3 px-3 h-10 rounded-button
+            w-full flex items-center gap-3 px-3 h-11 rounded-button
             ${isActive('/settings')
               ? 'bg-surface-light-elevated dark:bg-surface-dark-elevated text-text-light-primary dark:text-text-dark-primary'
               : 'text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
@@ -716,7 +717,7 @@ export const Sidebar: React.FC = () => {
         <button
           onClick={toggleTheme}
           className={`
-            w-full flex items-center gap-3 px-3 h-10 rounded-button
+            w-full flex items-center gap-3 px-3 h-11 rounded-button
             text-text-light-secondary dark:text-text-dark-secondary
             hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated
             transition-all duration-standard ease-smooth
@@ -749,7 +750,7 @@ export const Sidebar: React.FC = () => {
         <button
           onClick={toggleCollapse}
           className={`
-            w-full flex items-center gap-3 px-3 h-10 rounded-button
+            w-full flex items-center gap-3 px-3 h-11 rounded-button
             text-text-light-secondary dark:text-text-dark-secondary
             hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated
             transition-all duration-standard ease-smooth
