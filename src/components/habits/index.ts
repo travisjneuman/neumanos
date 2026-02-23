@@ -10,3 +10,5 @@ export {
 } from './HabitCompletionAnimation';
 export { HabitRewardsPanel } from './HabitRewards';
 export { useHabitReminders } from './HabitReminders';
+export { HabitAnalytics } from './HabitAnalytics';
+export { HabitAchievementsBadges } from './HabitAchievementsBadges';

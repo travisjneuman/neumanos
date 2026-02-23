@@ -18,10 +18,13 @@ import {
 } from 'lucide-react';
 import {
   importMarkdownFiles,
+  collectFolderPaths,
+  remapWikiLinks,
   type MarkdownImportResult,
   type MarkdownImportProgress,
 } from '../../services/markdownImport';
 import { useNotesStore } from '../../stores/useNotesStore';
+import { useFoldersStore } from '../../stores/useFoldersStore';
 import { logger } from '../../services/logger';
 
 const log = logger.module('MarkdownImportSection');
@@ -47,6 +50,9 @@ export const MarkdownImportSection: React.FC<MarkdownImportSectionProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createNote = useNotesStore((s) => s.createNote);
+  const updateNote = useNotesStore((s) => s.updateNote);
+  const createFolder = useFoldersStore((s) => s.createFolder);
+  const folders = useFoldersStore((s) => s.folders);
 
   const handleFolderSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -81,23 +87,69 @@ export const MarkdownImportSection: React.FC<MarkdownImportSectionProps> = ({
     let count = 0;
 
     try {
+      // Step 1: Create folder hierarchy from import paths
+      const folderPaths = collectFolderPaths(result.notes);
+      const pathToFolderIdMap = new Map<string, string>();
+
+      for (const folderPath of folderPaths) {
+        const parts = folderPath.split('/');
+        const folderName = parts[parts.length - 1];
+        const parentPath = parts.slice(0, -1).join('/');
+        const parentId = parentPath ? pathToFolderIdMap.get(parentPath) ?? null : null;
+
+        // Check if folder already exists under this parent
+        const existingFolder = Object.values(folders).find(
+          (f) => f.name === folderName && f.parentId === parentId
+        );
+
+        if (existingFolder) {
+          pathToFolderIdMap.set(folderPath, existingFolder.id);
+        } else {
+          const newFolder = createFolder({ name: folderName, parentId });
+          pathToFolderIdMap.set(folderPath, newFolder.id);
+        }
+      }
+
+      // Step 2: Create all notes (with correct folder assignments)
+      const titleToIdMap = new Map<string, string>();
+      const createdNoteIds: string[] = [];
+
       for (const note of result.notes) {
-        createNote({
+        const folderId = note.folderPath
+          ? pathToFolderIdMap.get(note.folderPath) ?? null
+          : null;
+
+        const newNote = createNote({
           title: note.title,
           contentText: note.content,
           tags: note.tags,
           createdAt: note.createdAt,
           updatedAt: note.updatedAt,
-          linkedNotes: note.linkedNotes,
+          folderId,
         });
+
+        titleToIdMap.set(note.title.toLowerCase(), newNote.id);
+        createdNoteIds.push(newNote.id);
         count++;
         setImportedCount(count);
       }
 
+      // Step 3: Remap wiki-links to internal IDs
+      const linkedNotesMap = remapWikiLinks(result.notes, titleToIdMap);
+      linkedNotesMap.forEach((linkedNoteIds, noteTitle) => {
+        const noteId = titleToIdMap.get(noteTitle.toLowerCase());
+        if (noteId) {
+          updateNote(noteId, { linkedNotes: linkedNoteIds });
+        }
+      });
+
+      const foldersCreated = folderPaths.length;
+      const linksRemapped = linkedNotesMap.size;
+
       setStage('complete');
       onMessage({
         type: 'success',
-        text: `Successfully imported ${count} notes from ${result.totalFiles} files.`,
+        text: `Imported ${count} notes, ${foldersCreated} folders, ${linksRemapped} wiki-links remapped.`,
       });
     } catch (error) {
       log.error('Note creation failed during import', { error });

@@ -14,3 +14,4 @@ export { SystemPromptPanel } from './SystemPromptPanel';
 export { CodeBlock } from './CodeBlock';
 export { TokenUsageBar, MessageTokenBadge } from './TokenUsageBar';
 export { ConversationExportButton } from './ConversationExportButton';
+export { ConversationSearchPanel } from './ConversationSearchPanel';

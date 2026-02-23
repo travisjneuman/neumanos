@@ -3,7 +3,7 @@ import { FileText, Download, Save, X } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useInvoicingStore } from '../stores/useInvoicingStore';
 import type { InvoiceFilters, Invoice } from '../types/invoicing';
-import { jsPDF } from 'jspdf';
+import { exportInvoicePdf } from '../services/invoicePdfExport';
 import { toast } from '../stores/useToastStore';
 
 /**
@@ -104,130 +104,10 @@ export function InvoiceBuilder() {
     }
   };
 
-  // Export to PDF
+  // Export to PDF using dedicated service
   const handleExportPDF = () => {
     if (!preview) return;
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 20;
-
-    // Header - Company Info
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(settings.companyName || 'Your Company', 20, yPos);
-    yPos += 8;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    if (settings.companyAddress) {
-      doc.text(settings.companyAddress, 20, yPos);
-      yPos += 5;
-    }
-    if (settings.companyEmail) {
-      doc.text(settings.companyEmail, 20, yPos);
-      yPos += 5;
-    }
-    if (settings.companyPhone) {
-      doc.text(settings.companyPhone, 20, yPos);
-      yPos += 5;
-    }
-
-    // Invoice Title & Number
-    yPos += 5;
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 8;
-
-    doc.setFontSize(12);
-    doc.text(preview.invoiceNumber, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 10;
-
-    // Invoice & Due Date
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Invoice Date: ${new Date(preview.invoiceDate).toLocaleDateString()}`, 20, yPos);
-    if (preview.dueDate) {
-      doc.text(`Due Date: ${new Date(preview.dueDate).toLocaleDateString()}`, pageWidth - 20, yPos, { align: 'right' });
-    }
-    yPos += 10;
-
-    // Client Info
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bill To:', 20, yPos);
-    yPos += 6;
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(preview.clientName, 20, yPos);
-    yPos += 5;
-    if (preview.clientEmail) {
-      doc.text(preview.clientEmail, 20, yPos);
-      yPos += 5;
-    }
-    if (preview.clientAddress) {
-      doc.text(preview.clientAddress, 20, yPos);
-      yPos += 5;
-    }
-
-    // Line Items Table
-    yPos += 10;
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, yPos - 5, pageWidth - 40, 7, 'F');
-    doc.text('Description', 25, yPos);
-    doc.text('Hours', pageWidth - 80, yPos);
-    doc.text('Rate', pageWidth - 60, yPos);
-    doc.text('Amount', pageWidth - 25, yPos, { align: 'right' });
-    yPos += 8;
-
-    // Line items
-    doc.setFont('helvetica', 'normal');
-    preview.lineItems.forEach(item => {
-      if (yPos > 270) { // Page break
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.text(item.description, 25, yPos);
-      doc.text(item.quantity.toFixed(2), pageWidth - 80, yPos);
-      doc.text(`${settings.currencySymbol}${item.rate.toFixed(2)}`, pageWidth - 60, yPos);
-      doc.text(`${settings.currencySymbol}${item.amount.toFixed(2)}`, pageWidth - 25, yPos, { align: 'right' });
-      yPos += 7;
-    });
-
-    // Totals
-    yPos += 5;
-    doc.line(20, yPos, pageWidth - 20, yPos);
-    yPos += 8;
-
-    doc.text('Subtotal:', pageWidth - 80, yPos);
-    doc.text(`${settings.currencySymbol}${preview.subtotal.toFixed(2)}`, pageWidth - 25, yPos, { align: 'right' });
-    yPos += 7;
-
-    if (preview.taxRate > 0) {
-      doc.text(`Tax (${preview.taxRate}%):`, pageWidth - 80, yPos);
-      doc.text(`${settings.currencySymbol}${preview.taxAmount.toFixed(2)}`, pageWidth - 25, yPos, { align: 'right' });
-      yPos += 7;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total:', pageWidth - 80, yPos);
-    doc.text(`${settings.currencySymbol}${preview.total.toFixed(2)}`, pageWidth - 25, yPos, { align: 'right' });
-
-    // Notes
-    if (preview.notes) {
-      yPos += 15;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Notes:', 20, yPos);
-      yPos += 6;
-      doc.setFont('helvetica', 'normal');
-      const splitNotes = doc.splitTextToSize(preview.notes, pageWidth - 40);
-      doc.text(splitNotes, 20, yPos);
-    }
-
-    // Save PDF
-    doc.save(`${preview.invoiceNumber}.pdf`);
+    exportInvoicePdf(preview, settings);
   };
 
   // Export to CSV
@@ -361,7 +241,7 @@ export function InvoiceBuilder() {
               </label>
               <select
                 value={filters.groupBy}
-                onChange={(e) => setFilters({ ...filters, groupBy: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, groupBy: e.target.value as 'project' | 'date' | 'none' })}
                 className="w-full rounded-md border border-border-light dark:border-border-dark bg-surface-light-elevated dark:bg-surface-dark-elevated px-3 py-2 text-sm text-text-light-primary dark:text-text-dark-primary focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
               >
                 <option value="project">Project</option>

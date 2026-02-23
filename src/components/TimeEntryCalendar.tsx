@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Eye, EyeOff } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { useKanbanStore } from '../stores/useKanbanStore';
@@ -31,7 +31,7 @@ interface TimeEntryCalendarProps {
  */
 export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: TimeEntryCalendarProps) {
   const { entries, projects, loadEntries, loadProjects } = useTimeTrackingStore();
-  const { events, importEvents } = useCalendarStore();
+  const { events, importEvents, calendars, toggleCalendarVisibility } = useCalendarStore();
   const { tasks } = useKanbanStore();
 
   const [loading, setLoading] = useState(true);
@@ -227,18 +227,28 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
     return result;
   }, [events, year, month]);
 
-  // Apply search and category filters to expanded events
+  // Build set of hidden calendar IDs for filtering
+  const hiddenCalendarIds = useMemo(() => {
+    return new Set(calendars.filter(c => !c.visible).map(c => c.id));
+  }, [calendars]);
+
+  // Apply search, category, and calendar filters to expanded events
   const filteredEvents = useMemo(() => {
     const hasSearch = searchQuery.trim().length > 0;
     const hasCategories = activeCategories.size > 0;
+    const hasHiddenCalendars = hiddenCalendarIds.size > 0;
 
-    if (!hasSearch && !hasCategories) return expandedEvents;
+    if (!hasSearch && !hasCategories && !hasHiddenCalendars) return expandedEvents;
 
     const lowerSearch = searchQuery.trim().toLowerCase();
     const result: Record<string, CalendarEvent[]> = {};
 
     Object.entries(expandedEvents).forEach(([dateKey, dayEvents]) => {
       const filtered = dayEvents.filter((event) => {
+        // Calendar visibility filter
+        if (hasHiddenCalendars && event.calendarId && hiddenCalendarIds.has(event.calendarId)) {
+          return false;
+        }
         // Search filter
         if (hasSearch && !event.title.toLowerCase().includes(lowerSearch)) {
           return false;
@@ -256,7 +266,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
     });
 
     return result;
-  }, [expandedEvents, searchQuery, activeCategories]);
+  }, [expandedEvents, searchQuery, activeCategories, hiddenCalendarIds]);
 
   // Group entries by date (ISO format for time entry lookups)
   // NOTE: Must be called before early return to maintain consistent hook order
@@ -445,6 +455,26 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
             </button>
           )}
         </div>
+
+        {/* Calendar Visibility Toggles */}
+        {calendars.length > 0 && (
+          <div className="flex items-center gap-1.5 border-l border-border-light dark:border-border-dark pl-3 ml-1">
+            {calendars.map((cal) => (
+              <button
+                key={cal.id}
+                onClick={() => toggleCalendarVisibility(cal.id)}
+                className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full transition-all duration-standard ease-smooth ${
+                  cal.visible ? 'text-white' : 'opacity-30'
+                }`}
+                style={{ backgroundColor: cal.color }}
+                title={`${cal.visible ? 'Hide' : 'Show'} ${cal.name}`}
+              >
+                {cal.visible ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
+                {cal.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* View Content */}

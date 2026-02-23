@@ -5,10 +5,11 @@
  * Features: time slots (hourly), timed events, all-day events, task bars
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { AlertCircle } from 'lucide-react';
 import type { CalendarEvent, Task } from '../types';
 import { getLegacyDateKey, isToday, isDateBetween } from '../utils/dateUtils';
-import { getColorCategory } from '../utils/eventColors';
+import { getEventDisplayColor } from '../utils/calendarColors';
 import { calculateEventLayout } from '../utils/eventLayout';
 import { QuickEventCreate } from './QuickEventCreate';
 
@@ -30,8 +31,21 @@ export const WeekView: React.FC<WeekViewProps> = ({
   showTimeSlots = true,
 }) => {
   const [quickCreate, setQuickCreate] = useState<{ dateKey: string; hour: number } | null>(null);
+  const [currentMinute, setCurrentMinute] = useState(() => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  });
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = showTimeSlots ? Array.from({ length: 24 }, (_, i) => i) : [];
+
+  // Update current time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setCurrentMinute(now.getHours() * 60 + now.getMinutes());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Get start of week (Sunday)
   const startOfWeek = new Date(currentDate);
@@ -126,7 +140,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                       onEventClick?.(event, dateKey);
                     }}
                     className="w-full text-left text-xs px-2 py-1 rounded-button text-white hover:opacity-90 transition-all duration-standard ease-smooth truncate"
-                    style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
+                    style={{ backgroundColor: getEventDisplayColor(event) }}
                   >
                     {event.startTime && `${event.startTime} `}
                     {event.title}
@@ -242,6 +256,19 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   </div>
                 ))}
 
+                {/* Current time indicator */}
+                {dayIsToday && (
+                  <div
+                    className="absolute left-0 right-0 z-30 pointer-events-none"
+                    style={{ top: `${(currentMinute / (24 * 60)) * 100}%` }}
+                  >
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 rounded-full bg-accent-red" />
+                      <div className="flex-1 h-0.5 bg-accent-red" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Timed events (with overlap stacking) */}
                 {(() => {
                   const layout = calculateEventLayout(timedEvents);
@@ -254,6 +281,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     const totalCols = layoutInfo?.totalColumns ?? 1;
                     const widthPercent = 100 / totalCols;
                     const leftPercent = col * widthPercent;
+                    const hasConflict = totalCols > 1;
 
                     return (
                       <button
@@ -267,11 +295,14 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           ...style,
                           left: `${leftPercent}%`,
                           width: `${widthPercent}%`,
-                          backgroundColor: getColorCategory(event.colorCategory).hex,
+                          backgroundColor: getEventDisplayColor(event),
                         }}
                         title={`${event.startTime} - ${event.endTime || ''}: ${event.title}`}
                       >
-                        <div className="font-medium truncate">{event.title}</div>
+                        <div className="font-medium truncate flex items-center gap-0.5">
+                          {event.title}
+                          {hasConflict && <AlertCircle className="w-2.5 h-2.5 text-amber-300 flex-shrink-0" />}
+                        </div>
                         {event.startTime && (
                           <div className="text-xs opacity-90">
                             {event.startTime} {event.endTime && `- ${event.endTime}`}
@@ -293,7 +324,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           onEventClick?.(event, dateKey);
                         }}
                         className="w-full text-left text-xs px-2 py-1 rounded-button text-white hover:opacity-90 transition-all duration-standard ease-smooth truncate"
-                        style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
+                        style={{ backgroundColor: getEventDisplayColor(event) }}
                       >
                         {event.title}
                       </button>

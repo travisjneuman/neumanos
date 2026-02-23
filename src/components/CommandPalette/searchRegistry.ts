@@ -973,10 +973,39 @@ const ABOUT_US_CONTENT = [
  * Keyboard shortcuts for search
  */
 const KEYBOARD_SHORTCUTS = [
+  // Global
   { keys: 'Ctrl+K / ⌘K', description: 'Open Synapse', context: 'Global', settingsSection: 'synapse' },
   { keys: 'Ctrl+B / ⌘B', description: 'Toggle Sidebar', context: 'Global', settingsSection: null },
   { keys: 'F1', description: 'Open Help & Support', context: 'Global', settingsSection: null },
   { keys: 'Ctrl+/ / ⌘/', description: 'Open Help', context: 'Global', settingsSection: null },
+  { keys: 'Ctrl+Shift+A', description: 'Toggle AI Terminal', context: 'Global', settingsSection: null },
+  { keys: 'Ctrl+Shift+P', description: 'Toggle Project Context', context: 'Global', settingsSection: null },
+  { keys: 'Escape', description: 'Close Modal/Dialog', context: 'Global', settingsSection: null },
+  // Navigation (Ctrl+Number)
+  { keys: 'Ctrl+1', description: 'Go to Dashboard', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+2', description: 'Go to Today', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+3', description: 'Go to Notes', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+4', description: 'Go to Tasks', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+5', description: 'Go to Schedule', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+6', description: 'Go to Create', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+7', description: 'Go to Links', context: 'Navigation', settingsSection: null },
+  { keys: 'Ctrl+8', description: 'Go to Settings', context: 'Navigation', settingsSection: null },
+  // G-then-key navigation
+  { keys: 'G then D', description: 'Go to Dashboard', context: 'Go To', settingsSection: null },
+  { keys: 'G then T', description: 'Go to Tasks', context: 'Go To', settingsSection: null },
+  { keys: 'G then N', description: 'Go to Notes', context: 'Go To', settingsSection: null },
+  { keys: 'G then H', description: 'Go to Habits', context: 'Go To', settingsSection: null },
+  { keys: 'G then C', description: 'Go to Calendar', context: 'Go To', settingsSection: null },
+  { keys: 'G then S', description: 'Go to Settings', context: 'Go To', settingsSection: null },
+  { keys: 'G then O', description: 'Go to Today', context: 'Go To', settingsSection: null },
+  { keys: 'G then L', description: 'Go to Links', context: 'Go To', settingsSection: null },
+  { keys: 'G then F', description: 'Go to Focus', context: 'Go To', settingsSection: null },
+  // Quick create
+  { keys: 'C', description: 'Quick Add Task', context: 'Global', settingsSection: null },
+  { keys: 'Ctrl+N / ⌘N', description: 'New Note', context: 'Global', settingsSection: null },
+  { keys: 'Ctrl+T / ⌘T', description: 'New Task', context: 'Global', settingsSection: null },
+  { keys: 'Ctrl+E / ⌘E', description: 'New Event', context: 'Global', settingsSection: null },
+  // Notes editor
   { keys: 'Ctrl+D / ⌘D', description: 'Create Daily Note', context: 'Notes', settingsSection: 'daily-notes' },
   { keys: 'Ctrl+Shift+E', description: 'Export Notes', context: 'Notes', settingsSection: null },
   { keys: 'Ctrl+B / ⌘B', description: 'Bold Text', context: 'Editor', settingsSection: null },
@@ -984,7 +1013,7 @@ const KEYBOARD_SHORTCUTS = [
   { keys: 'Ctrl+U / ⌘U', description: 'Underline Text', context: 'Editor', settingsSection: null },
   { keys: '/', description: 'Open Slash Commands', context: 'Editor', settingsSection: null },
   { keys: '[[', description: 'Insert Wiki Link', context: 'Editor', settingsSection: null },
-  { keys: 'Escape', description: 'Close Modal/Dialog', context: 'Global', settingsSection: null },
+  // Synapse
   { keys: 'Enter', description: 'Confirm/Submit', context: 'Forms', settingsSection: null },
   { keys: '↑↓', description: 'Navigate Options', context: 'Synapse', settingsSection: 'synapse' },
   { keys: 'Tab', description: 'Next Field/Option', context: 'Forms', settingsSection: null },

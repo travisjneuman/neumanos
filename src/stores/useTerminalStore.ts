@@ -98,6 +98,29 @@ export interface ProviderConfig {
 }
 
 /**
+ * AI Context for context-aware prompts
+ */
+export interface AIContext {
+  type: 'note' | 'task';
+  id: string;
+  title: string;
+  content: string;
+}
+
+/**
+ * Conversation search result
+ */
+export interface ConversationSearchResult {
+  conversationId: string;
+  conversationTitle: string;
+  messageId: string;
+  messageContent: string;
+  messageRole: 'user' | 'assistant' | 'system';
+  matchSnippet: string;
+  timestamp: number;
+}
+
+/**
  * Terminal state interface
  */
 interface TerminalState {
@@ -150,6 +173,9 @@ interface TerminalState {
 
   // Saved Messages Tracking (for duplicate detection)
   savedMessagesByNote: Record<string, string[]>; // noteId -> messageIds[]
+
+  // Context-Aware AI
+  activeContext: AIContext | null;
 
   // UI Actions
   setOpen: (open: boolean) => void;
@@ -209,6 +235,12 @@ interface TerminalState {
   markMessageSaved: (noteId: string, messageId: string) => void;
   isMessageSavedToNote: (noteId: string, messageId: string) => boolean;
   clearSavedMessagesForNote: (noteId: string) => void;
+
+  // Context-Aware AI Actions
+  setActiveContext: (context: AIContext | null) => void;
+
+  // Conversation Search
+  searchConversations: (query: string) => ConversationSearchResult[];
 
   // Legacy Compatibility
   model: string; // Deprecated: use activeModel instead
@@ -281,6 +313,9 @@ export const useTerminalStore = create<TerminalState>()(
 
       // Saved Messages Tracking
       savedMessagesByNote: {}, // noteId -> messageIds[]
+
+      // Context-Aware AI
+      activeContext: null,
 
       // Legacy State (backward compatibility)
       model: 'gemini-1.5-flash',
@@ -650,6 +685,48 @@ export const useTerminalStore = create<TerminalState>()(
           const { [noteId]: _, ...rest } = state.savedMessagesByNote;
           return { savedMessagesByNote: rest };
         }),
+
+      // Context-Aware AI Actions
+      setActiveContext: (context) => set({ activeContext: context }),
+
+      // Conversation Search
+      searchConversations: (query) => {
+        const { conversations } = get();
+        if (!query.trim()) return [];
+
+        const lowerQuery = query.toLowerCase().trim();
+        const results: ConversationSearchResult[] = [];
+
+        Object.values(conversations).forEach((conv) => {
+          conv.messages.forEach((msg) => {
+            if (msg.role === 'system') return;
+            const lowerContent = msg.content.toLowerCase();
+            const matchIndex = lowerContent.indexOf(lowerQuery);
+            if (matchIndex === -1) return;
+
+            // Build a snippet around the match
+            const snippetStart = Math.max(0, matchIndex - 40);
+            const snippetEnd = Math.min(msg.content.length, matchIndex + query.length + 40);
+            let snippet = msg.content.slice(snippetStart, snippetEnd).trim();
+            if (snippetStart > 0) snippet = '...' + snippet;
+            if (snippetEnd < msg.content.length) snippet = snippet + '...';
+
+            results.push({
+              conversationId: conv.id,
+              conversationTitle: conv.title,
+              messageId: msg.id,
+              messageContent: msg.content,
+              messageRole: msg.role,
+              matchSnippet: snippet,
+              timestamp: msg.timestamp,
+            });
+          });
+        });
+
+        // Sort by recency
+        results.sort((a, b) => b.timestamp - a.timestamp);
+        return results.slice(0, 50);
+      },
 
       // Legacy Actions (backward compatibility)
       setModel: (model) => {

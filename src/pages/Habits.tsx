@@ -2,7 +2,8 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Plus, Target, Flame, Trophy, Archive, RotateCcw, Trash2, Edit2,
   Check, MoreVertical, ChevronDown, ChevronRight, BarChart3, BookTemplate,
-  Grid3X3, Star, Lock, Bell, BellOff, Link2,
+  Grid3X3, Star, Lock, Bell, BellOff, Link2, Snowflake, Award,
+  TrendingUp, Search, MessageSquare,
 } from 'lucide-react';
 import { useHabitStore } from '../stores/useHabitStore';
 import { PageContent } from '../components/PageContent';
@@ -17,6 +18,8 @@ import {
   ConfettiEffect,
   StreakBump,
   HABIT_ANIMATION_STYLES,
+  HabitAnalytics,
+  HabitAchievementsBadges,
 } from '../components/habits';
 import type { HabitTemplate } from '../components/habits';
 import type { Habit, HabitFrequency, HabitCategory, HabitDifficulty } from '../types';
@@ -112,7 +115,7 @@ interface HabitModalProps {
   initialTemplate?: HabitTemplate;
   allHabits: Habit[];
   onClose: () => void;
-  onSave: (data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order'>) => void;
+  onSave: (data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order' | 'freezesUsed'>) => void;
 }
 
 function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: HabitModalProps) {
@@ -128,6 +131,7 @@ function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: Habi
   const [reminderEnabled, setReminderEnabled] = useState(habit?.reminder?.enabled ?? false);
   const [reminderTime, setReminderTime] = useState(habit?.reminder?.time ?? '09:00');
   const [requiredHabitIds, setRequiredHabitIds] = useState<string[]>(habit?.requiredHabitIds ?? []);
+  const [freezesPerWeek, setFreezesPerWeek] = useState(habit?.freezesPerWeek ?? 1);
 
   // Available habits for dependency selection (exclude self)
   const availableForDep = useMemo(
@@ -151,6 +155,7 @@ function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: Habi
       timesPerWeek: frequency === 'times-per-week' ? timesPerWeek : undefined,
       reminder: reminderEnabled ? { enabled: true, time: reminderTime } : undefined,
       requiredHabitIds: requiredHabitIds.length > 0 ? requiredHabitIds : undefined,
+      freezesPerWeek,
       projectIds: habit?.projectIds ?? [],
     });
   };
@@ -378,6 +383,27 @@ function HabitModal({ habit, initialTemplate, allHabits, onClose, onSave }: Habi
               )}
             </div>
 
+            {/* Streak Freeze */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary mb-1">
+                <Snowflake className="w-3.5 h-3.5 inline mr-1" />
+                Streak Freezes per Week
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={7}
+                  value={freezesPerWeek}
+                  onChange={(e) => setFreezesPerWeek(Number(e.target.value))}
+                  className="w-20 px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                />
+                <span className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+                  Auto-applied when a day is missed to preserve streaks
+                </span>
+              </div>
+            </div>
+
             {/* Dependencies */}
             {availableForDep.length > 0 && (
               <div className="mb-4">
@@ -439,7 +465,7 @@ interface HabitCardProps {
   isCompletedToday: boolean;
   isLocked: boolean;
   blockingNames: string[];
-  onToggle: () => void;
+  onToggle: (note?: string) => void;
   onEdit: () => void;
   onArchive: () => void;
   onDelete: () => void;
@@ -447,6 +473,9 @@ interface HabitCardProps {
   weekProgress: boolean[];
   showConfetti: boolean;
   animatedStreak: boolean;
+  freezesRemaining: number;
+  isFrozenToday: boolean;
+  completionNote?: string;
 }
 
 function HabitCard({
@@ -462,8 +491,13 @@ function HabitCard({
   weekProgress,
   showConfetti,
   animatedStreak,
+  freezesRemaining,
+  isFrozenToday,
+  completionNote,
 }: HabitCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState('');
   const trackToday = shouldTrackToday(habit);
   const canToggle = trackToday && !isLocked;
 
@@ -476,7 +510,15 @@ function HabitCard({
         {/* Check button */}
         <div className="relative">
           <button
-            onClick={onToggle}
+            onClick={() => {
+              if (isCompletedToday) {
+                // Uncompleting — no note needed
+                onToggle();
+              } else if (canToggle) {
+                // Show note input briefly then complete
+                setShowNoteInput(true);
+              }
+            }}
             disabled={!canToggle}
             className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all shrink-0 ${
               isCompletedToday
@@ -597,22 +639,89 @@ function HabitCard({
             </div>
           </div>
 
-          {/* Week progress */}
-          <div className="flex gap-1 mt-3">
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
+          {/* Week progress + freeze indicator */}
+          <div className="flex items-center gap-3 mt-3">
+            <div className="flex gap-1">
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
+                <div
+                  key={idx}
+                  className={`w-6 h-6 rounded text-xs flex items-center justify-center ${
+                    weekProgress[idx]
+                      ? 'bg-status-success text-white'
+                      : 'bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary'
+                  }`}
+                  title={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][idx]}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            {/* Freeze indicator */}
+            {(freezesRemaining > 0 || isFrozenToday) && (
               <div
-                key={idx}
-                className={`w-6 h-6 rounded text-xs flex items-center justify-center ${
-                  weekProgress[idx]
-                    ? 'bg-status-success text-white'
-                    : 'bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary'
-                }`}
-                title={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][idx]}
+                className="flex items-center gap-1 text-xs"
+                title={isFrozenToday ? 'Streak freeze active today' : `${freezesRemaining} freeze(s) remaining this week`}
               >
-                {day}
+                <Snowflake className={`w-3.5 h-3.5 ${isFrozenToday ? 'text-sky-400' : 'text-sky-600/50'}`} />
+                <span className={isFrozenToday ? 'text-sky-400' : 'text-text-light-tertiary dark:text-text-dark-tertiary'}>
+                  {isFrozenToday ? 'Frozen' : `${freezesRemaining}`}
+                </span>
               </div>
-            ))}
+            )}
           </div>
+
+          {/* Note input (shown when completing) */}
+          {showNoteInput && !isCompletedToday && (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="text"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add a note (optional)..."
+                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onToggle(noteText.trim() || undefined);
+                    setShowNoteInput(false);
+                    setNoteText('');
+                  } else if (e.key === 'Escape') {
+                    onToggle();
+                    setShowNoteInput(false);
+                    setNoteText('');
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  onToggle(noteText.trim() || undefined);
+                  setShowNoteInput(false);
+                  setNoteText('');
+                }}
+                className="px-3 py-1.5 text-sm bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
+              >
+                Done
+              </button>
+              <button
+                onClick={() => {
+                  onToggle();
+                  setShowNoteInput(false);
+                  setNoteText('');
+                }}
+                className="px-2 py-1.5 text-xs text-text-light-tertiary dark:text-text-dark-tertiary hover:text-text-light-primary dark:hover:text-text-dark-primary"
+              >
+                Skip
+              </button>
+            </div>
+          )}
+
+          {/* Display completion note if exists */}
+          {isCompletedToday && completionNote && (
+            <div className="mt-2 flex items-start gap-1.5 text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+              <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+              <span className="italic">{completionNote}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -667,6 +776,10 @@ export function HabitsContent() {
   const getTodayProgress = useHabitStore((s) => s.getTodayProgress);
   const isHabitUnlocked = useHabitStore((s) => s.isHabitUnlocked);
   const getBlockingHabits = useHabitStore((s) => s.getBlockingHabits);
+  const getFreezesRemainingThisWeek = useHabitStore((s) => s.getFreezesRemainingThisWeek);
+  const isDateFrozen = useHabitStore((s) => s.isDateFrozen);
+  const completions = useHabitStore((s) => s.completions);
+  const searchCompletionNotes = useHabitStore((s) => s.searchCompletionNotes);
 
   // Activate habit reminders
   useHabitReminders();
@@ -680,6 +793,10 @@ export function HabitsContent() {
   const [statsHabit, setStatsHabit] = useState<Habit | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showRewards, setShowRewards] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [noteSearchQuery, setNoteSearchQuery] = useState('');
+  const [showNoteSearch, setShowNoteSearch] = useState(false);
   const [groupByCategory, setGroupByCategory] = useState(true);
 
   const { triggerAnimation, clearAnimation, getAnimation } = useCompletionAnimation();
@@ -737,9 +854,9 @@ export function HabitsContent() {
     return sorted;
   }, [activeHabits]);
 
-  const handleToggleCompletion = useCallback((habitId: string) => {
+  const handleToggleCompletion = useCallback((habitId: string, note?: string) => {
     const wasCompleted = isCompletedOnDate(habitId, todayKey);
-    toggleCompletion(habitId, todayKey);
+    toggleCompletion(habitId, todayKey, note);
 
     if (!wasCompleted) {
       // Find updated streak after toggle
@@ -753,8 +870,14 @@ export function HabitsContent() {
     }
   }, [isCompletedOnDate, todayKey, toggleCompletion, habits, triggerAnimation, clearAnimation]);
 
+  // Note search results
+  const noteSearchResults = useMemo(() => {
+    if (!noteSearchQuery.trim()) return [];
+    return searchCompletionNotes(noteSearchQuery);
+  }, [noteSearchQuery, searchCompletionNotes]);
+
   const handleSaveHabit = (
-    data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order'>
+    data: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order' | 'freezesUsed'>
   ) => {
     if (editingHabit) {
       updateHabit(editingHabit.id, data);
@@ -788,6 +911,9 @@ export function HabitsContent() {
     const animation = getAnimation(habit.id);
     const unlocked = isHabitUnlocked(habit.id, todayKey);
     const blocking = getBlockingHabits(habit.id, todayKey);
+    const todayCompletion = completions.find(
+      (c) => c.habitId === habit.id && c.date === todayKey
+    );
     return (
       <HabitCard
         key={habit.id}
@@ -795,7 +921,7 @@ export function HabitsContent() {
         isCompletedToday={isCompletedOnDate(habit.id, todayKey)}
         isLocked={!unlocked}
         blockingNames={blocking}
-        onToggle={() => handleToggleCompletion(habit.id)}
+        onToggle={(note) => handleToggleCompletion(habit.id, note)}
         onEdit={() => { setEditingHabit(habit); setShowModal(true); }}
         onArchive={() => archiveHabit(habit.id)}
         onDelete={() => handleDeleteHabit(habit.id)}
@@ -803,9 +929,12 @@ export function HabitsContent() {
         weekProgress={getWeekProgress(habit.id)}
         showConfetti={animation?.type === 'milestone'}
         animatedStreak={!!animation}
+        freezesRemaining={getFreezesRemainingThisWeek(habit.id)}
+        isFrozenToday={isDateFrozen(habit.id, todayKey)}
+        completionNote={todayCompletion?.notes}
       />
     );
-  }, [getAnimation, isCompletedOnDate, isHabitUnlocked, getBlockingHabits, todayKey, handleToggleCompletion, archiveHabit, handleDeleteHabit, getWeekProgress]);
+  }, [getAnimation, isCompletedOnDate, isHabitUnlocked, getBlockingHabits, todayKey, handleToggleCompletion, archiveHabit, handleDeleteHabit, getWeekProgress, getFreezesRemainingThisWeek, isDateFrozen, completions]);
 
   return (
     <>
@@ -845,7 +974,7 @@ export function HabitsContent() {
       {/* Heatmap & Rewards toggles */}
       {activeHabits.length > 0 && (
         <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <button
               onClick={() => setShowHeatmap(!showHeatmap)}
               className={`flex items-center gap-2 text-sm font-medium transition-colors ${
@@ -868,6 +997,35 @@ export function HabitsContent() {
               <Star className="w-4 h-4" />
               XP & Rewards
             </button>
+            <button
+              onClick={() => setShowAnalytics(true)}
+              className="flex items-center gap-2 text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Analytics
+            </button>
+            <button
+              onClick={() => setShowAchievements(!showAchievements)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                showAchievements
+                  ? 'text-accent-primary'
+                  : 'text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              Badges
+            </button>
+            <button
+              onClick={() => setShowNoteSearch(!showNoteSearch)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                showNoteSearch
+                  ? 'text-accent-primary'
+                  : 'text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              Notes
+            </button>
           </div>
           {showHeatmap && (
             <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-xl p-4 border border-border-light dark:border-border-dark">
@@ -875,6 +1033,51 @@ export function HabitsContent() {
             </div>
           )}
           {showRewards && <HabitRewardsPanel />}
+          {showAchievements && (
+            <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-xl p-5 border border-border-light dark:border-border-dark">
+              <HabitAchievementsBadges />
+            </div>
+          )}
+          {showNoteSearch && (
+            <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-xl p-4 border border-border-light dark:border-border-dark">
+              <div className="flex items-center gap-2 mb-3">
+                <Search className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary" />
+                <input
+                  type="text"
+                  value={noteSearchQuery}
+                  onChange={(e) => setNoteSearchQuery(e.target.value)}
+                  placeholder="Search completion notes..."
+                  className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+              {noteSearchQuery.trim() && (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {noteSearchResults.length === 0 ? (
+                    <p className="text-sm text-text-light-tertiary dark:text-text-dark-tertiary text-center py-4">
+                      No notes found
+                    </p>
+                  ) : (
+                    noteSearchResults.map((result) => (
+                      <div
+                        key={result.id}
+                        className="flex items-start gap-2 text-sm p-2 rounded-lg bg-surface-light-alt dark:bg-surface-dark"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 mt-0.5 text-text-light-tertiary dark:text-text-dark-tertiary shrink-0" />
+                        <div>
+                          <div className="text-text-light-primary dark:text-text-dark-primary">
+                            {result.notes}
+                          </div>
+                          <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary mt-0.5">
+                            {result.habitTitle} &middot; {result.date}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1038,6 +1241,10 @@ export function HabitsContent() {
           habit={statsHabit}
           onClose={() => setStatsHabit(null)}
         />
+      )}
+
+      {showAnalytics && (
+        <HabitAnalytics onClose={() => setShowAnalytics(false)} />
       )}
 
       <ConfirmDialog

@@ -64,6 +64,7 @@ import { StorageInfoSection } from '../widgets/Settings/StorageInfoSection';
 import { DashboardSettingsSection } from '../widgets/Settings/DashboardSettingsSection';
 import { CalendarNotificationsSection } from '../widgets/Settings/CalendarNotificationsSection';
 import { CalendarImportExportSection } from '../widgets/Settings/CalendarImportExportSection';
+import { CalendarManagementSection } from '../widgets/Settings/CalendarManagementSection';
 import { WidgetSettingsSection } from '../widgets/Settings/WidgetSettingsSection';
 import { ProjectSettings } from '../widgets/Settings/ProjectSettings';
 import { DataManagementSection } from '../widgets/Settings/DataManagementSection';
@@ -501,6 +502,7 @@ export const Settings: React.FC = () => {
               {/* Notes & Calendar Settings */}
               {currentTab === 'notes' && (
                 <>
+                  <CalendarManagementSection />
                   <CalendarImportExportSection
                     isExporting={isExportingCalendar}
                     isImporting={isImportingCalendar}

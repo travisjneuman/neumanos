@@ -282,3 +282,67 @@ export async function importMarkdownFiles(
     warnings,
   };
 }
+
+/**
+ * Collect unique folder paths from parsed notes
+ * Returns a flat list of all folder paths (including intermediate ones)
+ */
+export function collectFolderPaths(notes: ParsedMarkdownNote[]): string[] {
+  const folderSet = new Set<string>();
+
+  notes.forEach((note) => {
+    if (note.folderPath) {
+      // Add all intermediate paths too (e.g., "a/b/c" -> "a", "a/b", "a/b/c")
+      const parts = note.folderPath.split('/');
+      for (let i = 1; i <= parts.length; i++) {
+        folderSet.add(parts.slice(0, i).join('/'));
+      }
+    }
+  });
+
+  // Sort so parent folders come first
+  return Array.from(folderSet).sort();
+}
+
+/**
+ * Remap [[wiki-links]] in note content to internal IDs after import
+ * Creates a title -> noteId mapping and replaces link titles with IDs
+ */
+export function remapWikiLinks(
+  notes: ParsedMarkdownNote[],
+  titleToIdMap: Map<string, string>
+): Map<string, string[]> {
+  const linkedNotesMap = new Map<string, string[]>();
+
+  notes.forEach((note) => {
+    const linkedNoteIds: string[] = [];
+
+    note.linkedNotes.forEach((linkTitle) => {
+      // Try exact match
+      let targetId = titleToIdMap.get(linkTitle.toLowerCase());
+
+      // Try without file extension
+      if (!targetId) {
+        const withoutExt = linkTitle.replace(/\.md$/i, '');
+        targetId = titleToIdMap.get(withoutExt.toLowerCase());
+      }
+
+      // Try just the filename part (for paths like "folder/note")
+      if (!targetId) {
+        const parts = linkTitle.split('/');
+        const filename = parts[parts.length - 1];
+        targetId = titleToIdMap.get(filename.toLowerCase());
+      }
+
+      if (targetId) {
+        linkedNoteIds.push(targetId);
+      }
+    });
+
+    if (linkedNoteIds.length > 0) {
+      linkedNotesMap.set(note.title, [...new Set(linkedNoteIds)]);
+    }
+  });
+
+  return linkedNotesMap;
+}

@@ -17,10 +17,10 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragStartEvent, DragEndEvent, Modifier } from '@dnd-kit/core';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, AlertCircle } from 'lucide-react';
 import type { CalendarEvent } from '../types';
 import { format } from 'date-fns';
-import { getColorCategory } from '../utils/eventColors';
+import { getEventDisplayColor } from '../utils/calendarColors';
 import { calculateEventLayout } from '../utils/eventLayout';
 import { QuickEventCreate } from './QuickEventCreate';
 
@@ -57,6 +57,7 @@ interface DraggableEventProps {
   onEventClick?: (event: CalendarEvent, dateKey: string) => void;
   isDragging?: boolean;
   enableDrag: boolean;
+  hasConflict?: boolean;
 }
 
 const DraggableEvent: React.FC<DraggableEventProps> = ({
@@ -66,6 +67,7 @@ const DraggableEvent: React.FC<DraggableEventProps> = ({
   onEventClick,
   isDragging = false,
   enableDrag,
+  hasConflict = false,
 }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: event.id,
@@ -81,7 +83,7 @@ const DraggableEvent: React.FC<DraggableEventProps> = ({
       }
     : style;
 
-  const eventColor = getColorCategory(event.colorCategory).hex;
+  const eventColor = getEventDisplayColor(event);
 
   return (
     <div
@@ -111,7 +113,14 @@ const DraggableEvent: React.FC<DraggableEventProps> = ({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="font-medium truncate">{event.title}</div>
+          <div className="font-medium truncate flex items-center gap-1">
+            {event.title}
+            {hasConflict && (
+              <span className="flex-shrink-0" aria-label="Overlapping event">
+                <AlertCircle className="w-3 h-3 text-amber-300" />
+              </span>
+            )}
+          </div>
           {event.startTime && (
             <div className="text-xs opacity-90">
               {event.startTime} {event.endTime && `- ${event.endTime}`}
@@ -360,6 +369,7 @@ export const DayView: React.FC<DayViewProps> = ({
                   onEventClick={onEventClick}
                   isDragging={activeEvent?.id === event.id}
                   enableDrag={enableTimeBlocking}
+                  hasConflict={totalCols > 1}
                 />
               );
             });
@@ -415,7 +425,7 @@ export const DayView: React.FC<DayViewProps> = ({
                 key={event.id}
                 onClick={() => onEventClick?.(event, dateKey)}
                 className="w-full text-left px-2 py-1 rounded text-white text-sm hover:opacity-90 transition-all duration-standard ease-smooth"
-                style={{ backgroundColor: getColorCategory(event.colorCategory).hex }}
+                style={{ backgroundColor: getEventDisplayColor(event) }}
               >
                 {event.title}
               </button>

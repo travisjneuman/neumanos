@@ -216,6 +216,46 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
     context: 'global',
     priority: 50,
   },
+  {
+    id: 'toggle-ai-terminal',
+    keys: ['mod', 'shift', 'a'],
+    label: 'Toggle AI Terminal',
+    description: 'Open or close the AI Terminal',
+    context: 'global',
+    priority: 60,
+  },
+  {
+    id: 'toggle-sidebar',
+    keys: ['mod', 'b'],
+    label: 'Toggle sidebar',
+    description: 'Show or hide the sidebar',
+    context: 'global',
+    priority: 40,
+  },
+  {
+    id: 'create-new-note',
+    keys: ['mod', 'n'],
+    label: 'New note',
+    description: 'Create a new note',
+    context: 'global',
+    priority: 45,
+  },
+  {
+    id: 'create-new-task',
+    keys: ['mod', 't'],
+    label: 'New task',
+    description: 'Quick add a new task',
+    context: 'global',
+    priority: 45,
+  },
+  {
+    id: 'create-new-event',
+    keys: ['mod', 'e'],
+    label: 'New event',
+    description: 'Navigate to calendar to create event',
+    context: 'global',
+    priority: 45,
+  },
 ];
 
 /**

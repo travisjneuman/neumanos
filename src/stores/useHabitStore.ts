@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
-import type { Habit, HabitCompletion, HabitAchievement, HabitDifficulty } from '../types';
+import type { Habit, HabitCompletion, HabitAchievement, HabitDifficulty, StreakFreezeRecord } from '../types';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';
@@ -132,12 +132,20 @@ function calculateStreakForHabit(
     return weeksStreak;
   }
 
+  // Build set of frozen dates for quick lookup
+  const frozenDates = new Set(
+    (habit.freezesUsed ?? []).map((f) => f.date)
+  );
+
   // For daily/weekdays/weekends/specific-days
   while (true) {
     const dateKey = getDateKey(checkDate);
 
     if (shouldTrackOnDate(habit, checkDate)) {
       if (completionSet.has(dateKey)) {
+        streak++;
+      } else if (frozenDates.has(dateKey)) {
+        // Streak freeze was applied — count as preserved, don't break
         streak++;
       } else {
         // If today and not completed, don't break streak yet
@@ -176,7 +184,7 @@ interface HabitStore {
   achievements: HabitAchievement[];
 
   // Habit CRUD
-  addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order'>) => string;
+  addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'totalCompletions' | 'totalXp' | 'order' | 'freezesUsed'>) => string;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   archiveHabit: (id: string) => void;
@@ -212,6 +220,21 @@ interface HabitStore {
   // Dependencies
   isHabitUnlocked: (habitId: string, dateKey: string) => boolean;
   getBlockingHabits: (habitId: string, dateKey: string) => string[];
+
+  // Streak freeze
+  applyStreakFreeze: (habitId: string, date: string) => boolean;
+  getFreezesRemainingThisWeek: (habitId: string) => number;
+  isDateFrozen: (habitId: string, date: string) => boolean;
+  autoApplyFreezes: () => void;
+
+  // Notes search
+  searchCompletionNotes: (query: string) => Array<HabitCompletion & { habitTitle: string }>;
+
+  // Update completion note
+  updateCompletionNote: (completionId: string, note: string) => void;
+
+  // Global achievement checks
+  checkGlobalAchievements: () => HabitAchievement[];
 }
 
 export const useHabitStore = create<HabitStore>()(
@@ -238,6 +261,8 @@ export const useHabitStore = create<HabitStore>()(
           longestStreak: 0,
           totalCompletions: 0,
           totalXp: 0,
+          freezesPerWeek: habitData.freezesPerWeek ?? 1,
+          freezesUsed: [],
           order: habits.length,
         };
 
@@ -394,6 +419,9 @@ export const useHabitStore = create<HabitStore>()(
                 `Keep going with "${habit.title}"!`
               );
             }
+
+            // Check global achievements after each completion
+            get().checkGlobalAchievements();
           }
         }
       },
@@ -644,6 +672,229 @@ export const useHabitStore = create<HabitStore>()(
           .map((reqId) => state.habits.find((h) => h.id === reqId)?.title ?? 'Unknown')
           .filter(Boolean);
       },
+
+      // ─── Streak Freeze ──────────────────────────────────
+
+      applyStreakFreeze: (habitId, date) => {
+        const state = get();
+        const habit = state.habits.find((h) => h.id === habitId);
+        if (!habit) return false;
+
+        const weekStart = getDateKey(getWeekStart(new Date(date.replace(/-/g, '/'))));
+        const freezesThisWeek = (habit.freezesUsed ?? []).filter(
+          (f) => f.weekStart === weekStart
+        ).length;
+        const maxFreezes = habit.freezesPerWeek ?? 1;
+
+        if (freezesThisWeek >= maxFreezes) return false;
+
+        const freeze: StreakFreezeRecord = {
+          date,
+          appliedAt: new Date().toISOString(),
+          weekStart,
+        };
+
+        set((s) => ({
+          habits: s.habits.map((h) =>
+            h.id === habitId
+              ? { ...h, freezesUsed: [...(h.freezesUsed ?? []), freeze] }
+              : h
+          ),
+        }));
+
+        // Recalculate streak since the freeze changes the calculation
+        get().recalculateStreak(habitId);
+        return true;
+      },
+
+      getFreezesRemainingThisWeek: (habitId) => {
+        const state = get();
+        const habit = state.habits.find((h) => h.id === habitId);
+        if (!habit) return 0;
+
+        const weekStart = getDateKey(getWeekStart(new Date()));
+        const freezesThisWeek = (habit.freezesUsed ?? []).filter(
+          (f) => f.weekStart === weekStart
+        ).length;
+        return Math.max(0, (habit.freezesPerWeek ?? 1) - freezesThisWeek);
+      },
+
+      isDateFrozen: (habitId, date) => {
+        const state = get();
+        const habit = state.habits.find((h) => h.id === habitId);
+        if (!habit) return false;
+        return (habit.freezesUsed ?? []).some((f) => f.date === date);
+      },
+
+      autoApplyFreezes: () => {
+        const state = get();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayKey = getDateKey(yesterday);
+
+        for (const habit of state.habits) {
+          if (habit.archivedAt) continue;
+          if (!shouldTrackOnDate(habit, yesterday)) continue;
+
+          // Check if yesterday was completed
+          const wasCompleted = state.completions.some(
+            (c) => c.habitId === habit.id && c.date === yesterdayKey
+          );
+          if (wasCompleted) continue;
+
+          // Check if already frozen
+          const alreadyFrozen = (habit.freezesUsed ?? []).some(
+            (f) => f.date === yesterdayKey
+          );
+          if (alreadyFrozen) continue;
+
+          // Only auto-freeze if the habit had an active streak
+          if (habit.currentStreak > 0) {
+            get().applyStreakFreeze(habit.id, yesterdayKey);
+            toast.info('Streak freeze applied', `"${habit.title}" streak preserved`);
+          }
+        }
+      },
+
+      // ─── Notes Search ────────────────────────────────────
+
+      searchCompletionNotes: (query) => {
+        const state = get();
+        const lowerQuery = query.toLowerCase();
+        return state.completions
+          .filter((c) => c.notes && c.notes.toLowerCase().includes(lowerQuery))
+          .map((c) => {
+            const habit = state.habits.find((h) => h.id === c.habitId);
+            return { ...c, habitTitle: habit?.title ?? 'Unknown' };
+          });
+      },
+
+      updateCompletionNote: (completionId, note) => {
+        set((s) => ({
+          completions: s.completions.map((c) =>
+            c.id === completionId ? { ...c, notes: note || undefined } : c
+          ),
+        }));
+      },
+
+      // ─── Global Achievements ─────────────────────────────
+
+      checkGlobalAchievements: () => {
+        const state = get();
+        const newAchievements: HabitAchievement[] = [];
+        const existingTypes = new Set(
+          state.achievements.map((a) => `${a.type}:${a.value}`)
+        );
+
+        const activeHabits = state.habits.filter((h) => !h.archivedAt);
+        const today = new Date();
+
+        // Category mastery: complete all habits in a category for 7 consecutive days
+        const categories = new Set(activeHabits.map((h) => h.category));
+        for (const cat of categories) {
+          const catHabits = activeHabits.filter((h) => h.category === cat);
+          if (catHabits.length === 0) continue;
+
+          // Check if all habits in category have 7+ day streaks
+          const allHave7DayStreak = catHabits.every((h) => h.currentStreak >= 7);
+          if (allHave7DayStreak && !existingTypes.has('category-mastery:7')) {
+            newAchievements.push({
+              id: nanoid(),
+              type: 'category-mastery',
+              habitId: '',
+              value: 7,
+              unlockedAt: new Date().toISOString(),
+              label: `${cat} Master`,
+              icon: 'crown',
+            });
+          }
+        }
+
+        // Explorer: use 5+ different categories
+        if (categories.size >= 5 && !existingTypes.has('explorer:5')) {
+          newAchievements.push({
+            id: nanoid(),
+            type: 'explorer',
+            habitId: '',
+            value: 5,
+            unlockedAt: new Date().toISOString(),
+            label: 'Explorer',
+            icon: 'compass',
+          });
+        }
+
+        // Consistency: all habits completed for N days
+        const consistencyMilestones = [3, 7, 14, 30];
+        for (const milestone of consistencyMilestones) {
+          if (activeHabits.length === 0) break;
+          const allConsistent = activeHabits.every((h) => h.currentStreak >= milestone);
+          if (allConsistent && !existingTypes.has(`consistency:${milestone}`)) {
+            newAchievements.push({
+              id: nanoid(),
+              type: 'consistency',
+              habitId: '',
+              value: milestone,
+              unlockedAt: new Date().toISOString(),
+              label: `${milestone}-Day Perfect`,
+              icon: 'check-circle',
+            });
+          }
+        }
+
+        // Early bird / Night owl — check recent completions
+        const recentCompletions = state.completions.filter((c) => {
+          const completedDate = new Date(c.completedAt);
+          const diffDays = (today.getTime() - completedDate.getTime()) / (1000 * 60 * 60 * 24);
+          return diffDays <= 30;
+        });
+
+        const earlyBirdCount = recentCompletions.filter((c) => {
+          const hour = new Date(c.completedAt).getHours();
+          return hour < 9;
+        }).length;
+
+        if (earlyBirdCount >= 10 && !existingTypes.has('early-bird:10')) {
+          newAchievements.push({
+            id: nanoid(),
+            type: 'early-bird',
+            habitId: '',
+            value: 10,
+            unlockedAt: new Date().toISOString(),
+            label: 'Early Bird',
+            icon: 'sunrise',
+          });
+        }
+
+        const nightOwlCount = recentCompletions.filter((c) => {
+          const hour = new Date(c.completedAt).getHours();
+          return hour >= 21;
+        }).length;
+
+        if (nightOwlCount >= 10 && !existingTypes.has('night-owl:10')) {
+          newAchievements.push({
+            id: nanoid(),
+            type: 'night-owl',
+            habitId: '',
+            value: 10,
+            unlockedAt: new Date().toISOString(),
+            label: 'Night Owl',
+            icon: 'moon',
+          });
+        }
+
+        if (newAchievements.length > 0) {
+          set((s) => ({
+            achievements: [...s.achievements, ...newAchievements],
+          }));
+          newAchievements.forEach((a) => {
+            toast.success(`Achievement Unlocked: ${a.label ?? a.type}`, '');
+          });
+        }
+
+        return newAchievements;
+      },
     }),
     {
       name: 'habit-store',
@@ -653,7 +904,7 @@ export const useHabitStore = create<HabitStore>()(
         completions: state.completions,
         achievements: state.achievements,
       }),
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         const state = persisted as Record<string, unknown>;
         let habits = (state.habits ?? []) as Array<Record<string, unknown>>;
@@ -671,6 +922,13 @@ export const useHabitStore = create<HabitStore>()(
             totalXp: h.totalXp ?? 0,
           }));
         }
+        if (version < 4) {
+          habits = habits.map((h) => ({
+            ...h,
+            freezesPerWeek: h.freezesPerWeek ?? 1,
+            freezesUsed: h.freezesUsed ?? [],
+          }));
+        }
 
         return { ...state, habits };
       },
@@ -682,6 +940,9 @@ export const useHabitStore = create<HabitStore>()(
 if (typeof window !== 'undefined') {
   // Wait for store to hydrate, then recalculate
   setTimeout(() => {
-    useHabitStore.getState().recalculateAllStreaks();
+    const store = useHabitStore.getState();
+    store.autoApplyFreezes();
+    store.recalculateAllStreaks();
+    store.checkGlobalAchievements();
   }, 1000);
 }

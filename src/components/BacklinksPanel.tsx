@@ -10,6 +10,67 @@ import { Link2, ChevronRight, ChevronDown, AlertTriangle, Plus } from 'lucide-re
 import { useNotesStore } from '../stores/useNotesStore';
 import { findUnlinkedMentions, findBrokenLinks } from '../utils/backlinks';
 
+/**
+ * Extract a context snippet from content that contains the wiki-link reference
+ * Shows the sentence or paragraph around the link for inline context
+ */
+function getBacklinkContext(content: string, targetTitle: string): string | null {
+  if (!content || !targetTitle) return null;
+
+  // Escape special regex characters in the title
+  const escaped = targetTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Look for [[targetTitle]] pattern first
+  const wikiLinkPattern = new RegExp('\\[\\[' + escaped + '\\]\\]', 'i');
+  let match = wikiLinkPattern.exec(content);
+
+  // Fallback: look for plain text mention
+  if (!match) {
+    const plainPattern = new RegExp('\\b' + escaped + '\\b', 'i');
+    match = plainPattern.exec(content);
+  }
+
+  if (!match) return null;
+
+  const position = match.index;
+
+  // Find the surrounding sentence/paragraph boundaries
+  let start = position;
+  const searchBack = Math.max(0, position - 100);
+  for (let i = position - 1; i >= searchBack; i--) {
+    const char = content[i];
+    if (char === '\n' || (char === '.' && i < position - 2)) {
+      start = i + 1;
+      break;
+    }
+    if (i === searchBack) {
+      start = searchBack;
+    }
+  }
+
+  // Find the end of the sentence
+  let end = position + match[0].length;
+  const searchForward = Math.min(content.length, position + match[0].length + 100);
+  for (let i = position + match[0].length; i < searchForward; i++) {
+    const char = content[i];
+    if (char === '\n' || char === '.') {
+      end = i + (char === '.' ? 1 : 0);
+      break;
+    }
+    if (i === searchForward - 1) {
+      end = searchForward;
+    }
+  }
+
+  let snippet = content.substring(start, end).trim();
+
+  // Add ellipsis if truncated
+  if (start > 0) snippet = '...' + snippet;
+  if (end < content.length) snippet = snippet + '...';
+
+  return snippet || null;
+}
+
 interface BacklinksPanelProps {
   noteId: string;
   onNoteClick?: (noteId: string) => void;
@@ -90,20 +151,31 @@ export function BacklinksPanel({ noteId, onNoteClick }: BacklinksPanelProps) {
             </span>
           </div>
 
-          <div className="space-y-1">
-            {backlinks.map((note) => (
-              <button
-                key={note.id}
-                onClick={() => handleNoteClick(note.id)}
-                className="w-full flex items-center gap-2 p-2 text-sm text-left rounded-lg hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors group"
-              >
-                <span className="text-lg">{note.icon || '📄'}</span>
-                <span className="flex-1 truncate text-text-light-primary dark:text-text-dark-primary">
-                  {note.title}
-                </span>
-                <ChevronRight className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-            ))}
+          <div className="space-y-2">
+            {backlinks.map((note) => {
+              // Extract context snippet showing the paragraph containing the link
+              const contextSnippet = getBacklinkContext(note.contentText, currentNote?.title || '');
+              return (
+                <button
+                  key={note.id}
+                  onClick={() => handleNoteClick(note.id)}
+                  className="w-full text-left p-2 text-sm rounded-lg hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors group"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">{note.icon || '📄'}</span>
+                    <span className="flex-1 truncate font-medium text-text-light-primary dark:text-text-dark-primary">
+                      {note.title}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  </div>
+                  {contextSnippet && (
+                    <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary ml-8 line-clamp-2">
+                      {contextSnippet}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

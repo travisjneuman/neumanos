@@ -18,6 +18,7 @@ import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FileText, Calendar as CalendarIcon, Network } from 'lucide-react';
 import { useNotesStore } from '../stores/useNotesStore';
+import { AIQuickActions } from '../components/AIQuickActions';
 import { useFoldersStore } from '../stores/useFoldersStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { NotesEditor, NotesEditorEmpty } from '../widgets/NotesEditor';
@@ -68,6 +69,7 @@ const log = logger.module('Notes');
  */
 export const Notes: React.FC = () => {
   const activeNoteId = useNotesStore((state) => state.activeNoteId);
+  const activeNote = useNotesStore((state) => activeNoteId ? state.notes[activeNoteId] : null);
   const getOrCreateDailyNote = useNotesStore((state) => state.getOrCreateDailyNote);
   const createNote = useNotesStore((state) => state.createNote);
   const activeFolderId = useFoldersStore((state) => state.activeFolderId);
@@ -307,6 +309,20 @@ export const Notes: React.FC = () => {
           placeholder="Note title"
           confirmText="Create Note"
         />
+      )}
+
+      {/* AI Quick Actions - floating button for active note */}
+      {activeNote && activeTab === 'notes' && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <AIQuickActions
+            context={{
+              type: 'note',
+              id: activeNote.id,
+              title: activeNote.title,
+              content: activeNote.contentText || '',
+            }}
+          />
+        </div>
       )}
 
       {/* Export Notes Modal */}

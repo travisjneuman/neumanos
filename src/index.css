@@ -708,3 +708,25 @@
 .code-block-wrapper .token-property {
   color: #e06c75;
 }
+
+/* ==================== DOCUMENT INLINE COMMENTS ==================== */
+
+.doc-comment-highlight {
+  background-color: rgba(251, 191, 36, 0.25);
+  border-bottom: 2px solid rgb(251, 191, 36);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.doc-comment-highlight:hover {
+  background-color: rgba(251, 191, 36, 0.4);
+}
+
+.dark .doc-comment-highlight {
+  background-color: rgba(251, 191, 36, 0.15);
+  border-bottom-color: rgba(251, 191, 36, 0.6);
+}
+
+.dark .doc-comment-highlight:hover {
+  background-color: rgba(251, 191, 36, 0.3);
+}

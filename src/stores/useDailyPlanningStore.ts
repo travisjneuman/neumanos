@@ -39,6 +39,7 @@ export interface TaskTimebox {
 export interface DailyReview {
   reflectionNotes: string;
   mood?: 'great' | 'good' | 'okay' | 'rough';
+  productivityRating?: 1 | 2 | 3 | 4 | 5;
   completedAt: string; // ISO date when review was written
   // Snapshot metrics (captured at review time)
   tasksCompleted: number;
@@ -48,12 +49,38 @@ export interface DailyReview {
   goalsDue: number;
 }
 
+/** Morning ritual completion record */
+export interface MorningRitualRecord {
+  completedAt: string; // ISO date
+  capacitySet: number; // Hours set during ritual
+  tasksPlanned: number; // Number of tasks added to plan
+}
+
+/** Rollover decision for an incomplete task */
+export type RolloverDecision = 'move' | 'reschedule' | 'drop';
+
+/** Evening review data (extended for guided flow) */
+export interface EveningReviewData {
+  tasksCompleted: number;
+  tasksDue: number;
+  hoursTracked: number;
+  goalsCompleted: number;
+  goalsDue: number;
+  mood?: DailyReview['mood'];
+  productivityRating?: 1 | 2 | 3 | 4 | 5;
+  reflectionNotes: string;
+  completedAt: string;
+  incompleteTasks: Array<{ taskId: string; decision: RolloverDecision }>;
+}
+
 /** All planning data for a single date */
 export interface DayPlan {
   goals: DailyGoal[];
   timeboxes: TaskTimebox[];
   review?: DailyReview;
   availableHours: number; // How many hours available for work (default: 8)
+  morningRitual?: MorningRitualRecord;
+  eveningReview?: EveningReviewData;
 }
 
 // ==================== STORE INTERFACE ====================
@@ -85,6 +112,17 @@ interface DailyPlanningActions {
   // Reviews
   saveReview: (dateKey: string, review: DailyReview) => void;
   getReview: (dateKey: string) => DailyReview | undefined;
+
+  // Morning ritual
+  completeMorningRitual: (dateKey: string, record: MorningRitualRecord) => void;
+  isMorningRitualCompleted: (dateKey: string) => boolean;
+
+  // Evening review (guided flow)
+  saveEveningReview: (dateKey: string, data: EveningReviewData) => void;
+  getEveningReview: (dateKey: string) => EveningReviewData | undefined;
+
+  // Rollover
+  getIncompleteTasks: (dateKey: string, allTasks: Array<{ id: string; status: string; dueDate: string | null }>) => Array<{ id: string; status: string; dueDate: string | null }>;
 }
 
 type DailyPlanningStore = DailyPlanningState & DailyPlanningActions;
@@ -259,6 +297,71 @@ export const useDailyPlanningStore = create<DailyPlanningStore>()(
 
       getReview: (dateKey) => {
         return get().plans[dateKey]?.review;
+      },
+
+      // ==================== MORNING RITUAL ====================
+
+      completeMorningRitual: (dateKey, record) => {
+        const plan = get().getPlan(dateKey);
+        set((state) => ({
+          plans: {
+            ...state.plans,
+            [dateKey]: {
+              ...plan,
+              morningRitual: record,
+              availableHours: record.capacitySet,
+            },
+          },
+        }));
+      },
+
+      isMorningRitualCompleted: (dateKey) => {
+        return !!get().plans[dateKey]?.morningRitual;
+      },
+
+      // ==================== EVENING REVIEW (GUIDED) ====================
+
+      saveEveningReview: (dateKey, data) => {
+        const plan = get().getPlan(dateKey);
+        // Also save as a standard DailyReview for backwards compatibility
+        const review: DailyReview = {
+          reflectionNotes: data.reflectionNotes,
+          mood: data.mood,
+          productivityRating: data.productivityRating,
+          completedAt: data.completedAt,
+          tasksCompleted: data.tasksCompleted,
+          tasksDue: data.tasksDue,
+          hoursTracked: data.hoursTracked,
+          goalsCompleted: data.goalsCompleted,
+          goalsDue: data.goalsDue,
+        };
+        set((state) => ({
+          plans: {
+            ...state.plans,
+            [dateKey]: {
+              ...plan,
+              eveningReview: data,
+              review,
+            },
+          },
+        }));
+      },
+
+      getEveningReview: (dateKey) => {
+        return get().plans[dateKey]?.eveningReview;
+      },
+
+      // ==================== ROLLOVER ====================
+
+      getIncompleteTasks: (dateKey, allTasks) => {
+        return allTasks.filter((task) => {
+          if (!task.dueDate || task.status === 'done') return false;
+          const dueKey = task.dueDate.replace(/-0/g, '-').replace(/^(\d{4})-0?(\d{1,2})-0?(\d{1,2})$/, '$1-$2-$3');
+          // Normalize dateKey format
+          const parts = dateKey.split('-');
+          const normalizedDateKey = `${parts[0]}-${parseInt(parts[1])}-${parseInt(parts[2])}`;
+          return dueKey === normalizedDateKey || task.dueDate === dateKey;
+        });
       },
     }),
     {

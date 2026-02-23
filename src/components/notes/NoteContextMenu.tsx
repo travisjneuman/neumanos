@@ -22,6 +22,7 @@ import {
   Pin,
   Star,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import type { Note } from '../../types/notes';
 
@@ -37,6 +38,7 @@ export interface NoteContextMenuProps {
   onTogglePin: (noteId: string) => void;
   onToggleFavorite: (noteId: string) => void;
   onDelete: (noteId: string) => void;
+  onSaveAsTemplate?: (note: Note) => void;
 }
 
 export const NoteContextMenu: React.FC<NoteContextMenuProps> = ({
@@ -51,6 +53,7 @@ export const NoteContextMenu: React.FC<NoteContextMenuProps> = ({
   onTogglePin,
   onToggleFavorite,
   onDelete,
+  onSaveAsTemplate,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -152,6 +155,19 @@ export const NoteContextMenu: React.FC<NoteContextMenuProps> = ({
       },
       active: note.isFavorite,
     },
+    ...(onSaveAsTemplate
+      ? [
+          { divider: true } as const,
+          {
+            label: 'Save as Template',
+            icon: Sparkles,
+            onClick: () => {
+              onSaveAsTemplate(note);
+              onClose();
+            },
+          },
+        ]
+      : []),
     { divider: true },
     {
       label: 'Delete',

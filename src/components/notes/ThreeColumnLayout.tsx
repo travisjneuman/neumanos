@@ -357,6 +357,21 @@ export const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
     }
   }, [noteToDelete, deleteNote]);
 
+  // Save note as template
+  const createNoteTemplate = useNotesStore((state) => state.createNoteTemplate);
+  const handleSaveAsTemplate = useCallback(
+    (note: Note) => {
+      createNoteTemplate({
+        name: note.title || 'Untitled Template',
+        description: note.contentText,
+        icon: note.icon,
+        defaultTags: note.tags,
+      });
+      toast.success('Template created from note');
+    },
+    [createNoteTemplate]
+  );
+
   // Folder picker handlers
   const handleFolderPickerSelect = useCallback(
     (targetFolderId: string | null) => {
@@ -553,6 +568,7 @@ export const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
           onTogglePin={handleNoteTogglePin}
           onToggleFavorite={handleNoteToggleFavorite}
           onDelete={handleNoteDelete}
+          onSaveAsTemplate={handleSaveAsTemplate}
         />
       )}
 

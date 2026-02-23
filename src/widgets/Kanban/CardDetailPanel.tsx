@@ -3,6 +3,7 @@ import { Modal } from '../../components/Modal';
 import { RecurrencePicker } from '../../components/RecurrencePicker';
 import { CustomFieldEditor } from '../../components/CustomFieldEditor';
 import { DependentShiftConfirmation } from '../../components/DependentShiftConfirmation';
+import { AIQuickActions } from '../../components/AIQuickActions';
 import AssigneePicker from '../../components/AssigneePicker';
 import ImagePreviewModal from '../../components/ImagePreviewModal';
 import { useKanbanStore } from '../../stores/useKanbanStore';
@@ -982,8 +983,16 @@ export const CardDetailPanel: React.FC<CardDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* Footer: Keyboard Hints */}
-      <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark">
+      {/* Footer: AI Quick Actions + Keyboard Hints */}
+      <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark flex items-center justify-between">
+        <AIQuickActions
+          context={{
+            type: 'task',
+            id: task.id,
+            title: task.title,
+            content: `${task.description || ''}\nPriority: ${task.priority || 'medium'}\nStatus: ${task.status || 'backlog'}`,
+          }}
+        />
         <p className="text-[10px] text-text-light-secondary dark:text-text-dark-secondary text-center">
           Press <kbd className="px-1 py-0.5 bg-surface-light-elevated dark:bg-surface-dark-elevated rounded text-[10px]">Esc</kbd> to close
           or <kbd className="px-1 py-0.5 bg-surface-light-elevated dark:bg-surface-dark-elevated rounded text-[10px]">Cmd+Enter</kbd> to save

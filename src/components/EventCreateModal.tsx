@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, AlertTriangle, Sparkles } from 'lucide-react';
+import { en as chrono } from 'chrono-node';
+import { format } from 'date-fns';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { REMINDER_OPTIONS } from '../services/eventReminders';
 import { detectConflicts, formatConflictMessage, getConflictDetails } from '../utils/conflictDetection';
@@ -18,7 +20,11 @@ interface EventCreateModalProps {
  * Simplified version matching TimeEntryCalendar aesthetic
  */
 export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalProps) {
-  const { addEvent, updateEvent, events } = useCalendarStore();
+  const { addEvent, updateEvent, events, calendars } = useCalendarStore();
+
+  // Natural language input state
+  const [nlInput, setNlInput] = useState('');
+  const [nlPreview, setNlPreview] = useState<string | null>(null);
 
   // Convert standard date key (YYYY-M-D) to ISO format for date input (YYYY-MM-DD)
   const toISODate = (standardKey: string): string => {
@@ -49,9 +55,62 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
   const [recurrenceEndCount, setRecurrenceEndCount] = useState(10);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [colorCategory, setColorCategory] = useState<EventColorCategory>('default');
+  const [calendarId, setCalendarId] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [conflicts, setConflicts] = useState<CalendarEvent[]>([]);
+
+  // Natural language event parsing
+  const handleNLInput = useCallback((text: string) => {
+    setNlInput(text);
+    if (!text.trim()) {
+      setNlPreview(null);
+      return;
+    }
+
+    try {
+      const results = chrono.parse(text);
+      if (results.length > 0) {
+        const parsed = results[0];
+        const parsedDate = parsed.start.date();
+
+        // Extract title: text before the date/time phrase
+        const titlePart = text.slice(0, parsed.index).trim()
+          || text.replace(parsed.text, '').trim()
+          || text.trim();
+
+        // Set title if we got something meaningful
+        if (titlePart) {
+          setTitle(titlePart);
+        }
+
+        // Set date
+        setStartDate(format(parsedDate, 'yyyy-MM-dd'));
+
+        // Set time if available
+        if (parsed.start.isCertain('hour')) {
+          const startStr = format(parsedDate, 'HH:mm');
+          setStartTime(startStr);
+          setIsAllDay(false);
+
+          // Calculate end time from duration or default to 1 hour
+          if (parsed.end) {
+            const endDate = parsed.end.date();
+            setEndTime(format(endDate, 'HH:mm'));
+          } else {
+            const endDate = new Date(parsedDate.getTime() + 60 * 60 * 1000);
+            setEndTime(format(endDate, 'HH:mm'));
+          }
+        }
+
+        setNlPreview(`"${titlePart}" on ${format(parsedDate, 'MMM d')}${parsed.start.isCertain('hour') ? ` at ${format(parsedDate, 'h:mm a')}` : ''}`);
+      } else {
+        setNlPreview(null);
+      }
+    } catch {
+      setNlPreview(null);
+    }
+  }, []);
 
   // Initialize form when editing existing event
   useEffect(() => {
@@ -66,6 +125,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
       setLocation(event.location || '');
       setReminders(event.reminders || []);
       setColorCategory(event.colorCategory || 'default');
+      setCalendarId(event.calendarId || '');
 
       if (event.recurrence) {
         setRecurrenceType(event.recurrence.frequency);
@@ -130,6 +190,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
         location: location.trim() || undefined,
         reminders: reminders.length > 0 ? reminders : undefined,
         colorCategory: colorCategory !== 'default' ? colorCategory : undefined,
+        calendarId: calendarId || undefined,
       };
 
       // Add recurrence if configured
@@ -208,6 +269,28 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
           {error && (
             <div className="px-3 py-2 bg-status-error/10 border border-status-error/20 rounded-button text-status-error text-xs">
               {error}
+            </div>
+          )}
+
+          {/* Natural Language Input (only for new events) */}
+          {!event && (
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
+                Quick Create
+              </label>
+              <input
+                type="text"
+                value={nlInput}
+                onChange={(e) => handleNLInput(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary placeholder-text-light-secondary dark:placeholder-text-dark-secondary"
+                placeholder='e.g. "Meeting with John tomorrow at 3pm for 1 hour"'
+              />
+              {nlPreview && (
+                <div className="mt-1 text-[10px] text-accent-green">
+                  Parsed: {nlPreview}
+                </div>
+              )}
             </div>
           )}
 
@@ -291,6 +374,27 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
               ))}
             </div>
           </div>
+
+          {/* Calendar Selector */}
+          {calendars.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-1.5">
+                Calendar
+              </label>
+              <select
+                value={calendarId}
+                onChange={(e) => setCalendarId(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary"
+              >
+                <option value="">No calendar</option>
+                {calendars.map((cal) => (
+                  <option key={cal.id} value={cal.id}>
+                    {cal.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Description */}
           <div>

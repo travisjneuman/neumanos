@@ -852,6 +852,7 @@ export function Docs() {
                             content={(activeDoc as import('../types').ProfessionalDoc).content}
                             onSave={(content) => updateDoc(activeDoc.id, { content })}
                             title={activeDoc.title}
+                            documentId={activeDoc.id}
                           />
                         )}
                         {activeDoc.type === 'sheet' && (

@@ -5,6 +5,8 @@ import type { TimeEntry } from '../types';
 import { db } from '../db/timeTrackingDb';
 import Dexie from 'dexie';
 import { logger } from '../services/logger';
+import { resolveRate } from '../utils/billableRateResolver';
+import { useTimeTrackingStore } from './useTimeTrackingStore';
 
 const log = logger.module('Invoicing');
 
@@ -250,6 +252,10 @@ export const useInvoicingStore = create<InvoicingStore>()(
           // Group entries into line items
           const lineItems: InvoiceLineItem[] = [];
 
+          // Get rate context for cascading rate resolution (entry > project > global)
+          const { defaultHourlyRate, projects: allProjects } = useTimeTrackingStore.getState();
+          const rateCtx = { defaultHourlyRate, projects: allProjects };
+
           if (filters.groupBy === 'project') {
             // Group by project
             const projectGroups = new Map<string, TimeEntry[]>();
@@ -267,9 +273,17 @@ export const useInvoicingStore = create<InvoicingStore>()(
 
             projectGroups.forEach((entries, projectId) => {
               const project = projectMap.get(projectId);
-              const totalHours = entries.reduce((sum, e) => sum + e.duration, 0) / 3600;
-              const rate = entries[0]?.hourlyRate || project?.hourlyRate || 0;
-              const amount = totalHours * rate;
+              // Use cascading rate: sum each entry's resolved rate * hours
+              let totalAmount = 0;
+              let totalHours = 0;
+              entries.forEach((e) => {
+                const hours = e.duration / 3600;
+                const { rate: entryRate } = resolveRate(e, rateCtx);
+                totalHours += hours;
+                totalAmount += hours * entryRate;
+              });
+              const rate = totalHours > 0 ? totalAmount / totalHours : 0;
+              const amount = totalAmount;
 
               lineItems.push({
                 id: crypto.randomUUID(),
@@ -293,9 +307,16 @@ export const useInvoicingStore = create<InvoicingStore>()(
             });
 
             dateGroups.forEach((entries, date) => {
-              const totalHours = entries.reduce((sum, e) => sum + e.duration, 0) / 3600;
-              const rate = entries[0]?.hourlyRate || 0;
-              const amount = totalHours * rate;
+              let totalAmount = 0;
+              let totalHours = 0;
+              entries.forEach((e) => {
+                const hours = e.duration / 3600;
+                const { rate: entryRate } = resolveRate(e, rateCtx);
+                totalHours += hours;
+                totalAmount += hours * entryRate;
+              });
+              const rate = totalHours > 0 ? totalAmount / totalHours : 0;
+              const amount = totalAmount;
 
               lineItems.push({
                 id: crypto.randomUUID(),
@@ -315,7 +336,7 @@ export const useInvoicingStore = create<InvoicingStore>()(
             // No grouping - one line per entry
             filteredEntries.forEach(entry => {
               const hours = entry.duration / 3600;
-              const rate = entry.hourlyRate || 0;
+              const { rate } = resolveRate(entry, rateCtx);
               const amount = hours * rate;
 
               lineItems.push({

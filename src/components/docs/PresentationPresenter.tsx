@@ -16,7 +16,7 @@ import {
   Play,
   Pause,
 } from 'lucide-react';
-import type { Slide } from '../../types';
+import type { Slide, SlideTransition } from '../../types';
 import { PresentationCanvas } from './PresentationCanvas';
 
 interface PresentationPresenterProps {
@@ -38,11 +38,17 @@ export function PresentationPresenter({
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionStyle, setTransitionStyle] = useState<React.CSSProperties>({});
+  const [prevSlideStyle, setPrevSlideStyle] = useState<React.CSSProperties>({});
+  const [showPrevSlide, setShowPrevSlide] = useState(false);
+  const [prevIndex, setPrevIndex] = useState(initialSlideIndex);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentSlide = slides[currentIndex];
   const nextSlide = slides[currentIndex + 1];
+  const prevSlide = slides[prevIndex];
 
   // Timer
   useEffect(() => {
@@ -75,14 +81,131 @@ export function PresentationPresenter({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Navigation
+  // Compute CSS for slide transitions (GPU-accelerated: transform + opacity only)
+  const getTransitionStyles = useCallback(
+    (
+      transition: SlideTransition | undefined,
+      direction: 'forward' | 'backward'
+    ): { incoming: React.CSSProperties; outgoing: React.CSSProperties; duration: number } => {
+      if (!transition || transition.type === 'none') {
+        return { incoming: {}, outgoing: {}, duration: 0 };
+      }
+
+      const dur = transition.duration || 300;
+      const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+      const base = { transition: `transform ${dur}ms ${easing}, opacity ${dur}ms ${easing}` };
+
+      switch (transition.type) {
+        case 'fade':
+          return {
+            incoming: { ...base, opacity: 0 },
+            outgoing: { ...base, opacity: 1 },
+            duration: dur,
+          };
+
+        case 'slide': {
+          const dir = transition.direction || (direction === 'forward' ? 'left' : 'right');
+          const translateMap: Record<string, string> = {
+            left: 'translateX(100%)',
+            right: 'translateX(-100%)',
+            up: 'translateY(100%)',
+            down: 'translateY(-100%)',
+          };
+          const outMap: Record<string, string> = {
+            left: 'translateX(-100%)',
+            right: 'translateX(100%)',
+            up: 'translateY(-100%)',
+            down: 'translateY(100%)',
+          };
+          return {
+            incoming: { ...base, transform: translateMap[dir] },
+            outgoing: { ...base, transform: outMap[dir] },
+            duration: dur,
+          };
+        }
+
+        case 'zoom':
+          return {
+            incoming: { ...base, transform: 'scale(0.5)', opacity: 0 },
+            outgoing: { ...base, transform: 'scale(1.5)', opacity: 0 },
+            duration: dur,
+          };
+
+        case 'flip':
+          return {
+            incoming: { ...base, transform: 'perspective(1200px) rotateY(90deg)', opacity: 0 },
+            outgoing: { ...base, transform: 'perspective(1200px) rotateY(-90deg)', opacity: 0 },
+            duration: dur,
+          };
+
+        default:
+          return { incoming: {}, outgoing: {}, duration: 0 };
+      }
+    },
+    []
+  );
+
+  // Navigation with transition animation
   const goToSlide = useCallback(
     (index: number) => {
       const newIndex = Math.max(0, Math.min(slides.length - 1, index));
+      if (newIndex === currentIndex || isTransitioning) return;
+
+      const targetSlide = slides[newIndex];
+      const direction = newIndex > currentIndex ? 'forward' : 'backward';
+      const transition = targetSlide?.transition;
+
+      if (!transition || transition.type === 'none') {
+        // No transition — instant switch
+        setCurrentIndex(newIndex);
+        onSlideChange?.(newIndex);
+        return;
+      }
+
+      // Animate transition
+      const { incoming, outgoing, duration } = getTransitionStyles(transition, direction);
+
+      setIsTransitioning(true);
+      setPrevIndex(currentIndex);
+      setShowPrevSlide(true);
+
+      // Set initial states: outgoing slide visible, incoming slide at start position
+      setPrevSlideStyle({ position: 'absolute', inset: 0, zIndex: 1, ...outgoing, transition: 'none' });
+      setTransitionStyle({ position: 'absolute', inset: 0, zIndex: 2, ...incoming, transition: 'none' });
+
+      // Switch to new slide index
       setCurrentIndex(newIndex);
       onSlideChange?.(newIndex);
+
+      // Trigger animation on next frame
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const trans = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+          setPrevSlideStyle((prev) => ({
+            ...prev,
+            ...outgoing,
+            transition: trans,
+          }));
+          setTransitionStyle({
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            transform: 'none',
+            opacity: 1,
+            transition: trans,
+          });
+        });
+      });
+
+      // Clean up after animation
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setShowPrevSlide(false);
+        setTransitionStyle({});
+        setPrevSlideStyle({});
+      }, duration + 50);
     },
-    [slides.length, onSlideChange]
+    [slides.length, currentIndex, isTransitioning, onSlideChange, getTransitionStyles, slides]
   );
 
   const goNext = useCallback(() => {
@@ -264,21 +387,43 @@ export function PresentationPresenter({
 
       {/* Main content area */}
       <div className="flex-1 flex">
-        {/* Main slide */}
+        {/* Main slide with transition support */}
         <div
           data-slide-area
-          className="flex-1 flex items-center justify-center cursor-pointer"
+          className="flex-1 flex items-center justify-center cursor-pointer relative overflow-hidden"
         >
-          <PresentationCanvas
-            slide={currentSlide}
-            containerWidth={showNotes ? window.innerWidth * 0.65 : window.innerWidth}
-            containerHeight={window.innerHeight}
-            selectedElementId={null}
-            onSelectElement={() => {}}
-            onUpdateElement={() => {}}
-            currentTool="select"
-            isEditable={false}
-          />
+          {/* Previous slide (shown during transitions) */}
+          {showPrevSlide && prevSlide && (
+            <div style={prevSlideStyle} className="flex items-center justify-center">
+              <PresentationCanvas
+                slide={prevSlide}
+                containerWidth={showNotes ? window.innerWidth * 0.65 : window.innerWidth}
+                containerHeight={window.innerHeight}
+                selectedElementId={null}
+                onSelectElement={() => {}}
+                onUpdateElement={() => {}}
+                currentTool="select"
+                isEditable={false}
+              />
+            </div>
+          )}
+
+          {/* Current slide */}
+          <div
+            style={isTransitioning ? transitionStyle : undefined}
+            className={isTransitioning ? 'flex items-center justify-center' : 'flex items-center justify-center'}
+          >
+            <PresentationCanvas
+              slide={currentSlide}
+              containerWidth={showNotes ? window.innerWidth * 0.65 : window.innerWidth}
+              containerHeight={window.innerHeight}
+              selectedElementId={null}
+              onSelectElement={() => {}}
+              onUpdateElement={() => {}}
+              currentTool="select"
+              isEditable={false}
+            />
+          </div>
         </div>
 
         {/* Speaker notes panel */}

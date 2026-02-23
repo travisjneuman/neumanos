@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useState, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { PageHeader } from './PageHeader';
 import { Footer as SaveStatusFooter } from './Footer';
@@ -8,8 +9,10 @@ import { OfflineIndicator } from './OfflineIndicator';
 import { useSidebarStore } from '../stores/useSidebarStore';
 import { useTerminalStore } from '../stores/useTerminalStore';
 import { useProjectContextStore } from '../stores/useProjectContextStore';
+import { useNotesStore } from '../stores/useNotesStore';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
 import { useShortcut } from '../hooks/useShortcut';
+import { isInputElement } from '../services/shortcuts';
 
 // Lazy load heavy components to reduce initial bundle size
 // AITerminal: 900KB+ of AI provider SDKs
@@ -31,6 +34,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const navigate = useNavigate();
   const { isCollapsed, toggleMobileMenu } = useSidebarStore();
   const { isOpen: isTerminalOpen, toggleTerminal, hasOpenedTerminal } = useTerminalStore();
   const toggleProjectDropdown = useProjectContextStore((s) => s.toggleDropdown);
@@ -122,6 +126,188 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     handler: useCallback(() => setShowQuickAddTask(true), []),
     priority: 40,
   });
+
+  // Navigation shortcuts: Ctrl+1-9 for pages
+  useShortcut({
+    id: 'nav-dashboard',
+    keys: ['mod', '1'],
+    label: 'Go to Dashboard',
+    description: 'Navigate to Dashboard',
+    handler: useCallback(() => navigate('/'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-today',
+    keys: ['mod', '2'],
+    label: 'Go to Today',
+    description: 'Navigate to Today page',
+    handler: useCallback(() => navigate('/today'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-notes',
+    keys: ['mod', '3'],
+    label: 'Go to Notes',
+    description: 'Navigate to Notes',
+    handler: useCallback(() => navigate('/notes'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-tasks',
+    keys: ['mod', '4'],
+    label: 'Go to Tasks',
+    description: 'Navigate to Tasks',
+    handler: useCallback(() => navigate('/tasks'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-schedule',
+    keys: ['mod', '5'],
+    label: 'Go to Schedule',
+    description: 'Navigate to Schedule',
+    handler: useCallback(() => navigate('/schedule'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-create',
+    keys: ['mod', '6'],
+    label: 'Go to Create',
+    description: 'Navigate to Create page',
+    handler: useCallback(() => navigate('/create'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-links',
+    keys: ['mod', '7'],
+    label: 'Go to Links',
+    description: 'Navigate to Link Library',
+    handler: useCallback(() => navigate('/links'), [navigate]),
+    priority: 30,
+  });
+
+  useShortcut({
+    id: 'nav-settings',
+    keys: ['mod', '8'],
+    label: 'Go to Settings',
+    description: 'Navigate to Settings',
+    handler: useCallback(() => navigate('/settings'), [navigate]),
+    priority: 30,
+  });
+
+  // Quick create actions
+  useShortcut({
+    id: 'create-new-note',
+    keys: ['mod', 'n'],
+    label: 'New note',
+    description: 'Create a new note',
+    handler: useCallback(() => {
+      const { createNote, setActiveNote } = useNotesStore.getState();
+      const note = createNote({ title: '', content: '', contentText: '', tags: [] });
+      setActiveNote(note.id);
+      navigate('/notes');
+    }, [navigate]),
+    priority: 45,
+  });
+
+  useShortcut({
+    id: 'create-new-task',
+    keys: ['mod', 't'],
+    label: 'New task',
+    description: 'Quick add a new task',
+    handler: useCallback(() => setShowQuickAddTask(true), []),
+    priority: 45,
+    allowInInput: false,
+  });
+
+  useShortcut({
+    id: 'create-new-event',
+    keys: ['mod', 'e'],
+    label: 'New event',
+    description: 'Navigate to calendar to create event',
+    handler: useCallback(() => navigate('/schedule'), [navigate]),
+    priority: 45,
+  });
+
+  useShortcut({
+    id: 'toggle-ai-terminal',
+    keys: ['mod', 'shift', 'a'],
+    label: 'Toggle AI Terminal',
+    description: 'Open or close the AI Terminal',
+    handler: toggleTerminal,
+    priority: 60,
+  });
+
+  useShortcut({
+    id: 'toggle-sidebar',
+    keys: ['mod', 'b'],
+    label: 'Toggle sidebar',
+    description: 'Show or hide the sidebar',
+    handler: useCallback(() => useSidebarStore.getState().toggleCollapse(), []),
+    priority: 40,
+  });
+
+  // G-then-key sequence shortcuts (Linear-style navigation)
+  const gKeyPendingRef = useRef(false);
+  const gKeyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleGSequence = (e: KeyboardEvent) => {
+      // Don't trigger in inputs
+      if (isInputElement(e.target)) return;
+      // Don't trigger with modifiers
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+      const key = e.key.toLowerCase();
+
+      if (gKeyPendingRef.current) {
+        // Second key of G sequence
+        gKeyPendingRef.current = false;
+        if (gKeyTimeoutRef.current) {
+          clearTimeout(gKeyTimeoutRef.current);
+          gKeyTimeoutRef.current = null;
+        }
+
+        const routes: Record<string, string> = {
+          d: '/',           // Dashboard
+          t: '/tasks',      // Tasks
+          n: '/notes',      // Notes
+          h: '/tasks?tab=habits', // Habits
+          c: '/schedule',   // Calendar/Schedule
+          s: '/settings',   // Settings
+          o: '/today',      // Today/Overview
+          l: '/links',      // Links
+          f: '/focus',      // Focus
+        };
+
+        if (routes[key]) {
+          e.preventDefault();
+          e.stopPropagation();
+          navigate(routes[key]);
+        }
+        return;
+      }
+
+      if (key === 'g') {
+        gKeyPendingRef.current = true;
+        // Reset after timeout
+        gKeyTimeoutRef.current = setTimeout(() => {
+          gKeyPendingRef.current = false;
+        }, 800);
+      }
+    };
+
+    window.addEventListener('keydown', handleGSequence);
+    return () => {
+      window.removeEventListener('keydown', handleGSequence);
+      if (gKeyTimeoutRef.current) clearTimeout(gKeyTimeoutRef.current);
+    };
+  }, [navigate]);
 
   return (
     <div className="app h-screen bg-surface-light dark:bg-surface-dark flex overflow-hidden">

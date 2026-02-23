@@ -49,6 +49,25 @@ export interface EventColorCategoryConfig {
   hex: string;           // Hex color for inline styles
 }
 
+/** A user-defined calendar grouping (Work, Personal, Birthdays, etc.) */
+export interface UserCalendar {
+  id: string;
+  name: string;
+  color: string;   // Hex color for event display
+  visible: boolean; // Toggle visibility in views
+}
+
+/** A subscribed external ICS calendar URL */
+export interface ICSSubscription {
+  id: string;
+  name: string;
+  url: string;
+  color: string;          // Hex color for imported events
+  lastSyncedAt?: string;  // ISO date
+  autoSyncMinutes: number; // 0 = manual only
+  enabled: boolean;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -56,6 +75,10 @@ export interface CalendarEvent {
   startTime?: string; // "14:00" (24-hour format)
   endTime?: string;   // "15:30"
   isAllDay?: boolean; // default true if no times specified
+
+  // Multi-calendar support
+  calendarId?: string;     // UserCalendar.id (undefined = default)
+  externalSource?: string; // ICSSubscription.id (marks event as read-only)
 
   // Project context (global filter system)
   projectIds: string[];  // Array for multi-project support; empty = uncategorized
@@ -95,6 +118,8 @@ export interface CalendarState {
   events: Record<string, CalendarEvent[]>; // dateKey -> array of events
   viewMode: ViewMode;
   currentDate: Date;
+  calendars: UserCalendar[];               // Multi-calendar support
+  icsSubscriptions: ICSSubscription[];     // External ICS URL subscriptions
 }
 
 export type DependencyType =
@@ -529,6 +554,12 @@ export interface HabitReminder {
   time: string;                     // "HH:MM" 24-hour format
 }
 
+export interface StreakFreezeRecord {
+  date: string;                     // YYYY-M-D format date the freeze was applied
+  appliedAt: string;                // ISO timestamp when the freeze was applied
+  weekStart: string;                // YYYY-M-D of the week start (Monday)
+}
+
 export interface Habit {
   id: string;
   title: string;
@@ -555,6 +586,10 @@ export interface Habit {
   totalCompletions: number;
   totalXp: number;                  // Accumulated experience points
 
+  // Streak freeze
+  freezesPerWeek: number;           // Max freezes allowed per week (default 1)
+  freezesUsed: StreakFreezeRecord[]; // History of applied freezes
+
   // Metadata
   projectIds: string[];             // Project context support
   createdAt: string;                // ISO date
@@ -570,14 +605,23 @@ export interface HabitCompletion {
   notes?: string;                   // Optional completion note
 }
 
-export type HabitAchievementType = 'streak' | 'total' | 'consistency';
+export type HabitAchievementType =
+  | 'streak'
+  | 'total'
+  | 'consistency'
+  | 'category-mastery'
+  | 'explorer'
+  | 'early-bird'
+  | 'night-owl';
 
 export interface HabitAchievement {
   id: string;
   type: HabitAchievementType;
-  habitId: string;
+  habitId: string;                  // Empty string for global achievements
   value: number;                    // e.g., 7 for "7-day streak"
   unlockedAt: string;               // ISO date
+  label?: string;                   // Human-readable label for the achievement
+  icon?: string;                    // Lucide icon name
 }
 
 export interface HabitState {

@@ -35,9 +35,10 @@ import {
   TokenUsageBar,
   MessageTokenBadge,
   ConversationExportButton,
+  ConversationSearchPanel,
 } from './terminal';
 import { getDefaultSystemPrompt } from '../services/systemPrompts';
-import { MessageSquare, Settings2, BookOpen } from 'lucide-react';
+import { MessageSquare, Settings2, BookOpen, Search, Sparkles, X } from 'lucide-react';
 import {
   AI_TERMINAL_FOLDER_NAME,
   getOrCreateQuickNote,
@@ -121,6 +122,7 @@ export const AITerminal: React.FC = () => {
   const [showSaveConversation, setShowSaveConversation] = useState(false);
   const [showConversationPanel, setShowConversationPanel] = useState(false);
   const [showSystemPromptPanel, setShowSystemPromptPanel] = useState(false);
+  const [showConversationSearch, setShowConversationSearch] = useState(false);
   const [fallbackNotification, setFallbackNotification] = useState<string | null>(null);
   const [terminalMode, setTerminalMode] = useState<TerminalMode>('chat');
   const [configuredProviderCount, setConfiguredProviderCount] = useState(0);
@@ -146,6 +148,10 @@ export const AITerminal: React.FC = () => {
   // Move to Daily Note state
   const [selectedText, setSelectedText] = useState('');
   const addToast = useToastStore((s) => s.addToast);
+
+  // Context-aware AI
+  const activeContext = useTerminalStore((s) => s.activeContext);
+  const setActiveContext = useTerminalStore((s) => s.setActiveContext);
 
   // Sort state from terminal store
   const notesSortField = useTerminalStore((s) => s.notesSortField);
@@ -549,7 +555,12 @@ export const AITerminal: React.FC = () => {
       }
 
       // Send message using router (with automatic fallback)
-      const systemPrompt = customSystemPrompt || getDefaultSystemPrompt();
+      // Inject context if active
+      const baseSystemPrompt = customSystemPrompt || getDefaultSystemPrompt();
+      const contextPrefix = activeContext
+        ? `\n\n**Active Context (${activeContext.type}):**\nTitle: ${activeContext.title}\nContent:\n${activeContext.content.slice(0, 2000)}\n\n---\n\n`
+        : '';
+      const systemPrompt = contextPrefix ? baseSystemPrompt + contextPrefix : baseSystemPrompt;
       const response = await router.sendMessage({
         prompt: userMessage,
         conversationHistory: messages.map((msg) => ({
@@ -700,10 +711,24 @@ export const AITerminal: React.FC = () => {
 
           {/* Right: Action buttons */}
           <div className="flex items-center gap-0.5">
+            {/* Conversation Search - Chat only */}
+            {terminalMode === 'chat' && (
+              <button
+                onClick={() => { setShowConversationSearch(!showConversationSearch); setShowConversationPanel(false); setShowSystemPromptPanel(false); }}
+                className={`p-1.5 hover:bg-surface-dark-elevated rounded transition-all ${
+                  showConversationSearch ? 'text-accent-yellow bg-accent-yellow/10' : 'text-text-dark-secondary hover:text-accent-yellow'
+                }`}
+                title="Search Conversations"
+                aria-label="Search conversations"
+              >
+                <Search size={14} />
+              </button>
+            )}
+
             {/* Conversation History - Chat only */}
             {terminalMode === 'chat' && (
               <button
-                onClick={() => { setShowConversationPanel(!showConversationPanel); setShowSystemPromptPanel(false); }}
+                onClick={() => { setShowConversationPanel(!showConversationPanel); setShowConversationSearch(false); setShowSystemPromptPanel(false); }}
                 className={`p-1.5 hover:bg-surface-dark-elevated rounded transition-all ${
                   showConversationPanel ? 'text-accent-green bg-accent-green/10' : 'text-text-dark-secondary hover:text-accent-green'
                 }`}
@@ -1033,6 +1058,23 @@ export const AITerminal: React.FC = () => {
           {/* Token Usage Bar */}
           <TokenUsageBar />
 
+          {/* Context Indicator */}
+          {activeContext && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-accent-primary/10 border-t border-accent-primary/20 flex-shrink-0">
+              <Sparkles size={12} className="text-accent-primary flex-shrink-0" />
+              <span className="text-xs text-accent-primary truncate flex-1">
+                Context: {activeContext.type === 'note' ? '📝' : '✅'} {activeContext.title}
+              </span>
+              <button
+                onClick={() => setActiveContext(null)}
+                className="text-accent-primary/60 hover:text-accent-primary transition-colors"
+                title="Clear context"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
           {/* Input Area */}
           <div className="border-t border-border-light dark:border-border-dark p-3 bg-surface-light dark:bg-black flex-shrink-0">
             <form onSubmit={handleSubmit} className="flex gap-2">
@@ -1355,6 +1397,13 @@ export const AITerminal: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Conversation Search Panel */}
+      {showConversationSearch && terminalMode === 'chat' && (
+        <div className="absolute top-12 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm z-40 flex flex-col">
+          <ConversationSearchPanel onClose={() => setShowConversationSearch(false)} />
+        </div>
+      )}
 
       {/* Conversation History Panel */}
       {showConversationPanel && terminalMode === 'chat' && (

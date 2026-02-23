@@ -35,7 +35,10 @@ import Typography from '@tiptap/extension-typography';
 import { useDebouncedCallback } from 'use-debounce';
 import { DocumentToolbar } from './DocumentToolbar';
 import { FindReplaceBar } from './FindReplaceBar';
-import { FileText, Scroll } from 'lucide-react';
+import { DocumentCommentPanel } from './DocumentCommentPanel';
+import { CommentMark } from './tiptapCommentMark';
+import { useDocCommentsStore } from '../../stores/useDocCommentsStore';
+import { FileText, Scroll, MessageSquare } from 'lucide-react';
 
 /** Page size presets (width x height in pixels at 96 DPI) */
 type PageSize = 'letter' | 'a4' | 'legal';
@@ -53,6 +56,8 @@ interface DocumentEditorProps {
   onSave: (content: string) => void;
   /** Document title for accessibility */
   title: string;
+  /** Document ID for linking comments */
+  documentId?: string;
   /** Whether editor is read-only */
   readOnly?: boolean;
   /** Additional class names */
@@ -67,6 +72,7 @@ export function DocumentEditor({
   content,
   onSave,
   title,
+  documentId,
   readOnly = false,
   className = '',
   pageView = true,
@@ -77,7 +83,9 @@ export function DocumentEditor({
   const [currentPageSize, setCurrentPageSize] = useState<PageSize>(pageSize);
   const [showFindReplace, setShowFindReplace] = useState(false);
   const [findReplaceMode, setFindReplaceMode] = useState<'find' | 'replace'>('find');
+  const [showComments, setShowComments] = useState(false);
   const pageDimensions = PAGE_SIZES[currentPageSize];
+  const addComment = useDocCommentsStore((s) => s.addComment);
 
   // Parse initial content
   const initialContent = useMemo(() => {
@@ -147,6 +155,9 @@ export function DocumentEditor({
       TextStyle,
       Color,
       Typography,
+      CommentMark.configure({
+        HTMLAttributes: {},
+      }),
     ],
     content: initialContent,
     editable: !readOnly,
@@ -204,6 +215,22 @@ export function DocumentEditor({
       .run();
   }, [editor]);
 
+  // Handle comment insertion
+  const addCommentToSelection = useCallback(() => {
+    if (!editor || !documentId) return;
+
+    const { from, to } = editor.state.selection;
+    if (from === to) return; // No text selected
+
+    const commentText = window.prompt('Add a comment:');
+    if (!commentText?.trim()) return;
+
+    const commentId = crypto.randomUUID();
+    editor.commands.setComment(commentId);
+    addComment(documentId, commentId, commentText.trim());
+    setShowComments(true);
+  }, [editor, documentId, addComment]);
+
   // Keyboard shortcuts for Find & Replace
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -247,6 +274,30 @@ export function DocumentEditor({
               onInsertTable={insertTable}
             />
           </div>
+
+          {/* Comment button */}
+          {documentId && (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={addCommentToSelection}
+                title="Add comment to selection"
+                className="p-1.5 rounded text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-alt dark:hover:bg-surface-dark-elevated transition-colors"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowComments(!showComments)}
+                title="Toggle comments panel"
+                className={`p-1.5 rounded transition-colors ${
+                  showComments
+                    ? 'bg-accent-primary/10 text-accent-primary'
+                    : 'text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-alt dark:hover:bg-surface-dark-elevated'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* View mode toggle */}
           <div className="flex items-center gap-1 px-2 py-1.5 shrink-0 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg">
@@ -306,6 +357,7 @@ export function DocumentEditor({
       )}
 
       {/* Editor content - Page view or continuous scroll */}
+      <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 overflow-auto bg-neutral-200 dark:bg-neutral-800">
         {isPageView ? (
           /* Page view: Simulated paper pages */
@@ -333,6 +385,16 @@ export function DocumentEditor({
             <EditorContent editor={editor} />
           </div>
         )}
+      </div>
+
+      {/* Comment Panel */}
+      {showComments && documentId && editor && (
+        <DocumentCommentPanel
+          documentId={documentId}
+          editor={editor}
+          onClose={() => setShowComments(false)}
+        />
+      )}
       </div>
     </div>
   );

@@ -12,7 +12,7 @@
  * - End-of-day review
  */
 
-import React, { useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { format, startOfDay, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -25,6 +25,9 @@ import {
   Zap,
   CloudSun,
   Focus,
+  Sun,
+  Moon,
+  FileText,
 } from 'lucide-react';
 import { DayView } from '../components/DayView';
 import { TodayFocus } from '../components/today/TodayFocus';
@@ -33,12 +36,18 @@ import { TimeboxSummary } from '../components/today/TimeboxSummary';
 import { DailyReview } from '../components/today/DailyReview';
 import { TomorrowPlanning } from '../components/today/TomorrowPlanning';
 import { WeeklyPlanning } from '../components/today/WeeklyPlanning';
+import { CapacityBar } from '../components/today/CapacityBar';
+import { MorningRitual } from '../components/today/MorningRitual';
+import { EveningReview as EveningReviewFlow } from '../components/today/EveningReview';
+import { RolloverModal } from '../components/today/RolloverModal';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { useKanbanStore } from '../stores/useKanbanStore';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useWeatherStore } from '../stores/useWeatherStore';
 import { useSettingsStore, formatTemperature } from '../stores/useSettingsStore';
 import { useFocusModeStore } from '../stores/useFocusModeStore';
+import { useDailyPlanningStore } from '../stores/useDailyPlanningStore';
+import { useNotesStore } from '../stores/useNotesStore';
 import { useShortcut } from '../hooks/useShortcut';
 import type { CalendarEvent, WeatherData } from '../types';
 import { PageContent } from '../components/PageContent';
@@ -258,11 +267,84 @@ const TodayTasks: React.FC<{
 };
 
 /**
+ * DailyNoteWidget - Quick access to today's daily note
+ */
+const DailyNoteWidget: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) => {
+  const dailyNotesEnabled = useSettingsStore((state) => state.dailyNotes.enabled);
+  const getOrCreateDailyNote = useNotesStore((state) => state.getOrCreateDailyNote);
+  const getDailyNote = useNotesStore((state) => state.getDailyNote);
+
+  const todayNote = useMemo(() => getDailyNote(new Date()), [getDailyNote]);
+
+  if (!dailyNotesEnabled) return null;
+
+  const handleOpenDailyNote = () => {
+    getOrCreateDailyNote(new Date());
+    onNavigate();
+  };
+
+  return (
+    <div className="bg-surface-light dark:bg-surface-dark rounded-lg border border-border-light dark:border-border-dark overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <h3 className="font-semibold text-text-light-primary dark:text-text-dark-primary flex items-center gap-2">
+          <FileText className="w-4 h-4 text-accent-primary" />
+          Daily Note
+        </h3>
+      </div>
+      <div className="p-4">
+        {todayNote ? (
+          <button
+            onClick={handleOpenDailyNote}
+            className="w-full text-left group"
+          >
+            <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors">
+              <span className="text-2xl">{todayNote.icon || '📅'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-text-light-primary dark:text-text-dark-primary truncate">
+                  {todayNote.title}
+                </p>
+                <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary line-clamp-2 mt-0.5">
+                  {todayNote.contentText.slice(0, 120) || 'No content yet'}
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+            </div>
+          </button>
+        ) : (
+          <button
+            onClick={handleOpenDailyNote}
+            className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-border-light dark:border-border-dark hover:border-accent-primary hover:bg-accent-primary/5 transition-colors group"
+          >
+            <div className="w-10 h-10 flex items-center justify-center bg-accent-primary/10 rounded-lg">
+              <Plus className="w-5 h-5 text-accent-primary" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-text-light-primary dark:text-text-dark-primary">
+                Create Today's Note
+              </p>
+              <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
+                Start capturing today's thoughts
+              </p>
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
  * Today Page Component
  */
 export const Today: React.FC = () => {
   const navigate = useNavigate();
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  // Modal states
+  const [showMorningRitual, setShowMorningRitual] = useState(false);
+  const [showEveningReview, setShowEveningReview] = useState(false);
+  const [showRollover, setShowRollover] = useState(false);
+  const [rolloverDismissed, setRolloverDismissed] = useState(false);
 
   // Get today's date
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -273,6 +355,10 @@ export const Today: React.FC = () => {
   const updateEventTime = useCalendarStore((state) => state.updateEventTime);
   const tasks = useKanbanStore((state) => state.tasks);
   const timeEntries = useTimeTrackingStore((state) => state.entries);
+
+  // Daily planning store
+  const isMorningRitualCompleted = useDailyPlanningStore((s) => s.isMorningRitualCompleted(todayKey));
+  const eveningReview = useDailyPlanningStore((s) => s.getEveningReview(todayKey));
 
   // Weather data
   const weatherData = useWeatherStore((state) => state.weatherData);
@@ -322,6 +408,23 @@ export const Today: React.FC = () => {
       eventsCount: todayEvents.length,
     };
   }, [todayTasks, todayEvents, timeEntries, todayKey]);
+
+  // Check for incomplete tasks from yesterday on mount
+  const hasOverdueTasks = useMemo(() => {
+    return tasks.some((task) => {
+      if (!task.dueDate || task.status === 'done' || task.archivedAt) return false;
+      return new Date(task.dueDate) < today;
+    });
+  }, [tasks, today]);
+
+  useEffect(() => {
+    if (hasOverdueTasks && !rolloverDismissed && !isMorningRitualCompleted) {
+      setShowRollover(true);
+    }
+  }, [hasOverdueTasks, rolloverDismissed, isMorningRitualCompleted]);
+
+  // Is it evening? (after 5pm)
+  const isEvening = useMemo(() => new Date().getHours() >= 17, []);
 
   // Scroll to current time on mount
   useEffect(() => {
@@ -394,17 +497,44 @@ export const Today: React.FC = () => {
         />
 
         {/* Page-specific toolbar */}
-        <button
-          onClick={() => navigate('/schedule')}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-light-elevated dark:bg-surface-dark-elevated hover:bg-surface-light dark:hover:bg-surface-dark border border-border-light dark:border-border-dark transition-colors text-sm"
-        >
-          <Calendar className="w-4 h-4" />
-          Full Schedule
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Morning Ritual button */}
+          {!isMorningRitualCompleted && (
+            <button
+              onClick={() => setShowMorningRitual(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-yellow/10 text-accent-yellow hover:bg-accent-yellow/20 border border-accent-yellow/20 transition-colors text-sm font-medium"
+            >
+              <Sun className="w-4 h-4" />
+              Start Your Day
+            </button>
+          )}
+
+          {/* Evening Review button */}
+          {(isEvening || isMorningRitualCompleted) && !eveningReview && (
+            <button
+              onClick={() => setShowEveningReview(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20 border border-accent-purple/20 transition-colors text-sm font-medium"
+            >
+              <Moon className="w-4 h-4" />
+              End Your Day
+            </button>
+          )}
+
+          <button
+            onClick={() => navigate('/schedule')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-light-elevated dark:bg-surface-dark-elevated hover:bg-surface-light dark:hover:bg-surface-dark border border-border-light dark:border-border-dark transition-colors text-sm"
+          >
+            <Calendar className="w-4 h-4" />
+            Full Schedule
+          </button>
+        </div>
       </div>
 
       {/* Daily Focus / Goals */}
       <TodayFocus dateKey={todayKey} />
+
+      {/* Capacity Indicator */}
+      <CapacityBar dateKey={todayKey} hoursTracked={metrics.hoursTracked} />
 
       {/* Metrics */}
       <TodayMetrics {...metrics} dateKey={todayKey} />
@@ -444,6 +574,9 @@ export const Today: React.FC = () => {
             </div>
           </div>
 
+          {/* Daily Note Widget */}
+          <DailyNoteWidget onNavigate={() => navigate('/notes?daily=true')} />
+
           {/* Tomorrow Planning */}
           <TomorrowPlanning today={today} />
 
@@ -474,6 +607,42 @@ export const Today: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Morning Ritual Modal */}
+      {showMorningRitual && (
+        <MorningRitual
+          dateKey={todayKey}
+          onComplete={() => setShowMorningRitual(false)}
+          onDismiss={() => setShowMorningRitual(false)}
+        />
+      )}
+
+      {/* Evening Review Modal */}
+      {showEveningReview && (
+        <EveningReviewFlow
+          dateKey={todayKey}
+          tasksCompleted={metrics.tasksCompleted}
+          tasksDue={metrics.tasksDue}
+          hoursTracked={metrics.hoursTracked}
+          onComplete={() => setShowEveningReview(false)}
+          onDismiss={() => setShowEveningReview(false)}
+        />
+      )}
+
+      {/* Rollover Modal */}
+      {showRollover && (
+        <RolloverModal
+          dateKey={todayKey}
+          onComplete={() => {
+            setShowRollover(false);
+            setRolloverDismissed(true);
+          }}
+          onDismiss={() => {
+            setShowRollover(false);
+            setRolloverDismissed(true);
+          }}
+        />
+      )}
     </PageContent>
   );
 };

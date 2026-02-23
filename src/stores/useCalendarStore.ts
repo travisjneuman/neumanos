@@ -1,9 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { CalendarState, ViewMode, CalendarEvent } from '../types';
+import type { CalendarState, ViewMode, CalendarEvent, UserCalendar, ICSSubscription } from '../types';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { scheduleEventReminders, cancelEventReminders } from '../services/eventReminders';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
+
+const DEFAULT_CALENDARS: UserCalendar[] = [
+  { id: 'cal-work', name: 'Work', color: '#2563eb', visible: true },
+  { id: 'cal-personal', name: 'Personal', color: '#059669', visible: true },
+  { id: 'cal-birthdays', name: 'Birthdays', color: '#d97706', visible: true },
+];
 
 interface CalendarStore extends CalendarState {
   setViewMode: (mode: ViewMode) => void;
@@ -23,6 +29,16 @@ interface CalendarStore extends CalendarState {
   importEvents: (events: (CalendarEvent & { _importedDate?: string })[]) => number;
   // Project context filtering
   getFilteredEvents: () => Record<string, CalendarEvent[]>;
+  // Multi-calendar management
+  addCalendar: (name: string, color: string) => void;
+  updateCalendar: (id: string, updates: Partial<Pick<UserCalendar, 'name' | 'color' | 'visible'>>) => void;
+  deleteCalendar: (id: string) => void;
+  toggleCalendarVisibility: (id: string) => void;
+  // ICS Subscriptions
+  addICSSubscription: (name: string, url: string, color: string, autoSyncMinutes: number) => void;
+  updateICSSubscription: (id: string, updates: Partial<Pick<ICSSubscription, 'name' | 'url' | 'color' | 'autoSyncMinutes' | 'enabled'>>) => void;
+  removeICSSubscription: (id: string) => void;
+  syncICSSubscription: (id: string, parsedEvents: (CalendarEvent & { _importedDate?: string })[]) => number;
 }
 
 export const useCalendarStore = create<CalendarStore>()(
@@ -32,6 +48,8 @@ export const useCalendarStore = create<CalendarStore>()(
       events: {},
       viewMode: 'monthly',
       currentDate: new Date(),
+      calendars: DEFAULT_CALENDARS,
+      icsSubscriptions: [],
 
       // Actions
       setViewMode: (mode) => set({ viewMode: mode }),
@@ -280,17 +298,29 @@ export const useCalendarStore = create<CalendarStore>()(
       // Project context filtering
       getFilteredEvents: (): Record<string, CalendarEvent[]> => {
         const { activeProjectIds } = useProjectContextStore.getState();
-        const { events } = get();
+        const { events, calendars } = get();
 
-        // "All" mode - no filter applied (matchesProjectFilter handles empty activeProjectIds)
-        if (activeProjectIds.length === 0) return events;
+        // Build set of hidden calendar IDs
+        const hiddenCalendarIds = new Set(
+          calendars.filter(c => !c.visible).map(c => c.id)
+        );
 
-        // Filter events using centralized project filter utility
+        // "All" mode - no project filter (matchesProjectFilter handles empty activeProjectIds)
+        const applyProjectFilter = activeProjectIds.length > 0;
+
         const filtered: Record<string, CalendarEvent[]> = {};
         Object.entries(events).forEach(([dateKey, dateEvents]) => {
-          const matchingEvents = dateEvents.filter((event: CalendarEvent) =>
-            matchesProjectFilter(event.projectIds, activeProjectIds)
-          );
+          const matchingEvents = dateEvents.filter((event: CalendarEvent) => {
+            // Calendar visibility filter
+            if (event.calendarId && hiddenCalendarIds.has(event.calendarId)) {
+              return false;
+            }
+            // Project filter
+            if (applyProjectFilter && !matchesProjectFilter(event.projectIds, activeProjectIds)) {
+              return false;
+            }
+            return true;
+          });
           if (matchingEvents.length > 0) {
             filtered[dateKey] = matchingEvents;
           }
@@ -298,33 +328,157 @@ export const useCalendarStore = create<CalendarStore>()(
 
         return filtered;
       },
+
+      // Multi-calendar management
+      addCalendar: (name, color) =>
+        set((state) => ({
+          calendars: [...state.calendars, {
+            id: `cal-${Date.now()}`,
+            name,
+            color,
+            visible: true,
+          }],
+        })),
+
+      updateCalendar: (id, updates) =>
+        set((state) => ({
+          calendars: state.calendars.map(cal =>
+            cal.id === id ? { ...cal, ...updates } : cal
+          ),
+        })),
+
+      deleteCalendar: (id) =>
+        set((state) => ({
+          calendars: state.calendars.filter(cal => cal.id !== id),
+        })),
+
+      toggleCalendarVisibility: (id) =>
+        set((state) => ({
+          calendars: state.calendars.map(cal =>
+            cal.id === id ? { ...cal, visible: !cal.visible } : cal
+          ),
+        })),
+
+      // ICS Subscriptions
+      addICSSubscription: (name, url, color, autoSyncMinutes) =>
+        set((state) => ({
+          icsSubscriptions: [...state.icsSubscriptions, {
+            id: `ics-${Date.now()}`,
+            name,
+            url,
+            color,
+            autoSyncMinutes,
+            enabled: true,
+          }],
+        })),
+
+      updateICSSubscription: (id, updates) =>
+        set((state) => ({
+          icsSubscriptions: state.icsSubscriptions.map(sub =>
+            sub.id === id ? { ...sub, ...updates } : sub
+          ),
+        })),
+
+      removeICSSubscription: (id) =>
+        set((state) => {
+          // Remove all events from this subscription
+          const newEvents: Record<string, CalendarEvent[]> = {};
+          Object.entries(state.events).forEach(([dateKey, dayEvents]) => {
+            const filtered = dayEvents.filter(e => e.externalSource !== id);
+            if (filtered.length > 0) {
+              newEvents[dateKey] = filtered;
+            }
+          });
+          return {
+            icsSubscriptions: state.icsSubscriptions.filter(sub => sub.id !== id),
+            events: newEvents,
+          };
+        }),
+
+      syncICSSubscription: (id, parsedEvents) => {
+        let count = 0;
+        set((state) => {
+          // Remove old events from this subscription
+          const newEvents: Record<string, CalendarEvent[]> = {};
+          Object.entries(state.events).forEach(([dateKey, dayEvents]) => {
+            const filtered = dayEvents.filter(e => e.externalSource !== id);
+            if (filtered.length > 0) {
+              newEvents[dateKey] = filtered;
+            }
+          });
+
+          // Add fresh events
+          parsedEvents.forEach((event) => {
+            const dateKey = (event as CalendarEvent & { _importedDate?: string })._importedDate;
+            if (!dateKey) return;
+
+            const cleanEvent: CalendarEvent = {
+              id: `${id}-${event.id}`,
+              title: event.title,
+              description: event.description,
+              startTime: event.startTime,
+              endTime: event.endTime,
+              isAllDay: event.isAllDay,
+              location: event.location,
+              externalSource: id,
+              projectIds: [],
+            };
+
+            if (!newEvents[dateKey]) {
+              newEvents[dateKey] = [];
+            }
+            newEvents[dateKey].push(cleanEvent);
+            count++;
+          });
+
+          // Update last synced timestamp
+          const updatedSubs = state.icsSubscriptions.map(sub =>
+            sub.id === id ? { ...sub, lastSyncedAt: new Date().toISOString() } : sub
+          );
+
+          return { events: newEvents, icsSubscriptions: updatedSubs };
+        });
+        return count;
+      },
     }),
     {
       name: 'calendar-events',
       storage: createJSONStorage(() => createSyncedStorage()),
-      version: 1, // v1: Add projectIds for global project context filter
+      version: 2, // v2: Add multi-calendar + ICS subscriptions
       // Only persist these fields
       partialize: (state) => ({
         events: state.events,
         viewMode: state.viewMode,
+        calendars: state.calendars,
+        icsSubscriptions: state.icsSubscriptions,
       }),
       migrate: (persistedState: unknown, version: number) => {
-        let state = persistedState as any;
+        let state = persistedState as Record<string, unknown>;
 
         // Version 0 -> 1: Add projectIds field to all events
         if (version < 1 && state.events) {
           console.log('[CalendarStore] Adding projectIds field to all events');
           const updatedEvents: Record<string, CalendarEvent[]> = {};
-          const eventEntries = Object.entries(state.events) as [string, any[]][];
+          const eventEntries = Object.entries(state.events as Record<string, unknown[]>) as [string, Record<string, unknown>[]][];
           eventEntries.forEach(([dateKey, events]) => {
-            updatedEvents[dateKey] = events.map((event: any) => ({
+            updatedEvents[dateKey] = events.map((event) => ({
               ...event,
-              projectIds: event.projectIds ?? [],
-            }));
+              projectIds: (event as Record<string, unknown>).projectIds ?? [],
+            })) as CalendarEvent[];
           });
           state = {
             ...state,
             events: updatedEvents,
+          };
+        }
+
+        // Version 1 -> 2: Add calendars and icsSubscriptions
+        if (version < 2) {
+          console.log('[CalendarStore] Adding calendars and ICS subscriptions');
+          state = {
+            ...state,
+            calendars: (state as Record<string, unknown>).calendars ?? DEFAULT_CALENDARS,
+            icsSubscriptions: (state as Record<string, unknown>).icsSubscriptions ?? [],
           };
         }
 
