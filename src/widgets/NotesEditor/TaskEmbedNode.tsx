@@ -81,7 +81,7 @@ const STATUS_COLORS: Record<string, string> = {
   done: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
 };
 
-function TaskEmbedComponent({
+const TaskEmbedComponent = React.memo(function TaskEmbedComponent({
   taskId,
   nodeKey: _nodeKey,
 }: {
@@ -158,7 +158,7 @@ function TaskEmbedComponent({
       </span>
     </span>
   );
-}
+});
 
 export function $createTaskEmbedNode(taskId: string): TaskEmbedNode {
   return new TaskEmbedNode(taskId);

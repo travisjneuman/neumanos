@@ -75,7 +75,7 @@ export class SpreadsheetEmbedNode extends DecoratorNode<React.ReactElement> {
 const MAX_PREVIEW_ROWS = 5;
 const MAX_PREVIEW_COLS = 5;
 
-function SpreadsheetEmbedComponent({
+const SpreadsheetEmbedComponent = React.memo(function SpreadsheetEmbedComponent({
   docId,
   nodeKey: _nodeKey,
 }: {
@@ -188,7 +188,7 @@ function SpreadsheetEmbedComponent({
       </table>
     </span>
   );
-}
+});
 
 export function $createSpreadsheetEmbedNode(docId: string): SpreadsheetEmbedNode {
   return new SpreadsheetEmbedNode(docId);

@@ -1,10 +1,9 @@
-import React, { Suspense, useEffect, useState, useMemo } from 'react';
+import React, { Suspense, useEffect, useState, useMemo, lazy } from 'react';
 import { indexedDBService } from '../services/indexedDB';
 import { useWidgetStore } from '../stores/useWidgetStore';
 import { WidgetManager } from '../components/WidgetManager';
 import { PresetManager } from '../components/PresetManager';
 import { BackgroundCustomizer, type BackgroundSettings } from '../components/BackgroundCustomizer';
-import { CustomWidgetBuilder } from '../components/CustomWidgetBuilder';
 import { SortableWidget } from '../components/SortableWidget';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { DashboardTemplatePicker } from '../components/DashboardTemplatePicker';
@@ -17,6 +16,9 @@ import { getWidgetComponentMap, registerCustomWidget } from '../widgets/Dashboar
 import { logger } from '../services/logger';
 import { getContentContrastClass } from '../utils/colorUtils';
 import { PageContent } from '../components/PageContent';
+
+// Lazy-load CustomWidgetBuilder - only needed when user opens the builder modal
+const CustomWidgetBuilder = lazy(() => import('../components/CustomWidgetBuilder').then(m => ({ default: m.CustomWidgetBuilder })));
 
 const log = logger.module('Dashboard');
 
@@ -333,11 +335,15 @@ export const Dashboard: React.FC = () => {
         onSettingsChange={handleBackgroundChange}
       />
 
-      {/* Custom Widget Builder Modal */}
-      <CustomWidgetBuilder
-        isOpen={showWidgetBuilder}
-        onClose={() => setShowWidgetBuilder(false)}
-      />
+      {/* Custom Widget Builder Modal (lazy-loaded, only renders when opened) */}
+      {showWidgetBuilder && (
+        <Suspense fallback={null}>
+          <CustomWidgetBuilder
+            isOpen={showWidgetBuilder}
+            onClose={() => setShowWidgetBuilder(false)}
+          />
+        </Suspense>
+      )}
     </PageContent>
   );
 };

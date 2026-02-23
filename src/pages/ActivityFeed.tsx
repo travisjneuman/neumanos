@@ -3,27 +3,34 @@
  *
  * Displays a chronological feed of activity events across all modules
  * with filtering, grouping by day, and personal analytics.
+ *
+ * Uses react-window v2 List for virtualized rendering to handle up to 10,000
+ * events without DOM performance degradation.
  */
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { List } from 'react-window';
+import { AutoSizer } from 'react-virtualized-auto-sizer';
 import { useActivityStore } from '../stores/useActivityStore';
-import type { ModuleType, ActivityFilter } from '../stores/useActivityStore';
-import { ActivityHeatmap } from '../components/Analytics/ActivityHeatmap';
-import { ModuleUsageChart } from '../components/Analytics/ModuleUsageChart';
-import { ProductivityTrends } from '../components/Analytics/ProductivityTrends';
+import type { ModuleType, ActivityFilter, ActivityEvent } from '../stores/useActivityStore';
+
+// Lazy-load analytics components since they pull in Recharts (~200KB)
+const ActivityHeatmap = lazy(() => import('../components/Analytics/ActivityHeatmap').then(m => ({ default: m.ActivityHeatmap })));
+const ModuleUsageChart = lazy(() => import('../components/Analytics/ModuleUsageChart').then(m => ({ default: m.ModuleUsageChart })));
+const ProductivityTrends = lazy(() => import('../components/Analytics/ProductivityTrends').then(m => ({ default: m.ProductivityTrends })));
 
 const MODULE_ICONS: Record<ModuleType, string> = {
-  notes: '📝',
-  tasks: '✅',
-  calendar: '📅',
-  docs: '📄',
-  'time-tracking': '⏱️',
-  habits: '🎯',
-  links: '🔗',
-  ai: '🤖',
-  forms: '📋',
-  diagrams: '🔷',
+  notes: '\u{1F4DD}',
+  tasks: '\u2705',
+  calendar: '\u{1F4C5}',
+  docs: '\u{1F4C4}',
+  'time-tracking': '\u23F1\uFE0F',
+  habits: '\u{1F3AF}',
+  links: '\u{1F517}',
+  ai: '\u{1F916}',
+  forms: '\u{1F4CB}',
+  diagrams: '\u{1F537}',
 };
 
 const MODULE_LABELS: Record<ModuleType, string> = {
@@ -52,6 +59,19 @@ const MODULE_COLORS: Record<ModuleType, string> = {
   diagrams: 'bg-teal-500/20 text-teal-400',
 };
 
+const MODULE_ROUTES: Record<ModuleType, string> = {
+  notes: '/notes',
+  tasks: '/tasks',
+  calendar: '/schedule',
+  docs: '/create',
+  'time-tracking': '/schedule',
+  habits: '/tasks?tab=habits',
+  links: '/links',
+  ai: '/',
+  forms: '/create?tab=forms',
+  diagrams: '/create?tab=diagrams',
+};
+
 const EVENT_TYPE_LABELS: Record<string, string> = {
   created: 'Created',
   updated: 'Updated',
@@ -61,6 +81,25 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 type DateRange = 'today' | '7d' | '30d' | 'all';
+
+/** Row height in pixels for virtualized list items */
+const EVENT_ROW_HEIGHT = 44;
+/** Row height for day header separators */
+const DAY_HEADER_HEIGHT = 36;
+
+/**
+ * Flattened row item: either a day header or an event row.
+ * This allows react-window to virtualize a mixed list of headers and events.
+ */
+type FlatRow =
+  | { type: 'day-header'; dayKey: string }
+  | { type: 'event'; event: ActivityEvent };
+
+/** Props passed to every row via react-window's rowProps */
+interface RowExtraProps {
+  flatRows: FlatRow[];
+  navigate: (path: string) => void;
+}
 
 function getRelativeTime(timestamp: string): string {
   const now = Date.now();
@@ -99,7 +138,71 @@ function formatDayHeader(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-const PAGE_SIZE = 50;
+/**
+ * Memoized event row component to prevent unnecessary re-renders
+ * in the virtualized list.
+ */
+const EventRow = React.memo(function EventRow({
+  event,
+  navigate,
+}: {
+  event: ActivityEvent;
+  navigate: (path: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => navigate(MODULE_ROUTES[event.module] || '/')}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all text-left group"
+    >
+      <span className="text-lg flex-shrink-0">{event.entityIcon || MODULE_ICONS[event.module]}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-text-light-primary dark:text-text-dark-primary truncate">
+            {EVENT_TYPE_LABELS[event.type] || event.type} {event.entityTitle}
+          </span>
+        </div>
+      </div>
+      <span className={`flex-shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full ${MODULE_COLORS[event.module]}`}>
+        {MODULE_LABELS[event.module]}
+      </span>
+      <span className="flex-shrink-0 text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+        {getRelativeTime(event.timestamp)}
+      </span>
+    </button>
+  );
+});
+
+/**
+ * Row component for react-window v2 List.
+ * Receives index, style, and rowProps (flatRows + navigate).
+ */
+function VirtualRow({
+  index,
+  style,
+  flatRows,
+  navigate,
+}: {
+  index: number;
+  style: React.CSSProperties;
+  flatRows: FlatRow[];
+  navigate: (path: string) => void;
+}) {
+  const row = flatRows[index];
+  if (row.type === 'day-header') {
+    return (
+      <div style={style} className="flex items-end px-3 pb-1">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-text-light-tertiary dark:text-text-dark-tertiary">
+          {formatDayHeader(row.dayKey)}
+        </h3>
+      </div>
+    );
+  }
+  return (
+    <div style={style}>
+      <EventRow event={row.event} navigate={navigate} />
+    </div>
+  );
+}
 
 export const ActivityFeed: React.FC = () => {
   const navigate = useNavigate();
@@ -108,9 +211,7 @@ export const ActivityFeed: React.FC = () => {
 
   const [moduleFilter, setModuleFilter] = useState<ModuleType | ''>('');
   const [dateRange, setDateRange] = useState<DateRange>('all');
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [activeTab, setActiveTab] = useState<'feed' | 'analytics'>('feed');
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const filter: ActivityFilter = useMemo(() => {
     const f: ActivityFilter = {};
@@ -122,36 +223,39 @@ export const ActivityFeed: React.FC = () => {
 
   const filteredEvents = useMemo(() => getActivities(filter), [events, filter, getActivities]);
 
-  const visibleEvents = useMemo(() => filteredEvents.slice(0, visibleCount), [filteredEvents, visibleCount]);
-
-  // Group events by day
-  const groupedEvents = useMemo(() => {
-    const groups: Map<string, typeof visibleEvents> = new Map();
-    for (const event of visibleEvents) {
+  /**
+   * Flatten grouped events into a single array of FlatRow items
+   * for react-window virtualization. Day headers and events are
+   * interleaved so the virtualizer can render them as variable-height rows.
+   */
+  const flatRows: FlatRow[] = useMemo(() => {
+    const rows: FlatRow[] = [];
+    let currentDay = '';
+    for (const event of filteredEvents) {
       const dayKey = event.timestamp.split('T')[0];
-      const existing = groups.get(dayKey) || [];
-      existing.push(event);
-      groups.set(dayKey, existing);
-    }
-    return groups;
-  }, [visibleEvents]);
-
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
-      if (visibleCount < filteredEvents.length) {
-        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredEvents.length));
+      if (dayKey !== currentDay) {
+        currentDay = dayKey;
+        rows.push({ type: 'day-header', dayKey });
       }
+      rows.push({ type: 'event', event });
     }
-  }, [visibleCount, filteredEvents.length]);
+    return rows;
+  }, [filteredEvents]);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', handleScroll);
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+  /** Returns the pixel height of each row based on whether it's a header or event */
+  const getItemSize = useCallback(
+    (index: number): number => {
+      const row = flatRows[index];
+      return row.type === 'day-header' ? DAY_HEADER_HEIGHT : EVENT_ROW_HEIGHT;
+    },
+    [flatRows],
+  );
+
+  /** Stable rowProps object for react-window v2 */
+  const rowProps: RowExtraProps = useMemo(
+    () => ({ flatRows, navigate }),
+    [flatRows, navigate],
+  );
 
   const allModules: ModuleType[] = ['notes', 'tasks', 'calendar', 'docs', 'time-tracking', 'habits', 'links', 'ai', 'forms', 'diagrams'];
 
@@ -225,11 +329,11 @@ export const ActivityFeed: React.FC = () => {
             </div>
           </div>
 
-          {/* Event List */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-4">
+          {/* Virtualized Event List */}
+          <div className="flex-1 min-h-0 px-6 py-4">
             {filteredEvents.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <span className="text-4xl mb-4">📊</span>
+                <span className="text-4xl mb-4">{'\u{1F4CA}'}</span>
                 <h3 className="text-lg font-medium text-text-light-primary dark:text-text-dark-primary mb-1">
                   No activity yet
                 </h3>
@@ -238,83 +342,37 @@ export const ActivityFeed: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {Array.from(groupedEvents.entries()).map(([dayKey, dayEvents]) => (
-                  <div key={dayKey}>
-                    {/* Sticky day header */}
-                    <div className="sticky top-0 z-10 bg-surface-light dark:bg-surface-dark py-2">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-text-light-tertiary dark:text-text-dark-tertiary">
-                        {formatDayHeader(dayKey)}
-                      </h3>
-                    </div>
-
-                    {/* Events */}
-                    <div className="space-y-1 mt-1">
-                      {dayEvents.map((event) => (
-                        <button
-                          key={event.id}
-                          onClick={() => {
-                            const moduleRoutes: Record<ModuleType, string> = {
-                              notes: '/notes',
-                              tasks: '/tasks',
-                              calendar: '/schedule',
-                              docs: '/create',
-                              'time-tracking': '/schedule',
-                              habits: '/tasks?tab=habits',
-                              links: '/links',
-                              ai: '/',
-                              forms: '/create?tab=forms',
-                              diagrams: '/create?tab=diagrams',
-                            };
-                            navigate(moduleRoutes[event.module] || '/');
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all text-left group"
-                        >
-                          {/* Module Icon */}
-                          <span className="text-lg flex-shrink-0">{event.entityIcon || MODULE_ICONS[event.module]}</span>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-text-light-primary dark:text-text-dark-primary truncate">
-                                {EVENT_TYPE_LABELS[event.type] || event.type} {event.entityTitle}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Module Badge */}
-                          <span className={`flex-shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full ${MODULE_COLORS[event.module]}`}>
-                            {MODULE_LABELS[event.module]}
-                          </span>
-
-                          {/* Timestamp */}
-                          <span className="flex-shrink-0 text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
-                            {getRelativeTime(event.timestamp)}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {visibleCount < filteredEvents.length && (
-                  <div className="text-center py-4">
-                    <p className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
-                      Showing {visibleCount} of {filteredEvents.length} events. Scroll for more.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <AutoSizer
+                renderProp={({ height, width }) => {
+                  if (!height || !width) return null;
+                  return (
+                    <List<RowExtraProps>
+                      style={{ width, height }}
+                      rowCount={flatRows.length}
+                      rowHeight={getItemSize}
+                      overscanCount={15}
+                      rowProps={rowProps}
+                      rowComponent={VirtualRow}
+                    />
+                  );
+                }}
+              />
             )}
           </div>
         </>
       ) : (
         /* Analytics Tab */
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-          <ActivityHeatmap />
+          <Suspense fallback={<div className="h-48 rounded-xl border border-border-light dark:border-border-dark animate-pulse bg-surface-light-elevated dark:bg-surface-dark-elevated" />}>
+            <ActivityHeatmap />
+          </Suspense>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ModuleUsageChart />
-            <ProductivityTrends />
+            <Suspense fallback={<div className="h-48 rounded-xl border border-border-light dark:border-border-dark animate-pulse bg-surface-light-elevated dark:bg-surface-dark-elevated" />}>
+              <ModuleUsageChart />
+            </Suspense>
+            <Suspense fallback={<div className="h-48 rounded-xl border border-border-light dark:border-border-dark animate-pulse bg-surface-light-elevated dark:bg-surface-dark-elevated" />}>
+              <ProductivityTrends />
+            </Suspense>
           </div>
         </div>
       )}

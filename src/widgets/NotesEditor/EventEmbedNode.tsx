@@ -88,7 +88,7 @@ function formatDateKey(dateKey: string): string {
   });
 }
 
-function EventEmbedComponent({
+const EventEmbedComponent = React.memo(function EventEmbedComponent({
   eventId,
   dateKey,
   nodeKey: _nodeKey,
@@ -163,7 +163,7 @@ function EventEmbedComponent({
       </span>
     </span>
   );
-}
+});
 
 export function $createEventEmbedNode(
   eventId: string,
