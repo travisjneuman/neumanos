@@ -12,7 +12,7 @@
  * - Empty state with call-to-action
  */
 
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -187,6 +187,23 @@ export const NotesList: React.FC<NotesListProps> = ({
   // Visible note IDs for BulkNotesActionBar "Select All"
   const visibleNoteIds = useMemo(() => notes.map((n) => n.id), [notes]);
 
+  // Pagination: batch-render notes to avoid rendering 500+ items at once.
+  // Only active when the list exceeds BATCH_SIZE items; otherwise all render normally.
+  const BATCH_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+
+  // Reset visible count whenever the filtered list changes so we don't show a
+  // stale "Show more" button after switching folders / applying tags / changing sort.
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [notes.length, activeFolderId, filter, activeTags]);
+
+  const visibleNotes = useMemo(
+    () => (notes.length > BATCH_SIZE ? notes.slice(0, visibleCount) : notes),
+    [notes, visibleCount]
+  );
+  const hiddenCount = notes.length - visibleNotes.length;
+
   // Handle Ctrl/Shift+click for multi-select (needs notes for range selection)
   const handleMultiSelectClick = useCallback(
     (noteId: string, event: React.MouseEvent) => {
@@ -262,7 +279,7 @@ export const NotesList: React.FC<NotesListProps> = ({
           onDragEnd={handleDragEnd}
         >
           <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-            {notes.map((note) => (
+            {visibleNotes.map((note) => (
               <NoteListItem
                 key={note.id}
                 note={note}
@@ -276,6 +293,16 @@ export const NotesList: React.FC<NotesListProps> = ({
                 onContextMenu={onNoteContextMenu}
               />
             ))}
+
+            {/* Batch load more — avoids rendering 500+ DnD nodes at once */}
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
+                className="w-full py-2 text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-primary transition-colors text-center"
+              >
+                Show {Math.min(hiddenCount, BATCH_SIZE)} more ({hiddenCount} remaining)
+              </button>
+            )}
 
           {/* Empty state */}
           {notes.length === 0 && (

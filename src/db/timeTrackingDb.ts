@@ -31,7 +31,9 @@ class TimeTrackingDatabase extends Dexie {
           entry.projectIds = [];
         }
       });
-      console.log('[TimeTrackingDB] Migrated entries to include projectIds field');
+      if (import.meta.env.DEV) {
+        console.log('[TimeTrackingDB] Migrated entries to include projectIds field');
+      }
     });
   }
 }

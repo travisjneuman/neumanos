@@ -121,7 +121,9 @@ export async function exportNoteToPDF(
     // Save PDF
     doc.save(filename);
 
-    console.log(`✅ Exported note to PDF: ${filename}`);
+    if (import.meta.env.DEV) {
+      console.log(`✅ Exported note to PDF: ${filename}`);
+    }
 
     // Call success callback if provided
     if (onSuccess) {

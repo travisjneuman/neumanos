@@ -1,5 +1,10 @@
 import { useEffect } from 'react';
 
+/** KeyboardEvent extended with a priority marker for the ESC priority system */
+interface PrioritizedKeyboardEvent extends KeyboardEvent {
+  _escPriority?: number;
+}
+
 interface UseEscapeKeyOptions {
   enabled: boolean;        // Is ESC handling enabled?
   onEscape: () => void;    // Callback when ESC pressed
@@ -29,11 +34,12 @@ export function useEscapeKey({ enabled, onEscape, priority = 0 }: UseEscapeKeyOp
         if (e.defaultPrevented) return;
 
         // Check if a higher priority handler already processed this event
-        const currentPriority = (e as any)._escPriority || -1;
+        const pe = e as PrioritizedKeyboardEvent;
+        const currentPriority = pe._escPriority ?? -1;
 
         if (priority > currentPriority) {  // ✅ Only strictly higher priority wins
           // Mark this priority on the event
-          (e as any)._escPriority = priority;
+          pe._escPriority = priority;
 
           // Stop event from reaching lower priority handlers
           e.stopPropagation();

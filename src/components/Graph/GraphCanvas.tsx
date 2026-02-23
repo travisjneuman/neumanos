@@ -167,9 +167,8 @@ export function GraphCanvas({
         d.fy = null;
       });
 
-    // D3 drag behavior requires complex generic typing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    node.call(dragBehavior as any);
+    // D3's join() returns a base Selection type; cast to the concrete element type for call()
+    (node as d3.Selection<SVGGElement, SimulationNode, SVGGElement, unknown>).call(dragBehavior);
 
     // Add circles to nodes
     node

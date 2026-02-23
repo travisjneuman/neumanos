@@ -15,6 +15,7 @@ import {
 } from 'react';
 import type { FormulaResult } from '../../services/formulaEngine';
 import type { CellStyle } from '../../types';
+import { useSpreadsheetKeyboard } from '../../hooks/useSpreadsheetKeyboard';
 import {
   colToLetter,
   createRef,
@@ -227,133 +228,80 @@ export function SpreadsheetGrid({
     [onStartEdit]
   );
 
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!selection) return;
+  // -----------------------------------------------------------------------
+  // Active cell — derived from selection's focus point.
+  // The hook drives navigation; selection state is kept in sync below.
+  // -----------------------------------------------------------------------
+  const activeCell = {
+    row: selection?.focusRow ?? 0,
+    col: selection?.focusCol ?? 0,
+  };
 
-      const { focusRow, focusCol } = selection;
+  const setActiveCell = useCallback(
+    (cell: { row: number; col: number }) => {
+      onSelectionChange({
+        anchorRow: cell.row,
+        anchorCol: cell.col,
+        focusRow: cell.row,
+        focusCol: cell.col,
+      });
+    },
+    [onSelectionChange]
+  );
 
-      // If editing, let the input handle it
-      if (editingCell) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          onCommitEdit();
-          // Move to next row
-          if (focusRow < rowCount - 1) {
-            onSelectionChange({
-              anchorRow: focusRow + 1,
-              anchorCol: focusCol,
-              focusRow: focusRow + 1,
-              focusCol: focusCol,
-            });
-          }
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          onCancelEdit();
-        } else if (e.key === 'Tab') {
-          e.preventDefault();
-          onCommitEdit();
-          // Move to next column
-          if (e.shiftKey) {
-            if (focusCol > 0) {
-              onSelectionChange({
-                anchorRow: focusRow,
-                anchorCol: focusCol - 1,
-                focusRow: focusRow,
-                focusCol: focusCol - 1,
-              });
-            }
-          } else {
-            if (focusCol < colCount - 1) {
-              onSelectionChange({
-                anchorRow: focusRow,
-                anchorCol: focusCol + 1,
-                focusRow: focusRow,
-                focusCol: focusCol + 1,
-              });
-            }
-          }
-        }
-        return;
-      }
+  const isEditing = editingCell !== null;
 
-      // Navigation when not editing
-      let newRow = focusRow;
-      let newCol = focusCol;
-
-      switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault();
-          newRow = Math.max(0, focusRow - 1);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          newRow = Math.min(rowCount - 1, focusRow + 1);
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          newCol = Math.max(0, focusCol - 1);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          newCol = Math.min(colCount - 1, focusCol + 1);
-          break;
-        case 'Tab':
-          e.preventDefault();
-          if (e.shiftKey) {
-            newCol = Math.max(0, focusCol - 1);
-          } else {
-            newCol = Math.min(colCount - 1, focusCol + 1);
-          }
-          break;
-        case 'Enter':
-          e.preventDefault();
-          onStartEdit(focusRow, focusCol);
-          return;
-        case 'Delete':
-        case 'Backspace':
-          e.preventDefault();
-          onStartEdit(focusRow, focusCol, '');
-          return;
-        default:
-          // Start typing to edit
-          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            onStartEdit(focusRow, focusCol, e.key);
-            return;
-          }
-      }
-
-      if (newRow !== focusRow || newCol !== focusCol) {
-        if (e.shiftKey) {
-          // Extend selection
-          onSelectionChange({
-            ...selection,
-            focusRow: newRow,
-            focusCol: newCol,
-          });
-        } else {
-          // Move selection
-          onSelectionChange({
-            anchorRow: newRow,
-            anchorCol: newCol,
-            focusRow: newRow,
-            focusCol: newCol,
-          });
-        }
+  const setIsEditing = useCallback(
+    (editing: boolean) => {
+      if (editing) {
+        onStartEdit(activeCell.row, activeCell.col);
+      } else {
+        // Commit whatever is in the input (mirrors Enter behaviour)
+        onCommitEdit();
       }
     },
-    [
-      selection,
-      editingCell,
-      rowCount,
-      colCount,
-      onSelectionChange,
-      onStartEdit,
-      onCommitEdit,
-      onCancelEdit,
-    ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeCell.row, activeCell.col, onStartEdit, onCommitEdit]
+  );
+
+  const handleCellClear = useCallback(
+    (row: number, col: number) => {
+      // Start edit with empty string to clear the cell value
+      onStartEdit(row, col, '');
+    },
+    [onStartEdit]
+  );
+
+  const { handleKeyDown: keyboardHandleKeyDown } = useSpreadsheetKeyboard({
+    rows: rowCount,
+    cols: colCount,
+    activeCell,
+    setActiveCell,
+    isEditing,
+    setIsEditing,
+    onCancelEdit,
+    onCellClear: handleCellClear,
+    containerRef,
+  });
+
+  // Handle keyboard navigation — delegates to the hook, then handles
+  // the "start typing to edit" fallthrough that is specific to spreadsheets.
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!selection) return;
+
+      // Let the hook handle all standard keys first
+      keyboardHandleKeyDown(e);
+
+      // If the event wasn't already prevented (i.e. the hook didn't handle it)
+      // and the user pressed a printable character outside edit mode, start
+      // editing with that character as the initial value.
+      if (!isEditing && !e.defaultPrevented && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        onStartEdit(activeCell.row, activeCell.col, e.key);
+      }
+    },
+    [selection, isEditing, keyboardHandleKeyDown, activeCell, onStartEdit]
   );
 
   // Render a cell

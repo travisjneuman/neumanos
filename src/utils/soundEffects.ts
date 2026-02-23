@@ -78,7 +78,9 @@ export async function playSound(
   } catch (error) {
     // Browser autoplay policy may block sound
     // This is expected on first interaction, silent fail
-    console.debug('Sound play blocked (autoplay policy):', error);
+    if (import.meta.env.DEV) {
+      console.debug('Sound play blocked (autoplay policy):', error);
+    }
   }
 }
 
@@ -101,7 +103,9 @@ export function preloadSounds(enabled: boolean = false): void {
     loadSound(soundName);
   });
 
-  console.debug('Sound effects preloaded');
+  if (import.meta.env.DEV) {
+    console.debug('Sound effects preloaded');
+  }
 }
 
 /**

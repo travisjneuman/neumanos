@@ -50,7 +50,7 @@ export function replaceAnswerTokens(
     if (typeof answer === 'object' && answer !== null) {
       // Check if it's a file upload answer
       if ('fileName' in answer) {
-        return escapeHtml((answer as any).fileName);
+        return escapeHtml(String((answer as Record<string, unknown>).fileName));
       }
       // Unknown object type - stringify safely
       return '[complex value]';

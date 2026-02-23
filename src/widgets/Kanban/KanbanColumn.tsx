@@ -1,9 +1,81 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { KanbanCard } from './KanbanCard';
 import { KanbanSectionDivider } from './KanbanSectionDivider';
 import { useKanbanStore } from '../../stores/useKanbanStore';
-import type { Task, TaskStatus } from '../../types';
+import type { Task, TaskStatus, KanbanSection as KanbanSectionType } from '../../types';
+
+// ─── Section sub-component with its own batch state ──────────────────────────
+
+interface KanbanSectionRowProps {
+  section: KanbanSectionType;
+  sectionTasks: Task[];
+  selectedTaskId?: string;
+  onRegisterCardRef: (taskId: string, ref: { triggerEdit: () => void }) => void;
+  onCardClick?: (task: Task, tab?: 'subtasks' | 'checklist' | 'comments' | 'activity') => void;
+  onToggleCollapse: (sectionId: string) => void;
+  onRename: (sectionId: string, name: string) => void;
+  onDelete: (sectionId: string) => void;
+}
+
+const BATCH_SIZE = 50;
+
+const KanbanSectionRow: React.FC<KanbanSectionRowProps> = ({
+  section,
+  sectionTasks,
+  selectedTaskId,
+  onRegisterCardRef,
+  onCardClick,
+  onToggleCollapse,
+  onRename,
+  onDelete,
+}) => {
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+
+  // Reset batch when section identity changes
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [section.id]);
+
+  const visibleTasks = sectionTasks.length > BATCH_SIZE
+    ? sectionTasks.slice(0, visibleCount)
+    : sectionTasks;
+  const hiddenCount = sectionTasks.length - visibleTasks.length;
+
+  return (
+    <div>
+      <KanbanSectionDivider
+        section={section}
+        taskCount={sectionTasks.length}
+        onToggleCollapse={onToggleCollapse}
+        onRename={onRename}
+        onDelete={onDelete}
+      />
+      {!section.collapsed && (
+        <>
+          {visibleTasks.map((task) => (
+            <div key={task.id} className="mt-3">
+              <KanbanCard
+                task={task}
+                isSelected={task.id === selectedTaskId}
+                onRegisterRef={(ref) => onRegisterCardRef(task.id, ref)}
+                onCardClick={onCardClick}
+              />
+            </div>
+          ))}
+          {hiddenCount > 0 && (
+            <button
+              onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
+              className="w-full mt-3 py-2 text-xs text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-primary transition-colors text-center rounded border border-dashed border-border-light dark:border-border-dark hover:border-accent-primary"
+            >
+              Show {Math.min(hiddenCount, BATCH_SIZE)} more ({hiddenCount} remaining)
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 interface KanbanColumnProps {
   id: string; // Changed from TaskStatus to support dynamic columns
@@ -39,6 +111,17 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const [showAddSection, setShowAddSection] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
+  // Batch rendering: show tasks in chunks of BATCH_SIZE to avoid rendering
+  // hundreds of @dnd-kit nodes at once. Full react-window virtualization is
+  // incompatible with @dnd-kit because it unmounts off-screen DOM nodes that
+  // drag handles depend on. This simpler approach gives most of the benefit.
+  const [visibleUnsectionedCount, setVisibleUnsectionedCount] = useState(BATCH_SIZE);
+
+  // Reset batch count when the column's task list changes identity
+  useEffect(() => {
+    setVisibleUnsectionedCount(BATCH_SIZE);
+  }, [id]);
+
   // Get sections for this column
   const columnSections = useMemo(() =>
     sections.filter(s => s.columnId === id).sort((a, b) => a.order - b.order),
@@ -51,8 +134,19 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     [tasks, columnSections]
   );
 
-  const getTasksForSection = (sectionId: string) =>
-    tasks.filter(t => t.sectionId === sectionId);
+  const getTasksForSection = useCallback(
+    (sectionId: string) => tasks.filter(t => t.sectionId === sectionId),
+    [tasks]
+  );
+
+  // Sliced unsectioned tasks for batch rendering
+  const visibleUnsectionedTasks = useMemo(
+    () => unsectionedTasks.length > BATCH_SIZE
+      ? unsectionedTasks.slice(0, visibleUnsectionedCount)
+      : unsectionedTasks,
+    [unsectionedTasks, visibleUnsectionedCount]
+  );
+  const hiddenUnsectionedCount = unsectionedTasks.length - visibleUnsectionedTasks.length;
 
   // Register ref for keyboard shortcut access
   useEffect(() => {
@@ -178,8 +272,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </div>
         ) : (
           <>
-            {/* Unsectioned tasks (rendered at top) */}
-            {unsectionedTasks.map((task) => (
+            {/* Unsectioned tasks (rendered at top, batched for performance) */}
+            {visibleUnsectionedTasks.map((task) => (
               <KanbanCard
                 key={task.id}
                 task={task}
@@ -189,31 +283,30 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               />
             ))}
 
-            {/* Sections with their tasks */}
-            {columnSections.map((section) => {
-              const sectionTasks = getTasksForSection(section.id);
-              return (
-                <div key={section.id}>
-                  <KanbanSectionDivider
-                    section={section}
-                    taskCount={sectionTasks.length}
-                    onToggleCollapse={toggleSectionCollapse}
-                    onRename={renameSection}
-                    onDelete={deleteSection}
-                  />
-                  {!section.collapsed && sectionTasks.map((task) => (
-                    <div key={task.id} className="mt-3">
-                      <KanbanCard
-                        task={task}
-                        isSelected={task.id === selectedTaskId}
-                        onRegisterRef={(ref) => onRegisterCardRef(task.id, ref)}
-                        onCardClick={onCardClick}
-                      />
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
+            {/* Load more unsectioned tasks */}
+            {hiddenUnsectionedCount > 0 && (
+              <button
+                onClick={() => setVisibleUnsectionedCount((c) => c + BATCH_SIZE)}
+                className="w-full py-2 text-xs text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-primary transition-colors text-center rounded border border-dashed border-border-light dark:border-border-dark hover:border-accent-primary"
+              >
+                Show {Math.min(hiddenUnsectionedCount, BATCH_SIZE)} more ({hiddenUnsectionedCount} remaining)
+              </button>
+            )}
+
+            {/* Sections with their tasks (each section has its own batch state) */}
+            {columnSections.map((section) => (
+              <KanbanSectionRow
+                key={section.id}
+                section={section}
+                sectionTasks={getTasksForSection(section.id)}
+                selectedTaskId={selectedTaskId}
+                onRegisterCardRef={onRegisterCardRef}
+                onCardClick={onCardClick}
+                onToggleCollapse={toggleSectionCollapse}
+                onRename={renameSection}
+                onDelete={deleteSection}
+              />
+            ))}
           </>
         )}
 

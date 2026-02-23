@@ -4,7 +4,19 @@
  */
 
 import type { DiagramElement, Point } from '../types/diagrams';
+import type { SimulationNodeDatum, SimulationLinkDatum } from 'd3-force';
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } from 'd3-force';
+
+interface LayoutNode extends SimulationNodeDatum {
+  id: string;
+  width: number;
+  height: number;
+}
+
+interface LayoutLink extends SimulationLinkDatum<LayoutNode> {
+  source: string;
+  target: string;
+}
 
 export interface LayoutResult {
   elements: DiagramElement[];
@@ -142,7 +154,7 @@ export function applyForceLayout(elements: DiagramElement[]): LayoutResult {
   if (elements.length === 0) return { elements };
 
   // Filter out connectors for simulation
-  const nodes = elements
+  const nodes: LayoutNode[] = elements
     .filter((el) => el.type !== 'arrow' && el.type !== 'line')
     .map((el) => ({
       id: el.id,
@@ -153,7 +165,7 @@ export function applyForceLayout(elements: DiagramElement[]): LayoutResult {
     }));
 
   // Build links from connectors
-  const links = elements
+  const links: LayoutLink[] = elements
     .filter((el) => (el.type === 'arrow' || el.type === 'line') && el.startShapeId && el.endShapeId)
     .map((el) => ({
       source: el.startShapeId!,
@@ -161,18 +173,18 @@ export function applyForceLayout(elements: DiagramElement[]): LayoutResult {
     }));
 
   // Run force simulation
-  const simulation = forceSimulation(nodes as any)
+  const simulation = forceSimulation<LayoutNode>(nodes)
     .force(
       'link',
-      forceLink(links as any)
-        .id((d: any) => d.id)
+      forceLink<LayoutNode, LayoutLink>(links)
+        .id((d) => d.id)
         .distance(150)
     )
-    .force('charge', forceManyBody().strength(-500))
+    .force('charge', forceManyBody<LayoutNode>().strength(-500))
     .force('center', forceCenter(400, 300))
     .force(
       'collision',
-      forceCollide().radius((d: any) => Math.max(d.width, d.height) / 2 + 20)
+      forceCollide<LayoutNode>().radius((d) => Math.max(d.width, d.height) / 2 + 20)
     )
     .stop();
 
