@@ -8,6 +8,42 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// === Custom Widget Types ===
+
+export type DataSourceType = 'rss' | 'json-api' | 'markdown' | 'store-query';
+
+export interface DataSourceConfig {
+  type: DataSourceType;
+  url?: string;
+  jsonPath?: string;
+  markdown?: string;
+  storeQuery?: {
+    store: 'notes' | 'tasks' | 'events' | 'time-entries';
+    filter?: string;
+    limit?: number;
+  };
+}
+
+export type LayoutType = 'number' | 'list' | 'chart' | 'markdown';
+
+export interface LayoutConfig {
+  type: LayoutType;
+  title?: string;
+  maxItems?: number;
+  chartType?: 'bar' | 'line' | 'pie';
+}
+
+export interface CustomWidgetConfig {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  dataSource: DataSourceConfig;
+  layout: LayoutConfig;
+  refreshIntervalMinutes: number;
+  createdAt: string;
+}
+
 /** Per-widget configuration options stored in the widget store */
 export interface WidgetSettings {
   refreshRate?: number; // Minutes between auto-refresh (0 = manual only)
@@ -43,6 +79,9 @@ export interface WidgetState {
   // Widget sizes (1x, 2x, or 3x width)
   widgetSizes: Record<string, 1 | 2 | 3>;
 
+  // Custom widgets
+  customWidgets: CustomWidgetConfig[];
+
   // Actions
   enableWidget: (widgetId: string) => void;
   disableWidget: (widgetId: string) => void;
@@ -51,6 +90,11 @@ export interface WidgetState {
   setWidgetSize: (widgetId: string, size: 1 | 2 | 3) => void;
   isWidgetEnabled: (widgetId: string) => boolean;
   getWidgetSettings: (widgetId: string) => WidgetSettings;
+
+  // Custom widget actions
+  createCustomWidget: (config: Omit<CustomWidgetConfig, 'id' | 'createdAt'>) => string;
+  updateCustomWidget: (id: string, updates: Partial<CustomWidgetConfig>) => void;
+  deleteCustomWidget: (id: string) => void;
 }
 
 export const useWidgetStore = create<WidgetState>()(
@@ -72,6 +116,9 @@ export const useWidgetStore = create<WidgetState>()(
         upcomingevents: 1,
         recentnotes: 1,
       },
+
+      // Custom widgets
+      customWidgets: [],
 
       // Default settings
       widgetSettings: {
@@ -149,10 +196,40 @@ export const useWidgetStore = create<WidgetState>()(
       getWidgetSettings: (widgetId) => {
         return get().widgetSettings[widgetId] || {};
       },
+
+      createCustomWidget: (config) => {
+        const id = `custom-${crypto.randomUUID()}`;
+        const widget: CustomWidgetConfig = {
+          ...config,
+          id,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          customWidgets: [...state.customWidgets, widget],
+        }));
+        // Enable the widget on the dashboard
+        get().enableWidget(id);
+        return id;
+      },
+
+      updateCustomWidget: (id, updates) => {
+        set((state) => ({
+          customWidgets: state.customWidgets.map((w) =>
+            w.id === id ? { ...w, ...updates, id: w.id, createdAt: w.createdAt } : w
+          ),
+        }));
+      },
+
+      deleteCustomWidget: (id) => {
+        get().disableWidget(id);
+        set((state) => ({
+          customWidgets: state.customWidgets.filter((w) => w.id !== id),
+        }));
+      },
     }),
     {
       name: 'dashboard-widgets',
-      version: 5, // Increment this when you need to trigger migrations
+      version: 6, // Increment this when you need to trigger migrations
       migrate: (persistedState: any, version: number) => {
         const state = persistedState as WidgetState;
 
@@ -229,6 +306,13 @@ export const useWidgetStore = create<WidgetState>()(
 
           // Clean up myday widget size
           delete state.widgetSizes.myday;
+        }
+
+        // Migration for version 5 -> 6: Add customWidgets array
+        if (version < 6) {
+          if (!state.customWidgets) {
+            (state as any).customWidgets = [];
+          }
         }
 
         return persistedState;

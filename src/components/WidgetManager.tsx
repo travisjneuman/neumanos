@@ -91,6 +91,7 @@ export const WidgetManager: React.FC<WidgetManagerProps> = ({ isOpen, onClose })
     dev: '🔧 Developer',
     fun: '🎮 Fun & Games',
     utility: '🛠️ Utilities',
+    custom: '🧩 Custom',
   };
 
   const sensors = useSensors(

@@ -4,6 +4,7 @@ import { useWidgetStore } from '../stores/useWidgetStore';
 import { WidgetManager } from '../components/WidgetManager';
 import { PresetManager } from '../components/PresetManager';
 import { BackgroundCustomizer, type BackgroundSettings } from '../components/BackgroundCustomizer';
+import { CustomWidgetBuilder } from '../components/CustomWidgetBuilder';
 import { SortableWidget } from '../components/SortableWidget';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { DashboardTemplatePicker } from '../components/DashboardTemplatePicker';
@@ -12,7 +13,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 // Centralized widget registry - single source of truth for all widgets
-import { getWidgetComponentMap } from '../widgets/Dashboard/WidgetRegistry';
+import { getWidgetComponentMap, registerCustomWidget } from '../widgets/Dashboard/WidgetRegistry';
 import { logger } from '../services/logger';
 import { getContentContrastClass } from '../utils/colorUtils';
 import { PageContent } from '../components/PageContent';
@@ -54,6 +55,7 @@ export const Dashboard: React.FC = () => {
   const [showWidgetManager, setShowWidgetManager] = useState(false);
   const [showPresetManager, setShowPresetManager] = useState(false);
   const [showBackgroundCustomizer, setShowBackgroundCustomizer] = useState(false);
+  const [showWidgetBuilder, setShowWidgetBuilder] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Background settings (persisted to localStorage)
@@ -66,9 +68,16 @@ export const Dashboard: React.FC = () => {
   const enabledWidgets = useWidgetStore((state) => state.enabledWidgets);
   const widgetSizes = useWidgetStore((state) => state.widgetSizes);
   const reorderWidgets = useWidgetStore((state) => state.reorderWidgets);
+  const customWidgets = useWidgetStore((state) => state.customWidgets);
 
-  // Get widget components from centralized registry (memoized to prevent re-creation)
-  const WIDGET_COMPONENTS = useMemo(() => getWidgetComponentMap(), []);
+  // Register custom widgets in the registry so they appear in the component map
+  // Re-compute when customWidgets changes (add/remove/edit)
+  const WIDGET_COMPONENTS = useMemo(() => {
+    for (const cw of customWidgets) {
+      registerCustomWidget(cw);
+    }
+    return getWidgetComponentMap();
+  }, [customWidgets]);
 
   // Calculate content contrast class based on background luminance
   // This forces appropriate text colors when background contrasts with current theme
@@ -185,6 +194,13 @@ export const Dashboard: React.FC = () => {
           🎨 Background
         </button>
         <button
+          onClick={() => setShowWidgetBuilder(true)}
+          className="px-3 py-1.5 text-sm bg-surface-light-elevated dark:bg-surface-dark-elevated hover:bg-border-light dark:hover:bg-border-dark text-text-light-primary dark:text-text-dark-primary rounded-lg font-medium transition-colors"
+          title="Create custom widget"
+        >
+          + Custom Widget
+        </button>
+        <button
           onClick={() => setShowPresetManager(true)}
           className="px-3 py-1.5 text-sm bg-surface-light-elevated dark:bg-surface-dark-elevated hover:bg-border-light dark:hover:bg-border-dark text-text-light-primary dark:text-text-dark-primary rounded-lg font-medium transition-colors"
           title="Manage layout presets"
@@ -233,16 +249,19 @@ export const Dashboard: React.FC = () => {
           {enabledWidgets.length > 0 ? (
             <div className="dashboard-grid relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 auto-rows-min" style={{ gridAutoFlow: 'dense' }}>
               {enabledWidgets.map((widgetId) => {
+                // Custom widgets use their full ID as the key
+                const isCustomWidget = widgetId.startsWith('custom-');
+
                 // Handle dynamic widget instances (e.g., github-1, github-2)
-                const baseWidgetType = widgetId.includes('-') && widgetId.match(/^([a-z]+)-\d+$/)
+                const baseWidgetType = !isCustomWidget && widgetId.includes('-') && widgetId.match(/^([a-z]+)-\d+$/)
                   ? widgetId.split('-')[0]
                   : widgetId;
 
                 const WidgetComponent = WIDGET_COMPONENTS[baseWidgetType];
                 if (!WidgetComponent) return null;
 
-                // Pass widgetId prop for dynamic instances
-                const isDynamicInstance = widgetId !== baseWidgetType;
+                // Pass widgetId prop for dynamic instances and custom widgets
+                const isDynamicInstance = isCustomWidget || widgetId !== baseWidgetType;
 
                 // Get widget size (default to 1x)
                 // In 2-column grid: 1x = 1 column (50%), 2x = 2 columns (100%), 3x = 2 columns (100%)
@@ -312,6 +331,12 @@ export const Dashboard: React.FC = () => {
         onClose={() => setShowBackgroundCustomizer(false)}
         settings={bgSettings}
         onSettingsChange={handleBackgroundChange}
+      />
+
+      {/* Custom Widget Builder Modal */}
+      <CustomWidgetBuilder
+        isOpen={showWidgetBuilder}
+        onClose={() => setShowWidgetBuilder(false)}
       />
     </PageContent>
   );
