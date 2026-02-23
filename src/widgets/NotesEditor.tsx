@@ -51,6 +51,9 @@ import {
   $isListNode
 } from '@lexical/list';
 import { registerCodeHighlighting } from '@lexical/code';
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
+import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 
 // URL matcher for AutoLinkPlugin
 const URL_MATCHER =
@@ -81,6 +84,9 @@ import { ImageNode, $createImageNode } from './NotesEditor/ImageNode';
 import { TaskEmbedNode } from './NotesEditor/TaskEmbedNode';
 import { EventEmbedNode } from './NotesEditor/EventEmbedNode';
 import { SpreadsheetEmbedNode } from './NotesEditor/SpreadsheetEmbedNode';
+import { CalloutNode, $createCalloutNode } from '../components/editor/nodes/CalloutNode';
+import type { CalloutType } from '../components/editor/nodes/CalloutNode';
+import { ToggleNode, $createToggleNode } from '../components/editor/nodes/ToggleNode';
 import { indexedDBService } from '../services/indexedDB';
 import { BacklinksPanel } from '../components/BacklinksPanel';
 import { VersionHistoryPanel } from '../components/notes/VersionHistoryPanel';
@@ -279,12 +285,55 @@ const SlashCommandPlugin: React.FC = () => {
   const [query, setQuery] = useState('');
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
+  const clearSlashCommand = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const node = selection.anchor.getNode();
+        const text = node.getTextContent();
+        // Remove the /command text from the current node
+        const slashIndex = text.lastIndexOf('/');
+        if (slashIndex >= 0 && 'setTextContent' in node) {
+          (node as unknown as { setTextContent(t: string): void }).setTextContent(
+            text.slice(0, slashIndex)
+          );
+        }
+      }
+    });
+  }, [editor]);
+
+  const insertCallout = useCallback((calloutType: CalloutType) => {
+    clearSlashCommand();
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const calloutNode = $createCalloutNode({ calloutType });
+        selection.insertNodes([calloutNode]);
+      }
+    });
+  }, [editor, clearSlashCommand]);
+
+  const insertToggle = useCallback(() => {
+    clearSlashCommand();
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const toggleNode = $createToggleNode({ isOpen: true });
+        selection.insertNodes([toggleNode]);
+      }
+    });
+  }, [editor, clearSlashCommand]);
+
+  const insertHR = useCallback(() => {
+    clearSlashCommand();
+    editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
+  }, [editor, clearSlashCommand]);
+
   const commands = [
     { label: 'Heading 1', icon: 'H1', action: () => {
       editor.update(() => {
         const selection = $getSelection();
         if (selection) {
-          // Convert to heading - will implement with format commands
           console.log('Heading 1');
         }
       });
@@ -295,6 +344,12 @@ const SlashCommandPlugin: React.FC = () => {
     { label: 'Numbered List', icon: '1.', action: () => console.log('Numbered List') },
     { label: 'Code Block', icon: '</>', action: () => console.log('Code Block') },
     { label: 'Quote', icon: '"', action: () => console.log('Quote') },
+    { label: 'Horizontal Rule', icon: '—', action: insertHR },
+    { label: 'Callout (Info)', icon: 'ℹ️', action: () => insertCallout('info') },
+    { label: 'Callout (Warning)', icon: '⚠️', action: () => insertCallout('warning') },
+    { label: 'Callout (Tip)', icon: '💡', action: () => insertCallout('tip') },
+    { label: 'Callout (Danger)', icon: '🚨', action: () => insertCallout('danger') },
+    { label: 'Toggle Block', icon: '▶', action: insertToggle },
   ];
 
   const filteredCommands = commands.filter(cmd =>
@@ -384,6 +439,47 @@ const EditorToolbar: React.FC<{
 }> = ({ wordCount, charCount, noteId, viewMode, onViewModeChange }) => {
   const [editor] = useLexicalComposerContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+
+  const HIGHLIGHT_COLORS = [
+    { label: 'Yellow', color: '#fef08a', darkColor: '#854d0e40' },
+    { label: 'Green', color: '#bbf7d0', darkColor: '#14532d40' },
+    { label: 'Blue', color: '#bfdbfe', darkColor: '#1e3a5f40' },
+    { label: 'Pink', color: '#fbcfe8', darkColor: '#831843a0' },
+    { label: 'Purple', color: '#e9d5ff', darkColor: '#581c87a0' },
+  ] as const;
+
+  const applyHighlight = useCallback((color: string) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        selection.formatText('highlight');
+        // Apply background color via style
+        const nodes = selection.getNodes();
+        nodes.forEach((node) => {
+          if ('setStyle' in node && typeof node.setStyle === 'function') {
+            node.setStyle(`background-color: ${color}`);
+          }
+        });
+      }
+    });
+    setShowHighlightPicker(false);
+  }, [editor]);
+
+  const removeHighlight = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const nodes = selection.getNodes();
+        nodes.forEach((node) => {
+          if ('setStyle' in node && typeof node.setStyle === 'function') {
+            node.setStyle('');
+          }
+        });
+      }
+    });
+    setShowHighlightPicker(false);
+  }, [editor]);
 
   const formatText = (format: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'code') => {
     editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
@@ -546,6 +642,37 @@ const EditorToolbar: React.FC<{
       <button onClick={() => formatText('code')} className={btnClass} title="Code">
         <span className="font-mono text-sm">&lt;/&gt;</span>
       </button>
+
+      {/* Highlight Color */}
+      <div className="relative">
+        <button
+          onClick={() => setShowHighlightPicker(!showHighlightPicker)}
+          className={btnClass}
+          title="Highlight Color"
+        >
+          <span className="text-sm" style={{ backgroundColor: '#fef08a', padding: '0 4px', borderRadius: '2px' }}>A</span>
+        </button>
+        {showHighlightPicker && (
+          <div className="absolute top-full left-0 mt-1 z-50 bg-surface-light dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-lg shadow-lg p-2 flex gap-1">
+            {HIGHLIGHT_COLORS.map((hc) => (
+              <button
+                key={hc.label}
+                onClick={() => applyHighlight(hc.color)}
+                className="w-6 h-6 rounded border border-border-light dark:border-border-dark hover:scale-110 transition-transform"
+                style={{ backgroundColor: hc.color }}
+                title={hc.label}
+              />
+            ))}
+            <button
+              onClick={removeHighlight}
+              className="w-6 h-6 rounded border border-border-light dark:border-border-dark hover:scale-110 transition-transform flex items-center justify-center text-xs text-text-light-secondary dark:text-text-dark-secondary"
+              title="Remove highlight"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className={dividerClass} />
 
@@ -830,6 +957,9 @@ const getEditorConfig = (initialContent?: string) => ({
     SpreadsheetEmbedNode,
     WikiLinkNode,
     HashtagNode,
+    HorizontalRuleNode,
+    CalloutNode,
+    ToggleNode,
   ],
   onError: (error: Error) => {
     console.error('Lexical error:', error);
@@ -1038,6 +1168,7 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
             <CheckListPlugin />
             <TablePlugin />
             <CodeHighlightPlugin />
+            <HorizontalRulePlugin />
             <MarkdownShortcutPlugin transformers={[...TRANSFORMERS, CHECK_LIST]} />
             <AutoLinkPlugin matchers={MATCHERS} />
             <KeyboardShortcutsPlugin />
