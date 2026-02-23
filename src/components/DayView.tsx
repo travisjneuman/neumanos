@@ -6,7 +6,7 @@
  * Time Blocking: Drag-drop support for moving events between time slots
  */
 
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -23,6 +23,15 @@ import { format } from 'date-fns';
 import { getEventDisplayColor } from '../utils/calendarColors';
 import { calculateEventLayout } from '../utils/eventLayout';
 import { QuickEventCreate } from './QuickEventCreate';
+
+interface ResizeState {
+  isResizing: boolean;
+  eventId: string;
+  edge: 'top' | 'bottom';
+  originalStartTime: string;
+  originalEndTime: string;
+  currentMinute: number;
+}
 
 interface DayViewProps {
   date: Date;
@@ -188,6 +197,7 @@ export const DayView: React.FC<DayViewProps> = ({
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
   const [quickCreate, setQuickCreate] = useState<{ hour: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [resizeState, setResizeState] = useState<ResizeState | null>(null);
 
   // Configure pointer sensor with activation constraint
   const sensors = useSensors(
@@ -287,6 +297,75 @@ export const DayView: React.FC<DayViewProps> = ({
     }
   }, [timedEvents, onEventTimeChange, parseTime]);
 
+  // --- Resize handlers ---
+  const snapTo15 = (minute: number): number => Math.round(minute / 15) * 15;
+
+  const handleResizeStart = useCallback((e: React.MouseEvent, eventId: string, edge: 'top' | 'bottom', startTime: string, endTime: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top + (containerRef.current.parentElement?.scrollTop ?? 0);
+    const rawMinute = Math.max(0, Math.min(y, 1439));
+    setResizeState({
+      isResizing: true,
+      eventId,
+      edge,
+      originalStartTime: startTime,
+      originalEndTime: endTime,
+      currentMinute: snapTo15(rawMinute),
+    });
+  }, []);
+
+  const handleResizeMove = useCallback((e: React.MouseEvent) => {
+    if (!resizeState?.isResizing || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top + (containerRef.current.parentElement?.scrollTop ?? 0);
+    const rawMinute = snapTo15(Math.max(0, Math.min(y, 1439)));
+    setResizeState(prev => prev ? { ...prev, currentMinute: rawMinute } : null);
+  }, [resizeState]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (!resizeState?.isResizing || !onEventTimeChange) {
+      setResizeState(null);
+      return;
+    }
+
+    const [origSH, origSM] = resizeState.originalStartTime.split(':').map(Number);
+    const [origEH, origEM] = resizeState.originalEndTime.split(':').map(Number);
+    let startMin = origSH * 60 + origSM;
+    let endMin = origEH * 60 + origEM;
+
+    if (resizeState.edge === 'top') {
+      startMin = Math.min(resizeState.currentMinute, endMin - 15);
+      startMin = Math.max(0, startMin);
+    } else {
+      endMin = Math.max(resizeState.currentMinute, startMin + 15);
+      endMin = Math.min(24 * 60 - 1, endMin);
+    }
+
+    const fmtTime = (m: number) => `${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
+    const newStartTime = fmtTime(startMin);
+    const newEndTime = fmtTime(endMin);
+
+    if (newStartTime !== resizeState.originalStartTime || newEndTime !== resizeState.originalEndTime) {
+      onEventTimeChange(resizeState.eventId, newStartTime, newEndTime);
+    }
+
+    setResizeState(null);
+  }, [resizeState, onEventTimeChange]);
+
+  // Cleanup resize on global mouseup
+  useEffect(() => {
+    const handleGlobalUp = () => {
+      if (resizeState?.isResizing) {
+        handleResizeEnd();
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalUp);
+    return () => window.removeEventListener('mouseup', handleGlobalUp);
+  }, [resizeState, handleResizeEnd]);
+
   // Render timeline content (shared between DndContext and non-DnD modes)
   const renderTimelineContent = () => (
     <>
@@ -340,13 +419,40 @@ export const DayView: React.FC<DayViewProps> = ({
           ))
         )}
 
-        {/* Timed events (with overlap stacking) */}
-        <div className="absolute top-0 left-14 right-0 bottom-0">
+        {/* Timed events (with overlap stacking + resize handles) */}
+        <div
+          className="absolute top-0 left-14 right-0 bottom-0"
+          onMouseMove={handleResizeMove}
+          onMouseUp={handleResizeEnd}
+          style={{ userSelect: resizeState?.isResizing ? 'none' : undefined }}
+        >
           {(() => {
             const layout = calculateEventLayout(timedEvents);
             return timedEvents.map((event) => {
-              const style = getEventStyle(event);
+              let style = getEventStyle(event);
               if (!style) return null;
+
+              // Adjust style if this event is being resized
+              const isBeingResized = resizeState?.isResizing && resizeState.eventId === event.id;
+              if (isBeingResized && event.startTime && event.endTime) {
+                const [origSH, origSM] = event.startTime.split(':').map(Number);
+                const [origEH, origEM] = event.endTime.split(':').map(Number);
+                let startMin = origSH * 60 + origSM;
+                let endMin = origEH * 60 + origEM;
+                if (resizeState.edge === 'top') {
+                  startMin = Math.min(resizeState.currentMinute, endMin - 15);
+                  startMin = Math.max(0, startMin);
+                } else {
+                  endMin = Math.max(resizeState.currentMinute, startMin + 15);
+                  endMin = Math.min(24 * 60 - 1, endMin);
+                }
+                const startHour = startMin / 60;
+                const duration = (endMin - startMin) / 60;
+                style = {
+                  top: `${(startHour / 24) * 100}%`,
+                  height: `${(duration / 24) * 100}%`,
+                };
+              }
 
               const layoutInfo = layout.get(event.id);
               const col = layoutInfo?.column ?? 0;
@@ -361,16 +467,33 @@ export const DayView: React.FC<DayViewProps> = ({
               };
 
               return (
-                <DraggableEvent
-                  key={event.id}
-                  event={event}
-                  style={positionedStyle}
-                  dateKey={dateKey}
-                  onEventClick={onEventClick}
-                  isDragging={activeEvent?.id === event.id}
-                  enableDrag={enableTimeBlocking}
-                  hasConflict={totalCols > 1}
-                />
+                <div key={event.id} className={`absolute group/resize ${isBeingResized ? 'ring-2 ring-white/50 z-50' : ''}`} style={positionedStyle}>
+                  {/* Top resize handle */}
+                  {onEventTimeChange && event.startTime && event.endTime && (
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1.5 cursor-n-resize opacity-0 group-hover/resize:opacity-100 bg-white/30 rounded-t z-30"
+                      onMouseDown={(e) => handleResizeStart(e, event.id, 'top', event.startTime!, event.endTime!)}
+                    />
+                  )}
+
+                  <DraggableEvent
+                    event={event}
+                    style={{ top: 0, left: 0, width: '100%', height: '100%', position: 'absolute' }}
+                    dateKey={dateKey}
+                    onEventClick={onEventClick}
+                    isDragging={activeEvent?.id === event.id}
+                    enableDrag={enableTimeBlocking}
+                    hasConflict={totalCols > 1}
+                  />
+
+                  {/* Bottom resize handle */}
+                  {onEventTimeChange && event.startTime && event.endTime && (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-1.5 cursor-s-resize opacity-0 group-hover/resize:opacity-100 bg-white/30 rounded-b z-30"
+                      onMouseDown={(e) => handleResizeStart(e, event.id, 'bottom', event.startTime!, event.endTime!)}
+                    />
+                  )}
+                </div>
               );
             });
           })()}

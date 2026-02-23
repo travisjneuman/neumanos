@@ -69,6 +69,14 @@ export interface WidgetSettings {
   channels?: string[]; // YouTube widget
 }
 
+export interface SavedLayout {
+  id: string;
+  name: string;
+  enabledWidgets: string[];
+  widgetSizes: Record<string, 1 | 2 | 3>;
+  savedAt: string;
+}
+
 export interface WidgetState {
   // Enabled widget IDs in display order
   enabledWidgets: string[];
@@ -81,6 +89,9 @@ export interface WidgetState {
 
   // Custom widgets
   customWidgets: CustomWidgetConfig[];
+
+  // Saved dashboard layouts
+  savedLayouts: SavedLayout[];
 
   // Actions
   enableWidget: (widgetId: string) => void;
@@ -95,6 +106,11 @@ export interface WidgetState {
   createCustomWidget: (config: Omit<CustomWidgetConfig, 'id' | 'createdAt'>) => string;
   updateCustomWidget: (id: string, updates: Partial<CustomWidgetConfig>) => void;
   deleteCustomWidget: (id: string) => void;
+
+  // Saved layout actions
+  saveLayout: (name: string) => string;
+  loadLayout: (id: string) => void;
+  deleteLayout: (id: string) => void;
 }
 
 export const useWidgetStore = create<WidgetState>()(
@@ -119,6 +135,9 @@ export const useWidgetStore = create<WidgetState>()(
 
       // Custom widgets
       customWidgets: [],
+
+      // Saved layouts
+      savedLayouts: [],
 
       // Default settings
       widgetSettings: {
@@ -226,10 +245,43 @@ export const useWidgetStore = create<WidgetState>()(
           customWidgets: state.customWidgets.filter((w) => w.id !== id),
         }));
       },
+
+      saveLayout: (name) => {
+        const id = `layout-${crypto.randomUUID()}`;
+        const { enabledWidgets, widgetSizes } = get();
+        const layout: SavedLayout = {
+          id,
+          name,
+          enabledWidgets: [...enabledWidgets],
+          widgetSizes: { ...widgetSizes },
+          savedAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          savedLayouts: [...state.savedLayouts, layout],
+        }));
+        return id;
+      },
+
+      loadLayout: (id) => {
+        const { savedLayouts } = get();
+        const layout = savedLayouts.find((l) => l.id === id);
+        if (layout) {
+          set({
+            enabledWidgets: [...layout.enabledWidgets],
+            widgetSizes: { ...layout.widgetSizes },
+          });
+        }
+      },
+
+      deleteLayout: (id) => {
+        set((state) => ({
+          savedLayouts: state.savedLayouts.filter((l) => l.id !== id),
+        }));
+      },
     }),
     {
       name: 'dashboard-widgets',
-      version: 6, // Increment this when you need to trigger migrations
+      version: 7, // Increment this when you need to trigger migrations
       migrate: (persistedState: any, version: number) => {
         const state = persistedState as WidgetState;
 
@@ -312,6 +364,13 @@ export const useWidgetStore = create<WidgetState>()(
         if (version < 6) {
           if (!state.customWidgets) {
             (state as any).customWidgets = [];
+          }
+        }
+
+        // Migration for version 6 -> 7: Add savedLayouts array
+        if (version < 7) {
+          if (!(state as any).savedLayouts) {
+            (state as any).savedLayouts = [];
           }
         }
 

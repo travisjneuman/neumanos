@@ -3,7 +3,7 @@ import {
   Plus, Target, Flame, Trophy, Archive, RotateCcw, Trash2, Edit2,
   Check, MoreVertical, ChevronDown, ChevronRight, BarChart3, BookTemplate,
   Grid3X3, Star, Lock, Bell, BellOff, Link2, Snowflake, Award,
-  TrendingUp, Search, MessageSquare,
+  TrendingUp, Search, MessageSquare, Brain,
 } from 'lucide-react';
 import { useHabitStore } from '../stores/useHabitStore';
 import { PageContent } from '../components/PageContent';
@@ -20,8 +20,13 @@ import {
   HABIT_ANIMATION_STYLES,
   HabitAnalytics,
   HabitAchievementsBadges,
+  HabitJournal,
+  HabitStreakCalendar,
+  FlashcardReview,
+  FlashcardCreator,
 } from '../components/habits';
 import type { HabitTemplate } from '../components/habits';
+import { useSpacedRepetitionStore } from '../stores/useSpacedRepetitionStore';
 import type { Habit, HabitFrequency, HabitCategory, HabitDifficulty } from '../types';
 
 // Helper to get date key in YYYY-M-D format
@@ -470,6 +475,8 @@ interface HabitCardProps {
   onArchive: () => void;
   onDelete: () => void;
   onViewStats: () => void;
+  onViewJournal: () => void;
+  onViewStreakCalendar: () => void;
   weekProgress: boolean[];
   showConfetti: boolean;
   animatedStreak: boolean;
@@ -488,6 +495,8 @@ function HabitCard({
   onArchive,
   onDelete,
   onViewStats,
+  onViewJournal,
+  onViewStreakCalendar,
   weekProgress,
   showConfetti,
   animatedStreak,
@@ -610,6 +619,20 @@ function HabitCard({
                       >
                         <BarChart3 className="w-4 h-4" />
                         Statistics
+                      </button>
+                      <button
+                        onClick={() => { setShowMenu(false); onViewJournal(); }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Journal
+                      </button>
+                      <button
+                        onClick={() => { setShowMenu(false); onViewStreakCalendar(); }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-surface-light-alt dark:hover:bg-surface-dark flex items-center gap-2"
+                      >
+                        <Target className="w-4 h-4" />
+                        Streak Calendar
                       </button>
                       <button
                         onClick={() => { setShowMenu(false); onEdit(); }}
@@ -798,6 +821,11 @@ export function HabitsContent() {
   const [noteSearchQuery, setNoteSearchQuery] = useState('');
   const [showNoteSearch, setShowNoteSearch] = useState(false);
   const [groupByCategory, setGroupByCategory] = useState(true);
+  const [journalHabit, setJournalHabit] = useState<Habit | null>(null);
+  const [streakCalendarHabit, setStreakCalendarHabit] = useState<Habit | null>(null);
+  const [showFlashcardReview, setShowFlashcardReview] = useState(false);
+  const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
+  const flashcardDueCount = useSpacedRepetitionStore((s) => s.getDueCount());
 
   const { triggerAnimation, clearAnimation, getAnimation } = useCompletionAnimation();
 
@@ -896,6 +924,24 @@ export function HabitsContent() {
     setShowModal(true);
   };
 
+  const handleSelectTemplatePack = (templates: HabitTemplate[]) => {
+    setShowTemplatePicker(false);
+    for (const t of templates) {
+      addHabit({
+        title: t.title,
+        description: t.description,
+        icon: t.icon,
+        color: t.color,
+        frequency: t.frequency,
+        category: t.category,
+        timesPerWeek: t.timesPerWeek,
+        difficulty: 'easy',
+        freezesPerWeek: 1,
+        projectIds: [],
+      });
+    }
+  };
+
   const handleDeleteHabit = useCallback((id: string) => {
     setHabitToDelete(id);
   }, []);
@@ -926,6 +972,8 @@ export function HabitsContent() {
         onArchive={() => archiveHabit(habit.id)}
         onDelete={() => handleDeleteHabit(habit.id)}
         onViewStats={() => setStatsHabit(habit)}
+        onViewJournal={() => setJournalHabit(habit)}
+        onViewStreakCalendar={() => setStreakCalendarHabit(habit)}
         weekProgress={getWeekProgress(habit.id)}
         showConfetti={animation?.type === 'milestone'}
         animatedStreak={!!animation}
@@ -1025,6 +1073,18 @@ export function HabitsContent() {
             >
               <Search className="w-4 h-4" />
               Notes
+            </button>
+            <button
+              onClick={() => setShowFlashcardReview(true)}
+              className="flex items-center gap-2 text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors"
+            >
+              <Brain className="w-4 h-4" />
+              Flashcards
+              {flashcardDueCount > 0 && (
+                <span className="px-1.5 py-0.5 text-xs rounded-full bg-accent-primary/10 text-accent-primary">
+                  {flashcardDueCount}
+                </span>
+              )}
             </button>
           </div>
           {showHeatmap && (
@@ -1232,6 +1292,7 @@ export function HabitsContent() {
       {showTemplatePicker && (
         <HabitTemplatePicker
           onSelect={handleSelectTemplate}
+          onSelectPack={handleSelectTemplatePack}
           onClose={() => setShowTemplatePicker(false)}
         />
       )}
@@ -1245,6 +1306,22 @@ export function HabitsContent() {
 
       {showAnalytics && (
         <HabitAnalytics onClose={() => setShowAnalytics(false)} />
+      )}
+
+      {journalHabit && (
+        <HabitJournal habit={journalHabit} onClose={() => setJournalHabit(null)} />
+      )}
+
+      {streakCalendarHabit && (
+        <HabitStreakCalendar habit={streakCalendarHabit} onClose={() => setStreakCalendarHabit(null)} />
+      )}
+
+      {showFlashcardReview && (
+        <FlashcardReview onClose={() => setShowFlashcardReview(false)} />
+      )}
+
+      {showFlashcardCreator && (
+        <FlashcardCreator onClose={() => setShowFlashcardCreator(false)} />
       )}
 
       <ConfirmDialog

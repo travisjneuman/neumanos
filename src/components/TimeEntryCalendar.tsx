@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { Clock, Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { Clock, Eye, EyeOff, Search } from 'lucide-react';
 import { useTimeTrackingStore } from '../stores/useTimeTrackingStore';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { useKanbanStore } from '../stores/useKanbanStore';
@@ -31,7 +31,7 @@ interface TimeEntryCalendarProps {
  */
 export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: TimeEntryCalendarProps) {
   const { entries, projects, loadEntries, loadProjects } = useTimeTrackingStore();
-  const { events, importEvents, calendars, toggleCalendarVisibility } = useCalendarStore();
+  const { events, importEvents, calendars, toggleCalendarVisibility, updateEventTime } = useCalendarStore();
   const { tasks } = useKanbanStore();
 
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,8 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const miniCalendarRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const [activeCategories, setActiveCategories] = useState<Set<EventColorCategory>>(new Set());
 
   // Group tasks by their due date (convert ISO date to standard date key)
@@ -268,6 +270,53 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
     return result;
   }, [expandedEvents, searchQuery, activeCategories, hiddenCalendarIds]);
 
+  // Search results for dropdown (max 10 results across all dates)
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const lowerSearch = searchQuery.trim().toLowerCase();
+    const results: { event: CalendarEvent; dateKey: string }[] = [];
+
+    Object.entries(expandedEvents).forEach(([dateKey, dayEvents]) => {
+      dayEvents.forEach((event) => {
+        if (
+          event.title.toLowerCase().includes(lowerSearch) ||
+          event.description?.toLowerCase().includes(lowerSearch) ||
+          event.location?.toLowerCase().includes(lowerSearch)
+        ) {
+          results.push({ event, dateKey });
+        }
+      });
+    });
+
+    // Sort by date key
+    results.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+    return results.slice(0, 10);
+  }, [expandedEvents, searchQuery]);
+
+  // Close search results dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle event time change from resize handles
+  const handleEventTimeChange = useCallback((dateKey: string, eventId: string, newStartTime: string, newEndTime: string) => {
+    updateEventTime(dateKey, eventId, newStartTime, newEndTime);
+  }, [updateEventTime]);
+
+  // Navigate to a search result date
+  const navigateToSearchResult = useCallback((dateKey: string) => {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    setCurrentDate(new Date(y, m - 1, d));
+    setSearchQuery('');
+    setShowSearchResults(false);
+  }, []);
+
   // Group entries by date (ISO format for time entry lookups)
   // NOTE: Must be called before early return to maintain consistent hook order
   const entriesByDate = useMemo(() => {
@@ -405,15 +454,60 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
           )}
         </div>
 
-        {/* Search Bar */}
-        <div className="flex-1 min-w-[160px] max-w-xs">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search events..."
-            className="w-full px-3 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary placeholder-text-light-tertiary dark:placeholder-text-dark-tertiary"
-          />
+        {/* Search Bar with Results Dropdown */}
+        <div className="flex-1 min-w-[160px] max-w-xs relative" ref={searchRef}>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-text-light-tertiary dark:text-text-dark-tertiary" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchResults(e.target.value.trim().length > 0);
+              }}
+              onFocus={() => {
+                if (searchQuery.trim()) setShowSearchResults(true);
+              }}
+              placeholder="Search events..."
+              className="w-full pl-7 pr-3 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary placeholder-text-light-tertiary dark:placeholder-text-dark-tertiary"
+            />
+          </div>
+
+          {/* Search Results Dropdown */}
+          {showSearchResults && searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-button shadow-lg z-50 max-h-64 overflow-y-auto">
+              {searchResults.map(({ event, dateKey }) => {
+                const [y, m, d] = dateKey.split('-').map(Number);
+                const dateStr = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric',
+                });
+                return (
+                  <button
+                    key={`${event.id}-${dateKey}`}
+                    onClick={() => navigateToSearchResult(dateKey)}
+                    className="w-full text-left px-3 py-2 hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors border-b border-border-light/50 dark:border-border-dark/50 last:border-b-0"
+                  >
+                    <div className="text-xs font-medium text-text-light-primary dark:text-text-dark-primary truncate">
+                      {event.title}
+                    </div>
+                    <div className="text-[10px] text-text-light-secondary dark:text-text-dark-secondary flex items-center gap-2">
+                      <span>{dateStr}</span>
+                      {event.startTime && <span>{event.startTime}{event.endTime ? ` - ${event.endTime}` : ''}</span>}
+                      {event.location && <span className="truncate">@ {event.location}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {showSearchResults && searchQuery.trim() && searchResults.length === 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-button shadow-lg z-50 p-3">
+              <p className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary text-center">
+                No events found
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Category Filter Buttons */}
@@ -542,6 +636,7 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
           onDayClick={handleDayClick}
           onEventClick={handleEventClick}
           showTimeSlots={true}
+          onEventTimeChange={handleEventTimeChange}
         />
       ) : viewMode === 'daily' ? (
         /* Daily View */
@@ -553,6 +648,11 @@ export function TimeEntryCalendar({ onEditEntry, onCreateEvent, onEditEvent }: T
             const dateKey = getStandardDateKey(currentDate);
             handleDayClick(dateKey);
           }}
+          onEventTimeChange={(eventId, newStart, newEnd) => {
+            const dateKey = getStandardDateKey(currentDate);
+            handleEventTimeChange(dateKey, eventId, newStart, newEnd);
+          }}
+          enableTimeBlocking
         />
       ) : (
         /* Agenda/List View */

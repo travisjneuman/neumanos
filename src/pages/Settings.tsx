@@ -73,6 +73,10 @@ import { NotionImportSection } from '../widgets/Settings/NotionImportSection';
 import { KeyboardShortcutsSection } from '../widgets/Settings/KeyboardShortcutsSection';
 import { AccentColorSection } from '../widgets/Settings/AccentColorSection';
 import { SelectiveExportSection } from '../widgets/Settings/SelectiveExportSection';
+import { NotificationPreferencesSection } from '../widgets/Settings/NotificationPreferencesSection';
+import { DefaultViewsSection } from '../widgets/Settings/DefaultViewsSection';
+import { AppPreferencesSection } from '../widgets/Settings/AppPreferencesSection';
+import { SavedLayoutsSection } from '../widgets/Settings/SavedLayoutsSection';
 
 const log = logger.module('Settings');
 
@@ -449,7 +453,10 @@ export const Settings: React.FC = () => {
                 <>
                   <AccountSettings />
                   <SiteWideSettings />
+                  <AppPreferencesSection />
+                  <DefaultViewsSection />
                   <DashboardSettingsSection onOpenPresetManager={() => setShowPresetManager(true)} />
+                  <SavedLayoutsSection />
                   <div className="bento-card p-6">
                     <WidgetSettingsSection />
                   </div>
@@ -515,6 +522,7 @@ export const Settings: React.FC = () => {
               {/* Notifications Settings */}
               {currentTab === 'notifications' && (
                 <>
+                  <NotificationPreferencesSection />
                   <CalendarNotificationsSection
                     notificationPermission={notificationPermission}
                     requestingPermission={requestingPermission}

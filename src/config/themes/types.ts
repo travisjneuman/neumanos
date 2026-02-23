@@ -17,7 +17,15 @@ export type ThemeId =
   | 'monochrome'
   | 'ink-wash'
   | 'matrix'
-  | 'deep-space';
+  | 'deep-space'
+  | 'nord'
+  | 'dracula'
+  | 'tokyo-night'
+  | 'catppuccin'
+  | 'gruvbox'
+  | 'solarized'
+  | 'rose-pine'
+  | 'one-dark';
 
 export type ColorMode = 'light' | 'dark' | 'system';
 

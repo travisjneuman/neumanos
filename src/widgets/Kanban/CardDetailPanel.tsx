@@ -452,6 +452,28 @@ export const CardDetailPanel: React.FC<CardDetailPanelProps> = ({
             </select>
           </div>
 
+          {/* When Tag - Wave 4E */}
+          <div>
+            <label className="block text-xs font-medium text-text-light-secondary dark:text-text-dark-secondary mb-2">
+              When
+            </label>
+            <select
+              value={task?.whenTag || ''}
+              onChange={(e) => {
+                const value = e.target.value || undefined;
+                handleFieldBlur('whenTag', value);
+              }}
+              className="w-full p-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-text-light-primary dark:text-text-dark-primary focus:ring-2 focus:ring-accent-blue outline-none"
+            >
+              <option value="">No when tag</option>
+              <option value="today">☀️ Today</option>
+              <option value="evening">🌙 This Evening</option>
+              <option value="upcoming">📅 Upcoming</option>
+              <option value="anytime">📌 Anytime</option>
+              <option value="someday">💭 Someday</option>
+            </select>
+          </div>
+
           {/* Milestone Checkbox - Phase 1.6 */}
           <div className="flex items-center gap-2 p-3 bg-surface-light-elevated dark:bg-surface-dark-elevated rounded-lg">
             <input

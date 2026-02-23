@@ -19,6 +19,14 @@ import { monochromeTheme } from './monochrome';
 import { inkWashTheme } from './ink-wash';
 import { matrixTheme } from './matrix';
 import { deepSpaceTheme } from './deep-space';
+import { nordTheme } from './nord';
+import { draculaTheme } from './dracula';
+import { tokyoNightTheme } from './tokyo-night';
+import { catppuccinTheme } from './catppuccin';
+import { gruvboxTheme } from './gruvbox';
+import { solarizedTheme } from './solarized';
+import { rosePineTheme } from './rose-pine';
+import { oneDarkTheme } from './one-dark';
 
 // ---------------------------------------------------------------------------
 // Registry
@@ -36,6 +44,14 @@ export const THEME_REGISTRY: Record<ThemeId, ThemeDefinition> = {
   'ink-wash': inkWashTheme,
   'matrix': matrixTheme,
   'deep-space': deepSpaceTheme,
+  'nord': nordTheme,
+  'dracula': draculaTheme,
+  'tokyo-night': tokyoNightTheme,
+  'catppuccin': catppuccinTheme,
+  'gruvbox': gruvboxTheme,
+  'solarized': solarizedTheme,
+  'rose-pine': rosePineTheme,
+  'one-dark': oneDarkTheme,
 };
 
 export const THEME_CATEGORIES: ThemeCategoryInfo[] = [

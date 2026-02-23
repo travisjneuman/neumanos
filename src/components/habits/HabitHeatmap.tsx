@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useHabitStore } from '../../stores/useHabitStore';
+
+type HeatmapRange = 90 | 180 | 365;
 
 interface HabitHeatmapProps {
   habitId?: string; // If undefined, shows aggregate for all active habits
@@ -32,24 +34,34 @@ const INTENSITY_COLORS = [
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
-export function HabitHeatmap({ habitId, weeks = 20 }: HabitHeatmapProps) {
+export function HabitHeatmap({ habitId, weeks: initialWeeks = 20 }: HabitHeatmapProps) {
   const completions = useHabitStore((s) => s.completions);
   const habits = useHabitStore((s) => s.habits);
+  const [range, setRange] = useState<HeatmapRange | null>(null);
+  const [selectedDay, setSelectedDay] = useState<{ date: string; habits: string[] } | null>(null);
 
-  const { grid, monthMarkers, maxCount, totalCompletions } = useMemo(() => {
+  const weeks = range ? Math.ceil(range / 7) : initialWeeks;
+
+  const { grid, monthMarkers, maxCount, totalCompletions, dayCompletionMap } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const totalDays = weeks * 7;
 
-    // Build a map of date -> completion count
+    // Build a map of date -> completion count and date -> habit titles
     const countMap = new Map<string, number>();
+    const dayHabits = new Map<string, string[]>();
     const activeHabitIds = habitId
       ? [habitId]
       : habits.filter((h) => !h.archivedAt).map((h) => h.id);
+    const habitTitleMap = new Map(habits.map((h) => [h.id, h.title]));
 
     for (const c of completions) {
       if (activeHabitIds.includes(c.habitId)) {
         countMap.set(c.date, (countMap.get(c.date) ?? 0) + 1);
+        const list = dayHabits.get(c.date) ?? [];
+        const title = habitTitleMap.get(c.habitId) ?? 'Unknown';
+        if (!list.includes(title)) list.push(title);
+        dayHabits.set(c.date, list);
       }
     }
 
@@ -105,11 +117,37 @@ export function HabitHeatmap({ habitId, weeks = 20 }: HabitHeatmapProps) {
       if (weekIndex >= weeks + 2) break; // Safety
     }
 
-    return { grid: gridData, monthMarkers: markers, maxCount: max, totalCompletions: total };
+    return { grid: gridData, monthMarkers: markers, maxCount: max, totalCompletions: total, dayCompletionMap: dayHabits };
   }, [completions, habits, habitId, weeks]);
+
+  const handleDayClick = (date: string) => {
+    const habitList = dayCompletionMap.get(date);
+    if (habitList && habitList.length > 0) {
+      setSelectedDay({ date, habits: habitList });
+    } else {
+      setSelectedDay(null);
+    }
+  };
 
   return (
     <div className="overflow-x-auto">
+      {/* Range toggle */}
+      <div className="flex items-center gap-2 mb-2">
+        {([90, 180, 365] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(range === r ? null : r)}
+            className={`px-2 py-0.5 text-xs rounded transition-colors ${
+              range === r
+                ? 'bg-accent-primary/10 text-accent-primary font-medium'
+                : 'text-text-light-tertiary dark:text-text-dark-tertiary hover:text-text-light-secondary dark:hover:text-text-dark-secondary'
+            }`}
+          >
+            {r}d
+          </button>
+        ))}
+      </div>
+
       {/* Month labels */}
       <div className="flex ml-8 mb-1">
         {monthMarkers.map((m, i) => (
@@ -143,13 +181,15 @@ export function HabitHeatmap({ habitId, weeks = 20 }: HabitHeatmapProps) {
         {grid.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-0.5">
             {week.map((day, di) => (
-              <div
+              <button
                 key={di}
+                type="button"
+                onClick={() => day.count > 0 && handleDayClick(day.date)}
                 className={`w-[12px] h-[12px] rounded-[2px] ${
                   day.count < 0
                     ? 'bg-transparent'
                     : INTENSITY_COLORS[getIntensity(day.count, maxCount)]
-                }`}
+                } ${day.count > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                 title={day.count >= 0 ? `${day.date}: ${day.count} completion${day.count !== 1 ? 's' : ''}` : ''}
               />
             ))}
@@ -170,6 +210,31 @@ export function HabitHeatmap({ habitId, weeks = 20 }: HabitHeatmapProps) {
           <span className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary ml-1">More</span>
         </div>
       </div>
+
+      {/* Selected day detail */}
+      {selectedDay && (
+        <div className="mt-3 p-3 rounded-lg bg-surface-light-alt dark:bg-surface-dark border border-border-light dark:border-border-dark">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-text-light-secondary dark:text-text-dark-secondary">
+              {selectedDay.date}
+            </span>
+            <button
+              onClick={() => setSelectedDay(null)}
+              className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary hover:text-text-light-primary dark:hover:text-text-dark-primary"
+            >
+              Close
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {selectedDay.habits.map((name) => (
+              <li key={name} className="text-xs text-text-light-primary dark:text-text-dark-primary flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                {name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

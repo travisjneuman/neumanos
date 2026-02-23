@@ -8,6 +8,14 @@ import { nanoid } from 'nanoid';
 
 export type TimeFormat = '12h' | '24h';
 export type TemperatureUnit = 'fahrenheit' | 'celsius';
+export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
+export type WeekStartDay = 0 | 1; // 0=Sunday, 1=Monday
+
+export interface DefaultViews {
+  tasks: 'board' | 'list' | 'eisenhower' | 'gantt';
+  calendar: 'month' | 'week' | 'day';
+  notes: 'list' | 'grid';
+}
 
 // Notes Layout Preferences (Notes Page Revolution)
 export type NotesViewMode = 'split' | 'editor-only' | 'list-only';
@@ -73,6 +81,11 @@ export interface SettingsState {
   // Display preferences
   timeFormat: TimeFormat;
   temperatureUnit: TemperatureUnit;
+  dateFormat: DateFormat;
+  weekStartDay: WeekStartDay;
+
+  // Default views per module
+  defaultViews: DefaultViews;
 
   // Daily Notes
   dailyNotes: DailyNotesSettings;
@@ -121,6 +134,9 @@ export interface SettingsState {
   setEmail: (email: string) => void;
   setTimeFormat: (format: TimeFormat) => void;
   setTemperatureUnit: (unit: TemperatureUnit) => void;
+  setDateFormat: (format: DateFormat) => void;
+  setWeekStartDay: (day: WeekStartDay) => void;
+  setDefaultViews: (views: Partial<DefaultViews>) => void;
   setDailyNotesSettings: (settings: Partial<DailyNotesSettings>) => void;
   setAutoShiftDependentTasks: (enabled: boolean) => void;
   setEnforceWipLimits: (enabled: boolean) => void;
@@ -223,9 +239,16 @@ export const useSettingsStore = create<SettingsState>()(
       displayName: '',
       email: '',
 
-      // Default: 12-hour time, Fahrenheit
+      // Default: 12-hour time, Fahrenheit, MM/DD/YYYY, Sunday start
       timeFormat: '12h',
       temperatureUnit: 'fahrenheit',
+      dateFormat: 'MM/DD/YYYY',
+      weekStartDay: 0,
+      defaultViews: {
+        tasks: 'board',
+        calendar: 'month',
+        notes: 'list',
+      },
       dailyNotes: DEFAULT_DAILY_NOTES_SETTINGS,
       customFieldDefinitions: {
         tasks: [],
@@ -248,6 +271,12 @@ export const useSettingsStore = create<SettingsState>()(
       setEmail: (email) => set({ email: email }),
       setTimeFormat: (format) => set({ timeFormat: format }),
       setTemperatureUnit: (unit) => set({ temperatureUnit: unit }),
+      setDateFormat: (format) => set({ dateFormat: format }),
+      setWeekStartDay: (day) => set({ weekStartDay: day }),
+      setDefaultViews: (views) =>
+        set((state) => ({
+          defaultViews: { ...state.defaultViews, ...views },
+        })),
       setDailyNotesSettings: (settings) =>
         set((state) => ({
           dailyNotes: { ...state.dailyNotes, ...settings },

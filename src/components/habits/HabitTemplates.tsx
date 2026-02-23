@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { HABIT_TEMPLATE_PACKS } from '../../data/habitTemplates';
 import type { HabitFrequency, HabitCategory } from '../../types';
 
 export interface HabitTemplate {
@@ -10,72 +13,18 @@ export interface HabitTemplate {
   timesPerWeek?: number;
 }
 
-export const HABIT_TEMPLATES: HabitTemplate[] = [
-  {
-    title: 'Morning Routine',
-    description: 'Complete your morning routine (stretch, hydrate, plan)',
-    icon: '☀️',
-    color: '#f97316',
-    frequency: 'daily',
-    category: 'productivity',
-  },
-  {
-    title: 'Exercise',
-    description: 'Get at least 30 minutes of physical activity',
-    icon: '💪',
-    color: '#22c55e',
-    frequency: 'times-per-week',
-    category: 'fitness',
-    timesPerWeek: 4,
-  },
-  {
-    title: 'Read 30 Minutes',
-    description: 'Read a book or article for 30 minutes',
-    icon: '📚',
-    color: '#8b5cf6',
-    frequency: 'daily',
-    category: 'learning',
-  },
-  {
-    title: 'Meditate',
-    description: 'Practice mindfulness or meditation',
-    icon: '🧘',
-    color: '#06b6d4',
-    frequency: 'daily',
-    category: 'mindfulness',
-  },
-  {
-    title: 'Drink Water',
-    description: 'Drink at least 8 glasses of water',
-    icon: '💧',
-    color: '#3b82f6',
-    frequency: 'daily',
-    category: 'health',
-  },
-  {
-    title: 'Journal',
-    description: 'Write in your journal — reflections, gratitude, or goals',
-    icon: '✍️',
-    color: '#ec4899',
-    frequency: 'daily',
-    category: 'mindfulness',
-  },
-  {
-    title: 'No Social Media',
-    description: 'Avoid social media for the entire day',
-    icon: '📵',
-    color: '#ef4444',
-    frequency: 'weekdays',
-    category: 'productivity',
-  },
-];
+// Flatten packs into a single list for backward compatibility
+export const HABIT_TEMPLATES: HabitTemplate[] = HABIT_TEMPLATE_PACKS.flatMap((p) => p.templates);
 
 interface HabitTemplatePickerProps {
   onSelect: (template: HabitTemplate) => void;
+  onSelectPack?: (templates: HabitTemplate[]) => void;
   onClose: () => void;
 }
 
-export function HabitTemplatePicker({ onSelect, onClose }: HabitTemplatePickerProps) {
+export function HabitTemplatePicker({ onSelect, onSelectPack, onClose }: HabitTemplatePickerProps) {
+  const [expandedPack, setExpandedPack] = useState<string | null>(null);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
@@ -84,35 +33,82 @@ export function HabitTemplatePicker({ onSelect, onClose }: HabitTemplatePickerPr
             Habit Templates
           </h2>
           <p className="text-sm text-text-light-tertiary dark:text-text-dark-tertiary mb-4">
-            Start with a pre-built template or create from scratch.
+            Pick a single habit or use a full pack to create multiple habits at once.
           </p>
 
-          <div className="space-y-2">
-            {HABIT_TEMPLATES.map((template) => (
-              <button
-                key={template.title}
-                onClick={() => onSelect(template)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark hover:border-accent-primary/40 hover:bg-accent-primary/5 transition-all text-left"
-              >
-                <span
-                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
-                  style={{ backgroundColor: `${template.color}20` }}
+          <div className="space-y-3">
+            {HABIT_TEMPLATE_PACKS.map((pack) => {
+              const isExpanded = expandedPack === pack.name;
+              return (
+                <div
+                  key={pack.name}
+                  className="rounded-lg border border-border-light dark:border-border-dark overflow-hidden"
                 >
-                  {template.icon}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-text-light-primary dark:text-text-dark-primary">
-                    {template.title}
-                  </div>
-                  <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary truncate">
-                    {template.description}
-                  </div>
+                  {/* Pack header */}
+                  <button
+                    onClick={() => setExpandedPack(isExpanded ? null : pack.name)}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-accent-primary/5 transition-colors text-left"
+                  >
+                    <span className="text-xl">{pack.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-text-light-primary dark:text-text-dark-primary">
+                        {pack.name}
+                      </div>
+                      <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+                        {pack.description} ({pack.templates.length} habits)
+                      </div>
+                    </div>
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary shrink-0" />
+                    )}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t border-border-light dark:border-border-dark">
+                      {/* Use entire pack button */}
+                      {onSelectPack && (
+                        <button
+                          onClick={() => onSelectPack(pack.templates)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-primary hover:bg-accent-primary/5 transition-colors border-b border-border-light dark:border-border-dark"
+                        >
+                          <Layers className="w-4 h-4" />
+                          Use All {pack.templates.length} Habits
+                        </button>
+                      )}
+
+                      {/* Individual templates */}
+                      {pack.templates.map((template) => (
+                        <button
+                          key={template.title}
+                          onClick={() => onSelect(template)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-accent-primary/5 transition-all text-left border-b last:border-b-0 border-border-light dark:border-border-dark"
+                        >
+                          <span
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0"
+                            style={{ backgroundColor: `${template.color}20` }}
+                          >
+                            {template.icon}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-text-light-primary dark:text-text-dark-primary">
+                              {template.title}
+                            </div>
+                            <div className="text-xs text-text-light-tertiary dark:text-text-dark-tertiary truncate">
+                              {template.description}
+                            </div>
+                          </div>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary capitalize shrink-0">
+                            {template.category}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-light-alt dark:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary capitalize shrink-0">
-                  {template.category}
-                </span>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { X, Plus, Calendar, CheckSquare, Clock } from 'lucide-react';
+import { X, Plus, Calendar, CheckSquare, Clock, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDuration, formatTime } from '../utils/timeFormatters';
 import { getColorCategory } from '../utils/eventColors';
@@ -117,37 +117,55 @@ export function DayDetailModal({
             {events.length > 0 ? (
               <div className="space-y-1.5">
                 {events.map((event) => (
-                  <button
+                  <div
                     key={event.id}
-                    onClick={() => handleEventClick(event)}
-                    className="w-full text-left p-2 rounded-button border hover:opacity-80 transition-all duration-standard ease-smooth"
-                    style={{
-                      backgroundColor: `${getColorCategory(event.colorCategory).hex}15`,
-                      borderColor: `${getColorCategory(event.colorCategory).hex}40`,
-                    }}
+                    className="relative group/event"
                   >
-                    <div className="font-medium text-xs text-text-light-primary dark:text-text-dark-primary">
-                      {event.recurrence && '🔁 '}{event.title}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-text-light-secondary dark:text-text-dark-secondary">
-                      {event.isAllDay ? (
-                        <span>All day</span>
-                      ) : event.startTime && (
-                        <span>
-                          {event.startTime}
-                          {event.endTime && ` - ${event.endTime}`}
-                        </span>
+                    <button
+                      onClick={() => handleEventClick(event)}
+                      className="w-full text-left p-2 rounded-button border hover:opacity-80 transition-all duration-standard ease-smooth"
+                      style={{
+                        backgroundColor: `${getColorCategory(event.colorCategory).hex}15`,
+                        borderColor: `${getColorCategory(event.colorCategory).hex}40`,
+                      }}
+                    >
+                      <div className="font-medium text-xs text-text-light-primary dark:text-text-dark-primary">
+                        {event.recurrence && '🔁 '}{event.title}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-text-light-secondary dark:text-text-dark-secondary">
+                        {event.isAllDay ? (
+                          <span>All day</span>
+                        ) : event.startTime && (
+                          <span>
+                            {event.startTime}
+                            {event.endTime && ` - ${event.endTime}`}
+                          </span>
+                        )}
+                        {event.location && (
+                          <span className="truncate">@ {event.location}</span>
+                        )}
+                      </div>
+                      {event.description && (
+                        <p className="mt-1 text-[10px] text-text-light-tertiary dark:text-text-dark-tertiary line-clamp-2">
+                          {event.description}
+                        </p>
                       )}
-                      {event.location && (
-                        <span className="truncate">📍 {event.location}</span>
-                      )}
-                    </div>
-                    {event.description && (
-                      <p className="mt-1 text-[10px] text-text-light-tertiary dark:text-text-dark-tertiary line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
-                  </button>
+                    </button>
+                    {/* Duplicate button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                        window.dispatchEvent(new CustomEvent('calendar:duplicate-event', {
+                          detail: { event, dateKey },
+                        }));
+                      }}
+                      className="absolute top-1.5 right-1.5 p-1 rounded-button bg-surface-light dark:bg-surface-dark opacity-0 group-hover/event:opacity-100 hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all duration-standard ease-smooth"
+                      title="Duplicate event"
+                    >
+                      <Copy className="w-3 h-3 text-text-light-secondary dark:text-text-dark-secondary" />
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : (

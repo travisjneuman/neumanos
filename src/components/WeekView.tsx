@@ -24,6 +24,16 @@ interface DragState {
   startY: number; // initial mouseY for threshold detection
 }
 
+interface ResizeState {
+  isResizing: boolean;
+  eventId: string;
+  dateKey: string;
+  edge: 'top' | 'bottom';
+  originalStartTime: string;
+  originalEndTime: string;
+  currentMinute: number;
+}
+
 interface WeekViewProps {
   currentDate: Date;
   events: Record<string, CalendarEvent[]>;
@@ -31,6 +41,8 @@ interface WeekViewProps {
   onDayClick: (dateKey: string) => void;
   onEventClick?: (event: CalendarEvent, dateKey: string) => void;
   showTimeSlots?: boolean;
+  /** Called when an event is resized via drag handles */
+  onEventTimeChange?: (dateKey: string, eventId: string, newStartTime: string, newEndTime: string) => void;
 }
 
 export const WeekView: React.FC<WeekViewProps> = ({
@@ -40,6 +52,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onDayClick,
   onEventClick,
   showTimeSlots = true,
+  onEventTimeChange,
 }) => {
   const [quickCreate, setQuickCreate] = useState<{
     dateKey: string;
@@ -55,6 +68,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   const [isDraggingVisual, setIsDraggingVisual] = useState(false);
   const dragThresholdMet = useRef(false);
   const gridRef = useRef<HTMLDivElement>(null);
+  const [resizeState, setResizeState] = useState<ResizeState | null>(null);
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = showTimeSlots ? Array.from({ length: 24 }, (_, i) => i) : [];
@@ -191,16 +205,78 @@ export const WeekView: React.FC<WeekViewProps> = ({
     dragThresholdMet.current = false;
   }, [dragState, weekDays]);
 
+  // --- Resize handlers ---
+  const handleResizeStart = useCallback((e: React.MouseEvent, eventId: string, dateKey: string, edge: 'top' | 'bottom', startTime: string, endTime: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { hour, minute } = getTimeFromY(e.clientY);
+    setResizeState({
+      isResizing: true,
+      eventId,
+      dateKey,
+      edge,
+      originalStartTime: startTime,
+      originalEndTime: endTime,
+      currentMinute: hour * 60 + minute,
+    });
+  }, [getTimeFromY]);
+
+  const handleResizeMove = useCallback((e: React.MouseEvent) => {
+    if (!resizeState?.isResizing) return;
+    const { hour, minute } = getTimeFromY(e.clientY);
+    setResizeState(prev => prev ? { ...prev, currentMinute: hour * 60 + minute } : null);
+  }, [resizeState, getTimeFromY]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (!resizeState?.isResizing || !onEventTimeChange) {
+      setResizeState(null);
+      return;
+    }
+
+    const [origStartH, origStartM] = resizeState.originalStartTime.split(':').map(Number);
+    const [origEndH, origEndM] = resizeState.originalEndTime.split(':').map(Number);
+    const origStartTotal = origStartH * 60 + origStartM;
+    const origEndTotal = origEndH * 60 + origEndM;
+
+    let newStartTotal = origStartTotal;
+    let newEndTotal = origEndTotal;
+
+    if (resizeState.edge === 'top') {
+      newStartTotal = Math.min(resizeState.currentMinute, origEndTotal - 15);
+      newStartTotal = Math.max(0, newStartTotal);
+    } else {
+      newEndTotal = Math.max(resizeState.currentMinute, origStartTotal + 15);
+      newEndTotal = Math.min(24 * 60 - 1, newEndTotal);
+    }
+
+    const newStartH = Math.floor(newStartTotal / 60);
+    const newStartM = newStartTotal % 60;
+    const newEndH = Math.floor(newEndTotal / 60);
+    const newEndM = newEndTotal % 60;
+
+    const newStartTime = `${newStartH.toString().padStart(2, '0')}:${newStartM.toString().padStart(2, '0')}`;
+    const newEndTime = `${newEndH.toString().padStart(2, '0')}:${newEndM.toString().padStart(2, '0')}`;
+
+    if (newStartTime !== resizeState.originalStartTime || newEndTime !== resizeState.originalEndTime) {
+      onEventTimeChange(resizeState.dateKey, resizeState.eventId, newStartTime, newEndTime);
+    }
+
+    setResizeState(null);
+  }, [resizeState, onEventTimeChange]);
+
   // Clean up drag on mouse leave / window blur
   useEffect(() => {
     const handleGlobalUp = () => {
       if (dragState?.isDragging) {
         handleMouseUp();
       }
+      if (resizeState?.isResizing) {
+        handleResizeEnd();
+      }
     };
     window.addEventListener('mouseup', handleGlobalUp);
     return () => window.removeEventListener('mouseup', handleGlobalUp);
-  }, [dragState, handleMouseUp]);
+  }, [dragState, handleMouseUp, resizeState, handleResizeEnd]);
 
   // Update current time every minute
   useEffect(() => {
@@ -367,9 +443,15 @@ export const WeekView: React.FC<WeekViewProps> = ({
         <div
           ref={gridRef}
           className="grid grid-cols-8 relative"
-          style={{ minHeight: '1440px' /* 24 hours * 60px */, userSelect: isDraggingVisual ? 'none' : undefined }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+          style={{ minHeight: '1440px' /* 24 hours * 60px */, userSelect: (isDraggingVisual || resizeState?.isResizing) ? 'none' : undefined }}
+          onMouseMove={(e) => {
+            handleMouseMove(e);
+            handleResizeMove(e);
+          }}
+          onMouseUp={() => {
+            handleMouseUp();
+            handleResizeEnd();
+          }}
         >
           {/* Time labels column */}
           <div className="border-r border-border-light dark:border-border-dark">
@@ -454,12 +536,34 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   </div>
                 )}
 
-                {/* Timed events (with overlap stacking) */}
+                {/* Timed events (with overlap stacking + resize handles) */}
                 {(() => {
                   const layout = calculateEventLayout(timedEvents);
                   return timedEvents.map((event) => {
-                    const style = getEventStyle(event);
+                    // If resizing this event, compute adjusted style
+                    let style = getEventStyle(event);
                     if (!style) return null;
+
+                    const isBeingResized = resizeState?.isResizing && resizeState.eventId === event.id;
+                    if (isBeingResized && event.startTime && event.endTime) {
+                      const [origSH, origSM] = event.startTime.split(':').map(Number);
+                      const [origEH, origEM] = event.endTime.split(':').map(Number);
+                      let startMin = origSH * 60 + origSM;
+                      let endMin = origEH * 60 + origEM;
+                      if (resizeState.edge === 'top') {
+                        startMin = Math.min(resizeState.currentMinute, endMin - 15);
+                        startMin = Math.max(0, startMin);
+                      } else {
+                        endMin = Math.max(resizeState.currentMinute, startMin + 15);
+                        endMin = Math.min(24 * 60 - 1, endMin);
+                      }
+                      const startHour = startMin / 60;
+                      const duration = (endMin - startMin) / 60;
+                      style = {
+                        top: `${(startHour / 24) * 100}%`,
+                        height: `${(duration / 24) * 100}%`,
+                      };
+                    }
 
                     const layoutInfo = layout.get(event.id);
                     const col = layoutInfo?.column ?? 0;
@@ -469,13 +573,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     const hasConflict = totalCols > 1;
 
                     return (
-                      <button
+                      <div
                         key={event.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick?.(event, dateKey);
-                        }}
-                        className="absolute px-1 py-0.5 rounded-button text-left overflow-hidden text-white text-xs hover:opacity-90 transition-all duration-standard ease-smooth shadow-sm z-20"
+                        className={`absolute rounded-button text-left overflow-hidden text-white text-xs shadow-sm z-20 group/event ${isBeingResized ? 'ring-2 ring-white/50' : ''}`}
                         style={{
                           ...style,
                           left: `${leftPercent}%`,
@@ -484,16 +584,40 @@ export const WeekView: React.FC<WeekViewProps> = ({
                         }}
                         title={`${event.startTime} - ${event.endTime || ''}: ${event.title}`}
                       >
-                        <div className="font-medium truncate flex items-center gap-0.5">
-                          {event.title}
-                          {hasConflict && <AlertCircle className="w-2.5 h-2.5 text-amber-300 flex-shrink-0" />}
-                        </div>
-                        {event.startTime && (
-                          <div className="text-xs opacity-90">
-                            {event.startTime} {event.endTime && `- ${event.endTime}`}
-                          </div>
+                        {/* Top resize handle */}
+                        {onEventTimeChange && event.startTime && event.endTime && (
+                          <div
+                            className="absolute top-0 left-0 right-0 h-1.5 cursor-n-resize opacity-0 group-hover/event:opacity-100 bg-white/30 rounded-t-button z-30"
+                            onMouseDown={(e) => handleResizeStart(e, event.id, dateKey, 'top', event.startTime!, event.endTime!)}
+                          />
                         )}
-                      </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventClick?.(event, dateKey);
+                          }}
+                          className="w-full h-full px-1 py-0.5 text-left hover:opacity-90 transition-all duration-standard ease-smooth"
+                        >
+                          <div className="font-medium truncate flex items-center gap-0.5">
+                            {event.title}
+                            {hasConflict && <AlertCircle className="w-2.5 h-2.5 text-amber-300 flex-shrink-0" />}
+                          </div>
+                          {event.startTime && (
+                            <div className="text-xs opacity-90">
+                              {event.startTime} {event.endTime && `- ${event.endTime}`}
+                            </div>
+                          )}
+                        </button>
+
+                        {/* Bottom resize handle */}
+                        {onEventTimeChange && event.startTime && event.endTime && (
+                          <div
+                            className="absolute bottom-0 left-0 right-0 h-1.5 cursor-s-resize opacity-0 group-hover/event:opacity-100 bg-white/30 rounded-b-button z-30"
+                            onMouseDown={(e) => handleResizeStart(e, event.id, dateKey, 'bottom', event.startTime!, event.endTime!)}
+                          />
+                        )}
+                      </div>
                     );
                   });
                 })()}

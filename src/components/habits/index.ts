@@ -12,3 +12,7 @@ export { HabitRewardsPanel } from './HabitRewards';
 export { useHabitReminders } from './HabitReminders';
 export { HabitAnalytics } from './HabitAnalytics';
 export { HabitAchievementsBadges } from './HabitAchievementsBadges';
+export { HabitJournal } from './HabitJournal';
+export { HabitStreakCalendar } from './HabitStreakCalendar';
+export { FlashcardReview } from './FlashcardReview';
+export { FlashcardCreator } from './FlashcardCreator';

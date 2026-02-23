@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, AlertTriangle, Sparkles } from 'lucide-react';
+import { X, AlertTriangle, Sparkles, Copy } from 'lucide-react';
 import { en as chrono } from 'chrono-node';
 import { format } from 'date-fns';
 import { useCalendarStore } from '../stores/useCalendarStore';
@@ -12,6 +12,8 @@ interface EventCreateModalProps {
   dateKey: string;
   event?: CalendarEvent | null;
   onClose: () => void;
+  /** When true, opens as a duplicate of the event (new event with same details) */
+  isDuplicate?: boolean;
 }
 
 /**
@@ -19,7 +21,7 @@ interface EventCreateModalProps {
  * Create or edit calendar events
  * Simplified version matching TimeEntryCalendar aesthetic
  */
-export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalProps) {
+export function EventCreateModal({ dateKey, event, onClose, isDuplicate = false }: EventCreateModalProps) {
   const { addEvent, updateEvent, events, calendars } = useCalendarStore();
 
   // Natural language input state
@@ -49,6 +51,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
   const [location, setLocation] = useState('');
   const [reminders, setReminders] = useState<number[]>([]);
   const [recurrenceType, setRecurrenceType] = useState<'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'>('none');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [weeklyDays, setWeeklyDays] = useState<number[]>([]);
   const [monthlyDay, setMonthlyDay] = useState(1);
   const [recurrenceEndType, setRecurrenceEndType] = useState<'never' | 'after' | 'until'>('never');
@@ -112,10 +115,10 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
     }
   }, []);
 
-  // Initialize form when editing existing event
+  // Initialize form when editing existing event or duplicating
   useEffect(() => {
     if (event) {
-      setTitle(event.title);
+      setTitle(isDuplicate ? `${event.title} (copy)` : event.title);
       setDescription(event.description || '');
       setStartDate(toISODate(dateKey));
       setIsAllDay(event.isAllDay !== false);
@@ -129,6 +132,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
 
       if (event.recurrence) {
         setRecurrenceType(event.recurrence.frequency);
+        setRecurrenceInterval(event.recurrence.interval || 1);
         setWeeklyDays(event.recurrence.daysOfWeek || []);
         setMonthlyDay(event.recurrence.dayOfMonth || 1);
         setRecurrenceEndType(event.recurrence.endType);
@@ -136,7 +140,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
         setRecurrenceEndDate(event.recurrence.endDate || '');
       }
     }
-  }, [event, dateKey]);
+  }, [event, dateKey, isDuplicate]);
 
   // Check for conflicts when time changes
   useEffect(() => {
@@ -193,11 +197,11 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
         calendarId: calendarId || undefined,
       };
 
-      // Add recurrence if configured
-      if (recurrenceType !== 'none' && !event) {
+      // Add recurrence if configured (for both new events and edits)
+      if (recurrenceType !== 'none') {
         eventData.recurrence = {
           frequency: recurrenceType,
-          interval: 1,
+          interval: recurrenceInterval,
           endType: recurrenceEndType,
           endCount: recurrenceEndType === 'after' ? recurrenceEndCount : undefined,
           endDate: recurrenceEndType === 'until' ? recurrenceEndDate : undefined,
@@ -210,16 +214,19 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
         if (recurrenceType === 'monthly') {
           eventData.recurrence.dayOfMonth = monthlyDay;
         }
+      } else {
+        // Explicitly remove recurrence when set to none
+        eventData.recurrence = undefined;
       }
 
       // Get the standard date key from the ISO start date
       const effectiveDateKey = toStandardKey(startDate);
 
-      if (event) {
+      if (event && !isDuplicate) {
         // Update existing event
         updateEvent(effectiveDateKey, event.id, eventData.title!, eventData.description, eventData);
       } else {
-        // Create new event
+        // Create new event (or duplicate)
         addEvent(effectiveDateKey, eventData.title!, eventData.description, eventData);
       }
 
@@ -253,15 +260,33 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark sticky top-0 bg-surface-light dark:bg-surface-dark z-10">
           <h2 className="text-base font-semibold text-text-light-primary dark:text-text-dark-primary">
-            {event ? 'Edit Event' : 'Create Event'}
+            {isDuplicate ? 'Duplicate Event' : event ? 'Edit Event' : 'Create Event'}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-button hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary transition-all duration-standard ease-smooth"
-            aria-label="Close modal"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {event && !isDuplicate && (
+              <button
+                onClick={() => {
+                  onClose();
+                  // Re-open as duplicate by triggering a custom event
+                  window.dispatchEvent(new CustomEvent('calendar:duplicate-event', {
+                    detail: { event, dateKey },
+                  }));
+                }}
+                className="p-1 rounded-button hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary transition-all duration-standard ease-smooth"
+                aria-label="Duplicate event"
+                title="Duplicate event"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 rounded-button hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary transition-all duration-standard ease-smooth"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -488,24 +513,49 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
             />
           </div>
 
-          {/* Recurrence (only for new events) */}
-          {!event && (
-            <>
+          {/* Recurrence */}
+          <>
+            <div>
+              <label className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-1.5">
+                Repeat
+              </label>
+              <select
+                value={recurrenceType}
+                onChange={(e) => setRecurrenceType(e.target.value as 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly')}
+                className="w-full px-2.5 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary"
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            {/* Recurrence Interval */}
+            {recurrenceType !== 'none' && (
               <div>
                 <label className="block text-xs font-medium text-text-light-primary dark:text-text-dark-primary mb-1.5">
-                  Repeat
+                  Every
                 </label>
-                <select
-                  value={recurrenceType}
-                  onChange={(e) => setRecurrenceType(e.target.value as any)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary"
-                >
-                  <option value="none">Does not repeat</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={recurrenceInterval}
+                    onChange={(e) => setRecurrenceInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 px-2.5 py-1.5 text-xs bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark rounded-button focus:outline-none focus:ring-2 focus:ring-accent-primary text-text-light-primary dark:text-text-dark-primary"
+                  />
+                  <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
+                    {recurrenceType === 'daily' ? (recurrenceInterval === 1 ? 'day' : 'days') :
+                     recurrenceType === 'weekly' ? (recurrenceInterval === 1 ? 'week' : 'weeks') :
+                     recurrenceType === 'monthly' ? (recurrenceInterval === 1 ? 'month' : 'months') :
+                     (recurrenceInterval === 1 ? 'year' : 'years')}
+                  </span>
+                </div>
               </div>
+            )}
 
               {/* Weekly days selection */}
               {recurrenceType === 'weekly' && (
@@ -597,8 +647,7 @@ export function EventCreateModal({ dateKey, event, onClose }: EventCreateModalPr
                   )}
                 </div>
               )}
-            </>
-          )}
+          </>
 
           {/* Reminders */}
           <div>

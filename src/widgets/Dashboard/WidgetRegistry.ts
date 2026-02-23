@@ -91,6 +91,8 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   habitsummary: 'HabitSummaryWidget',
   bookmarks: 'BookmarksWidget',
   activityfeed: 'ActivityFeedWidget',
+  aibriefing: 'AIBriefingWidget',
+  flashcard: 'FlashcardWidget',
 };
 
 /**
@@ -629,6 +631,24 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     description: 'Recent activity across all modules',
     icon: '📊',
     category: 'core',
+    defaultEnabled: false,
+  },
+
+  aibriefing: {
+    id: 'aibriefing',
+    name: 'AI Daily Briefing',
+    description: 'AI-generated morning summary with events, tasks, and habits',
+    icon: '🌅',
+    category: 'productivity',
+    defaultEnabled: false,
+  },
+
+  flashcard: {
+    id: 'flashcard',
+    name: 'Flashcards',
+    description: 'Spaced repetition flashcard review with SM-2 algorithm',
+    icon: '🧠',
+    category: 'productivity',
     defaultEnabled: false,
   },
 };

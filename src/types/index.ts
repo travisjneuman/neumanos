@@ -5,6 +5,7 @@ import type { CustomFieldsMap } from './customFields';
 export type ViewMode = 'monthly' | 'weekly' | 'daily' | 'agenda';
 export type TaskStatus = 'backlog' | 'todo' | 'inprogress' | 'review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type WhenTag = 'today' | 'evening' | 'upcoming' | 'someday' | 'anytime';
 
 // ==================== PROJECT CONTEXT TYPES ====================
 // Global project/context filter system for scoping all entities
@@ -364,6 +365,12 @@ export interface Task {
 
   // PHASE 3.4 FIELDS (CARD COVERS):
   coverMode?: 'fit' | 'fill'; // Cover image display mode (default: 'fit')
+
+  // WAVE 4E: TEMPORAL TAGS (Things 3-style "When")
+  whenTag?: WhenTag; // Temporal tag for task scheduling
+
+  // WAVE 4E: SNOOZE (for triage inbox)
+  snoozedUntil?: string; // ISO date — hidden from triage until this time
 }
 
 export interface KanbanState {

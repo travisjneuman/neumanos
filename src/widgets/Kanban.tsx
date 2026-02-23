@@ -18,6 +18,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Toast } from '../components/Toast';
 import { useKanbanStore } from '../stores/useKanbanStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
+import { useTaskViewsStore, applyFilters } from '../stores/useTaskViewsStore';
 import { useKanbanKeyboard } from '../hooks/useKanbanKeyboard';
 import { KanbanColumn } from './Kanban/KanbanColumn';
 import { KanbanCard } from './Kanban/KanbanCard';
@@ -27,6 +28,10 @@ import { ListView } from './Kanban/ListView';
 import { CalendarView } from './Kanban/CalendarView';
 import { ArchivedView } from './Kanban/ArchivedView';
 import { QuickAddModal } from './Kanban/QuickAddModal';
+import { EisenhowerMatrix } from '../components/tasks/EisenhowerMatrix';
+import { TriageInbox } from '../components/tasks/TriageInbox';
+import { TaskViewSidebar } from '../components/tasks/TaskViewSidebar';
+import { TaskTemplatesPicker } from '../components/tasks/TaskTemplatesPicker';
 import type { Task, TaskStatus } from '../types';
 
 /**
@@ -55,10 +60,17 @@ export const Kanban: React.FC = () => {
   const selectedTask = detailPanelTaskId ? tasks.find(t => t.id === detailPanelTaskId) || null : null;
 
   // View mode state with persistence
-  const [viewMode, setViewMode] = useState<'board' | 'list' | 'calendar'>(() => {
+  const [viewMode, setViewMode] = useState<'board' | 'list' | 'calendar' | 'matrix' | 'triage'>(() => {
     const saved = localStorage.getItem('kanban-view-mode');
-    return (saved as 'board' | 'list' | 'calendar') || 'board';
+    return (saved as 'board' | 'list' | 'calendar' | 'matrix' | 'triage') || 'board';
   });
+
+  // Task templates modal
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  // Active view from task views store
+  const activeView = useTaskViewsStore((s) => s.getActiveView());
+  const [showViewSidebar, setShowViewSidebar] = useState(false);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,9 +119,13 @@ export const Kanban: React.FC = () => {
     return Array.from(tagSet).sort();
   }, [tasks]);
 
-  // Filter tasks based on search and filters
+  // Filter tasks based on search, view filters, and manual filters
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    // First apply active view filters
+    let result = activeView.filters.length > 0 ? applyFilters(tasks, activeView.filters) : tasks;
+
+    // Then apply manual filters
+    return result.filter((task) => {
       // Search filter (title, description, or card number)
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -161,7 +177,7 @@ export const Kanban: React.FC = () => {
 
       return true;
     });
-  }, [tasks, searchQuery, selectedPriorities, selectedTags, selectedAssignees, showUnassigned]);
+  }, [tasks, searchQuery, selectedPriorities, selectedTags, selectedAssignees, showUnassigned, activeView]);
 
   // Toggle filter helpers
   const togglePriority = (priority: string) => {
@@ -390,40 +406,49 @@ export const Kanban: React.FC = () => {
           </button>
           {/* View Toggle */}
           <div className="flex rounded-lg overflow-hidden border border-border-light dark:border-border-dark">
-            <button
-              onClick={() => setViewMode('board')}
-              className={`px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                viewMode === 'board'
-                  ? 'bg-accent-blue text-white'
-                  : 'bg-surface-light dark:bg-surface-dark text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
-              }`}
-              title="Board View"
-            >
-              📋 Board
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap border-l border-border-light dark:border-border-dark ${
-                viewMode === 'list'
-                  ? 'bg-accent-blue text-white'
-                  : 'bg-surface-light dark:bg-surface-dark text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
-              }`}
-              title="List View"
-            >
-              📊 List
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap border-l border-border-light dark:border-border-dark ${
-                viewMode === 'calendar'
-                  ? 'bg-accent-blue text-white'
-                  : 'bg-surface-light dark:bg-surface-dark text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
-              }`}
-              title="Calendar View"
-            >
-              📅 Calendar
-            </button>
+            {([
+              { id: 'board' as const, label: 'Board', icon: '📋' },
+              { id: 'list' as const, label: 'List', icon: '📊' },
+              { id: 'calendar' as const, label: 'Calendar', icon: '📅' },
+              { id: 'matrix' as const, label: 'Matrix', icon: '🎯' },
+              { id: 'triage' as const, label: 'Triage', icon: '📥' },
+            ] as const).map((v, i) => (
+              <button
+                key={v.id}
+                onClick={() => setViewMode(v.id)}
+                className={`px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                  i > 0 ? 'border-l border-border-light dark:border-border-dark' : ''
+                } ${
+                  viewMode === v.id
+                    ? 'bg-accent-blue text-white'
+                    : 'bg-surface-light dark:bg-surface-dark text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated'
+                }`}
+                title={`${v.label} View`}
+              >
+                {v.icon} {v.label}
+              </button>
+            ))}
           </div>
+          {/* Templates button */}
+          <button
+            onClick={() => setShowTemplates(true)}
+            className="px-4 py-2 text-sm font-medium bg-surface-light-elevated dark:bg-surface-dark text-text-light-primary dark:text-text-dark-primary rounded-lg border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark-elevated transition-colors whitespace-nowrap"
+            title="Create from Template"
+          >
+            📝 Template
+          </button>
+          {/* Views sidebar toggle */}
+          <button
+            onClick={() => setShowViewSidebar(!showViewSidebar)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+              showViewSidebar
+                ? 'bg-accent-blue text-white'
+                : 'bg-surface-light-elevated dark:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light dark:hover:bg-surface-dark'
+            }`}
+            title="Saved Views"
+          >
+            👁 Views
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
@@ -561,68 +586,86 @@ export const Kanban: React.FC = () => {
         </div>
       </div>
 
-      {viewMode === 'board' ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="kanban-board min-h-[500px] flex gap-4 overflow-x-auto pb-4 max-w-full">
-            {sortedColumns.map((column, index) => {
-              // Dynamic column width: always calculate based on visibleColumns setting
-              // If visibleColumns > actual columns, columns will be narrower (leaving space on right)
-              // If visibleColumns < actual columns, horizontal scrolling will be enabled
-              const columnWidth = `calc((100% - ${(visibleColumns - 1) * 16}px) / ${visibleColumns})`;
-
-              return (
-                <KanbanColumn
-                  key={column.id}
-                  id={column.id}
-                  title={column.title}
-                  color={column.color}
-                  wipLimit={column.wipLimit}
-                  tasks={filteredTasks.filter((task) => task.status === column.id)}
-                  selectedTaskId={selectedColumn === index ? selectedTaskId : undefined}
-                  columnWidth={columnWidth}
-                  onRegisterRef={(ref) => {
-                    columnRefs.current[column.id] = ref;
-                  }}
-                  onRegisterCardRef={(taskId, ref) => {
-                    cardRefs.current[taskId] = ref;
-                  }}
-                  onCardClick={(task, tab) => {
-                    setDetailPanelTaskId(task.id);
-                    if (tab) setSelectedTab(tab);
-                  }}
-                  onEditColumn={handleEditColumn}
-                />
-              );
-            })}
+      <div className={`flex gap-4 ${showViewSidebar ? '' : ''}`}>
+        {/* Views Sidebar */}
+        {showViewSidebar && (
+          <div className="w-48 shrink-0 border-r border-border-light dark:border-border-dark pr-4">
+            <TaskViewSidebar />
           </div>
+        )}
 
-          {/* Drag overlay - shows ghost of dragged card */}
-          <DragOverlay>
-            {activeTask ? (
-              <div className="opacity-80 rotate-3 scale-105 transition-transform">
-                <KanbanCard task={activeTask} isDragging />
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {viewMode === 'board' ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="kanban-board min-h-[500px] flex gap-4 overflow-x-auto pb-4 max-w-full">
+                {sortedColumns.map((column, index) => {
+                  const columnWidth = `calc((100% - ${(visibleColumns - 1) * 16}px) / ${visibleColumns})`;
+
+                  return (
+                    <KanbanColumn
+                      key={column.id}
+                      id={column.id}
+                      title={column.title}
+                      color={column.color}
+                      wipLimit={column.wipLimit}
+                      tasks={filteredTasks.filter((task) => task.status === column.id)}
+                      selectedTaskId={selectedColumn === index ? selectedTaskId : undefined}
+                      columnWidth={columnWidth}
+                      onRegisterRef={(ref) => {
+                        columnRefs.current[column.id] = ref;
+                      }}
+                      onRegisterCardRef={(taskId, ref) => {
+                        cardRefs.current[taskId] = ref;
+                      }}
+                      onCardClick={(task, tab) => {
+                        setDetailPanelTaskId(task.id);
+                        if (tab) setSelectedTab(tab);
+                      }}
+                      onEditColumn={handleEditColumn}
+                    />
+                  );
+                })}
               </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      ) : viewMode === 'list' ? (
-        <ListView
-          tasks={filteredTasks}
-          columns={columns}
-          onTaskClick={(task) => setDetailPanelTaskId(task.id)}
-        />
-      ) : (
-        <CalendarView
-          tasks={filteredTasks}
-          columns={columns}
-          onTaskClick={(task) => setDetailPanelTaskId(task.id)}
-        />
-      )}
+
+              {/* Drag overlay - shows ghost of dragged card */}
+              <DragOverlay>
+                {activeTask ? (
+                  <div className="opacity-80 rotate-3 scale-105 transition-transform">
+                    <KanbanCard task={activeTask} isDragging />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          ) : viewMode === 'list' ? (
+            <ListView
+              tasks={filteredTasks}
+              columns={columns}
+              onTaskClick={(task) => setDetailPanelTaskId(task.id)}
+            />
+          ) : viewMode === 'matrix' ? (
+            <EisenhowerMatrix
+              tasks={filteredTasks}
+              onTaskClick={(task) => setDetailPanelTaskId(task.id)}
+            />
+          ) : viewMode === 'triage' ? (
+            <TriageInbox
+              onTaskClick={(task) => setDetailPanelTaskId(task.id)}
+            />
+          ) : (
+            <CalendarView
+              tasks={filteredTasks}
+              columns={columns}
+              onTaskClick={(task) => setDetailPanelTaskId(task.id)}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Keyboard Shortcuts Help Modal */}
       <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
@@ -686,6 +729,12 @@ export const Kanban: React.FC = () => {
       <QuickAddModal
         isOpen={showQuickAdd}
         onClose={() => setShowQuickAdd(false)}
+      />
+
+      {/* Task Templates Picker (Wave 4E) */}
+      <TaskTemplatesPicker
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
       />
     </Widget>
   );
