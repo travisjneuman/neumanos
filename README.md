@@ -7,10 +7,10 @@
 **A privacy-first, local-only platform for organizing your life and work without surrendering your data.**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-os.neuman.dev-brightgreen)](https://os.neuman.dev)
+[![Live Site](https://img.shields.io/badge/Live%20Demo-os.neuman.dev-brightgreen)](https://os.neuman.dev)
 [![GitHub Stars](https://img.shields.io/github/stars/travisjneuman/neumanos?style=social)](https://github.com/travisjneuman/neumanos/stargazers)
 
-**[Live Demo](https://os.neuman.dev)** &nbsp;|&nbsp; **[Documentation](https://os.neuman.dev)** &nbsp;|&nbsp; **[Report Bug](https://github.com/travisjneuman/neumanos/issues)** &nbsp;|&nbsp; **[Request Feature](https://github.com/travisjneuman/neumanos/discussions)**
+**[Live Site](https://os.neuman.dev)** &nbsp;|&nbsp; **[Documentation](https://os.neuman.dev/create/platform/readme)** &nbsp;|&nbsp; **[Report Bug](https://github.com/travisjneuman/neumanos/issues)** &nbsp;|&nbsp; **[Request Feature](https://github.com/travisjneuman/neumanos/discussions)**
 
 </div>
 
