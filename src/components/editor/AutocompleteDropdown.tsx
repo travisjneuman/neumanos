@@ -141,7 +141,22 @@ export default function AutocompleteDropdown({
     const searchResults: SearchResult[] = [];
 
     notes.forEach((note) => {
-      const { matches, score } = fuzzyMatch(query, note.title);
+      // Match against title
+      let { matches, score } = fuzzyMatch(query, note.title);
+
+      // Also match against aliases if title didn't match
+      if (!matches && note.aliases) {
+        for (const alias of note.aliases) {
+          const aliasResult = fuzzyMatch(query, alias);
+          if (aliasResult.matches) {
+            matches = true;
+            // Slightly lower score for alias matches vs title matches
+            score = Math.max(score, aliasResult.score - 5);
+            break;
+          }
+        }
+      }
+
       if (!matches) return;
 
       let finalScore = score;

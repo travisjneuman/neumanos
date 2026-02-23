@@ -17,3 +17,5 @@ export { HabitStreakCalendar } from './HabitStreakCalendar';
 export { FlashcardReview } from './FlashcardReview';
 export { FlashcardCreator } from './FlashcardCreator';
 export { DailyQuestsPanel } from './DailyQuestsPanel';
+export { RoutineBuilder } from './RoutineBuilder';
+export { RoutineRunner } from './RoutineRunner';

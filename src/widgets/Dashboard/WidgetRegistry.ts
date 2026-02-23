@@ -94,6 +94,9 @@ const WIDGET_FILE_NAMES: Record<string, string> = {
   aibriefing: 'AIBriefingWidget',
   flashcard: 'FlashcardWidget',
   dailyquests: 'DailyQuestsWidget',
+  energytracker: 'EnergyTrackerWidget',
+  portfolio: 'PortfolioWidget',
+  weeklyinsights: 'WeeklyInsightsWidget',
 };
 
 /**
@@ -658,6 +661,33 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     name: 'Daily Quests',
     description: 'Gamified daily habit challenges with XP rewards',
     icon: '📜',
+    category: 'productivity',
+    defaultEnabled: false,
+  },
+
+  energytracker: {
+    id: 'energytracker',
+    name: 'Energy Tracker',
+    description: 'Track your energy levels and find optimal work times',
+    icon: '⚡',
+    category: 'productivity',
+    defaultEnabled: false,
+  },
+
+  portfolio: {
+    id: 'portfolio',
+    name: 'Portfolio',
+    description: 'Cross-project health overview with task counts',
+    icon: '📂',
+    category: 'productivity',
+    defaultEnabled: false,
+  },
+
+  weeklyinsights: {
+    id: 'weeklyinsights',
+    name: 'Weekly Insights',
+    description: 'Productivity score, top win, and improvement from your weekly retrospective',
+    icon: '📊',
     category: 'productivity',
     defaultEnabled: false,
   },

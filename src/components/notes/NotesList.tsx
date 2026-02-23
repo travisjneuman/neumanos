@@ -21,12 +21,11 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { FileText, FileDown, Sparkles, Trash2, FolderOpen } from 'lucide-react';
+import { FileText, FileDown, Sparkles } from 'lucide-react';
 import { useFoldersStore } from '../../stores/useFoldersStore';
 import { useNotesStore } from '../../stores/useNotesStore';
-import { PromptDialog } from '../PromptDialog';
-import { ConfirmDialog } from '../ConfirmDialog';
-import { FolderPickerModal } from './FolderPickerModal';
+import { useNoteSelectionStore } from '../../stores/useNoteSelectionStore';
+import { BulkNotesActionBar } from './BulkNotesActionBar';
 import { NoteListItem } from './NoteListItem';
 import { tagMatchesFilter } from '../../utils/tagHierarchy';
 import { logger } from '../../services/logger';
@@ -55,12 +54,18 @@ export const NotesList: React.FC<NotesListProps> = ({
   const filter = useNotesStore((state) => state.filter);
   const activeNoteId = useNotesStore((state) => state.activeNoteId);
   const createNote = useNotesStore((state) => state.createNote);
-  const deleteNote = useNotesStore((state) => state.deleteNote);
-  const bulkAddTag = useNotesStore((state) => state.bulkAddTag);
-  const bulkRemoveTag = useNotesStore((state) => state.bulkRemoveTag);
   const moveNote = useNotesStore((state) => state.moveNote);
   const setParentNote = useNotesStore((state) => state.setParentNote);
   const canSetParentNote = useNotesStore((state) => state.canSetParentNote);
+
+  // Selection store
+  const selectionMode = useNoteSelectionStore((s) => s.isMultiSelectMode);
+  const selectedNoteIds = useNoteSelectionStore((s) => s.selectedNoteIds);
+  const lastSelectedNoteId = useNoteSelectionStore((s) => s.lastSelectedNoteId);
+  const toggleSelect = useNoteSelectionStore((s) => s.toggleSelect);
+  const selectRange = useNoteSelectionStore((s) => s.selectRange);
+  const toggleMultiSelectMode = useNoteSelectionStore((s) => s.toggleMultiSelectMode);
+  const enterMultiSelectMode = useNoteSelectionStore((s) => s.enterMultiSelectMode);
 
   // DnD state for note movement
   const [isDisablingClicks, setIsDisablingClicks] = useState(false);
@@ -116,98 +121,9 @@ export const NotesList: React.FC<NotesListProps> = ({
     [moveNote, setParentNote, canSetParentNote]
   );
 
-  // Bulk operations state
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
-  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
-  const [bulkTagAction, setBulkTagAction] = useState<'add' | 'remove' | null>(null);
-  const [bulkTagValue, setBulkTagValue] = useState('');
-  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [bulkMoveDialogOpen, setBulkMoveDialogOpen] = useState(false);
-
-  // Track last selected note for shift+click range selection
-  const lastSelectedNoteIdRef = useRef<string | null>(null);
-
-  // Bulk operations handlers
-  const toggleSelectionMode = () => {
-    setSelectionMode(!selectionMode);
-    if (selectionMode) {
-      setSelectedNoteIds(new Set());
-    }
-  };
-
   const toggleNoteSelection = useCallback((noteId: string) => {
-    setSelectedNoteIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(noteId)) {
-        next.delete(noteId);
-      } else {
-        next.add(noteId);
-      }
-      return next;
-    });
-    lastSelectedNoteIdRef.current = noteId;
-  }, []);
-
-  const deselectAll = () => {
-    setSelectedNoteIds(new Set());
-  };
-
-  const handleBulkAddTag = () => {
-    setBulkTagAction('add');
-    setBulkTagDialogOpen(true);
-  };
-
-  const handleBulkRemoveTag = () => {
-    setBulkTagAction('remove');
-    setBulkTagDialogOpen(true);
-  };
-
-  const confirmBulkTagAction = (value: string) => {
-    if (!value.trim() || selectedNoteIds.size === 0) return;
-
-    if (bulkTagAction === 'add') {
-      bulkAddTag(Array.from(selectedNoteIds), value.trim());
-    } else if (bulkTagAction === 'remove') {
-      bulkRemoveTag(Array.from(selectedNoteIds), value.trim());
-    }
-
-    // Clear selection and close dialog
-    setBulkTagDialogOpen(false);
-    setBulkTagValue('');
-    setSelectedNoteIds(new Set());
-    setSelectionMode(false);
-  };
-
-  // Bulk delete handler
-  const handleBulkDelete = () => {
-    setBulkDeleteDialogOpen(true);
-  };
-
-  const confirmBulkDelete = () => {
-    selectedNoteIds.forEach((noteId) => {
-      deleteNote(noteId);
-    });
-    log.debug('Bulk deleted notes', { count: selectedNoteIds.size });
-    setBulkDeleteDialogOpen(false);
-    setSelectedNoteIds(new Set());
-    setSelectionMode(false);
-  };
-
-  // Bulk move handler
-  const handleBulkMove = () => {
-    setBulkMoveDialogOpen(true);
-  };
-
-  const confirmBulkMove = (targetFolderId: string | null) => {
-    selectedNoteIds.forEach((noteId) => {
-      moveNote(noteId, targetFolderId);
-    });
-    log.debug('Bulk moved notes', { count: selectedNoteIds.size, targetFolderId });
-    setBulkMoveDialogOpen(false);
-    setSelectedNoteIds(new Set());
-    setSelectionMode(false);
-  };
+    toggleSelect(noteId);
+  }, [toggleSelect]);
 
   // Compute filtered/sorted notes with useMemo
   const notes = useMemo(() => {
@@ -268,44 +184,27 @@ export const NotesList: React.FC<NotesListProps> = ({
     });
   }, [notesObj, activeFolderId, sortConfig, filter, activeTags]);
 
-  // selectAll needs notes, so defined after useMemo
-  const selectAll = () => {
-    const allIds = notes.map((n) => n.id);
-    setSelectedNoteIds(new Set(allIds));
-  };
+  // Visible note IDs for BulkNotesActionBar "Select All"
+  const visibleNoteIds = useMemo(() => notes.map((n) => n.id), [notes]);
 
   // Handle Ctrl/Shift+click for multi-select (needs notes for range selection)
   const handleMultiSelectClick = useCallback(
     (noteId: string, event: React.MouseEvent) => {
       // Auto-enter selection mode on first modifier+click
       if (!selectionMode) {
-        setSelectionMode(true);
+        enterMultiSelectMode();
       }
 
-      if (event.shiftKey && lastSelectedNoteIdRef.current) {
+      if (event.shiftKey && lastSelectedNoteId) {
         // Shift+click: Range selection
-        const lastIndex = notes.findIndex((n) => n.id === lastSelectedNoteIdRef.current);
-        const currentIndex = notes.findIndex((n) => n.id === noteId);
-
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const startIdx = Math.min(lastIndex, currentIndex);
-          const endIdx = Math.max(lastIndex, currentIndex);
-
-          setSelectedNoteIds((prev) => {
-            const next = new Set(prev);
-            for (let i = startIdx; i <= endIdx; i++) {
-              next.add(notes[i].id);
-            }
-            return next;
-          });
-          lastSelectedNoteIdRef.current = noteId;
-        }
+        const allIds = notes.map((n) => n.id);
+        selectRange(lastSelectedNoteId, noteId, allIds);
       } else {
         // Ctrl/Cmd+click: Toggle individual selection
         toggleNoteSelection(noteId);
       }
     },
-    [selectionMode, notes, toggleNoteSelection]
+    [selectionMode, notes, lastSelectedNoteId, toggleNoteSelection, enterMultiSelectMode, selectRange]
   );
 
   return (
@@ -326,7 +225,7 @@ export const NotesList: React.FC<NotesListProps> = ({
               Export
             </button>
             <button
-              onClick={toggleSelectionMode}
+              onClick={toggleMultiSelectMode}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 selectionMode
                   ? 'bg-accent-primary/20 text-accent-primary'
@@ -352,56 +251,8 @@ export const NotesList: React.FC<NotesListProps> = ({
           </div>
         </div>
 
-        {/* Bulk Operations Toolbar */}
-        {selectionMode && selectedNoteIds.size > 0 && (
-          <div className="mb-4 p-3 rounded-lg bg-accent-blue/10 dark:bg-accent-blue/20 border border-accent-blue/30 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-text-light-primary dark:text-text-dark-primary">
-                {selectedNoteIds.size} note{selectedNoteIds.size !== 1 ? 's' : ''} selected
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={selectAll}
-                  className="px-2 py-1 text-xs font-medium rounded border border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors text-text-light-secondary dark:text-text-dark-secondary"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={deselectAll}
-                  className="px-2 py-1 text-xs font-medium rounded border border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors text-text-light-secondary dark:text-text-dark-secondary"
-                >
-                  Deselect All
-                </button>
-                <button
-                  onClick={handleBulkAddTag}
-                  className="px-3 py-1 text-xs font-medium rounded bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
-                >
-                  Add Tag
-                </button>
-                <button
-                  onClick={handleBulkRemoveTag}
-                  className="px-3 py-1 text-xs font-medium rounded bg-accent-red/20 text-accent-red hover:bg-accent-red/30 transition-colors"
-                >
-                  Remove Tag
-                </button>
-                <button
-                  onClick={handleBulkMove}
-                  className="px-3 py-1 text-xs font-medium rounded bg-accent-purple/20 text-accent-purple hover:bg-accent-purple/30 transition-colors flex items-center gap-1"
-                >
-                  <FolderOpen className="w-3 h-3" />
-                  Move
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-3 py-1 text-xs font-medium rounded bg-accent-red text-white hover:bg-accent-red-hover transition-colors flex items-center gap-1"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Floating Bulk Actions Bar (renders at bottom of screen via portal) */}
+        <BulkNotesActionBar visibleNoteIds={visibleNoteIds} />
 
         {/* Notes list - scrollable with DnD */}
         <DndContext
@@ -462,51 +313,6 @@ export const NotesList: React.FC<NotesListProps> = ({
         </DndContext>
       </div>
 
-      {/* Bulk Tag Dialog */}
-      {bulkTagDialogOpen && (
-        <PromptDialog
-          isOpen={true}
-          onClose={() => {
-            setBulkTagDialogOpen(false);
-            setBulkTagValue('');
-          }}
-          onConfirm={confirmBulkTagAction}
-          title={
-            bulkTagAction === 'add'
-              ? 'Add Tag to Selected Notes'
-              : 'Remove Tag from Selected Notes'
-          }
-          message={
-            bulkTagAction === 'add'
-              ? `Enter tag name to add to ${selectedNoteIds.size} note${selectedNoteIds.size !== 1 ? 's' : ''}:`
-              : `Enter tag name to remove from ${selectedNoteIds.size} note${selectedNoteIds.size !== 1 ? 's' : ''}:`
-          }
-          defaultValue={bulkTagValue}
-          placeholder="Tag name"
-          confirmText={bulkTagAction === 'add' ? 'Add Tag' : 'Remove Tag'}
-        />
-      )}
-
-      {/* Bulk Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={bulkDeleteDialogOpen}
-        onClose={() => setBulkDeleteDialogOpen(false)}
-        onConfirm={confirmBulkDelete}
-        title="Delete Selected Notes"
-        message={`Are you sure you want to delete ${selectedNoteIds.size} note${selectedNoteIds.size !== 1 ? 's' : ''}? This action cannot be undone.`}
-        confirmText="Delete"
-        variant="danger"
-      />
-
-      {/* Bulk Move Folder Picker */}
-      <FolderPickerModal
-        isOpen={bulkMoveDialogOpen}
-        onClose={() => setBulkMoveDialogOpen(false)}
-        onSelect={confirmBulkMove}
-        title={`Move ${selectedNoteIds.size} Note${selectedNoteIds.size !== 1 ? 's' : ''} to...`}
-        currentFolderId={activeFolderId}
-        itemType="note"
-      />
     </div>
   );
 };

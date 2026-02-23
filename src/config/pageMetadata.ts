@@ -92,6 +92,14 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     title: 'Project Management',
     subtitle: 'Track projects, milestones, and team progress',
   },
+  '/portfolio': {
+    title: 'Portfolio',
+    subtitle: 'Cross-project overview and health tracking',
+  },
+  '/energy': {
+    title: 'Energy',
+    subtitle: 'Track energy levels and optimize your schedule',
+  },
 };
 
 /**

@@ -281,6 +281,30 @@ export const NAVIGATION_PAGES: NavigationPage[] = [
     keywords: ['activity', 'feed', 'history', 'log', 'analytics', 'heatmap'],
     description: 'Activity feed and personal analytics',
   },
+  {
+    id: 'portfolio',
+    name: 'Portfolio',
+    path: '/portfolio',
+    icon: '📂',
+    keywords: ['portfolio', 'projects', 'overview', 'health', 'cross-project', 'dashboard'],
+    description: 'Cross-project portfolio overview',
+  },
+  {
+    id: 'energy',
+    name: 'Energy',
+    path: '/energy',
+    icon: '⚡',
+    keywords: ['energy', 'tracking', 'burnout', 'schedule', 'productivity', 'fatigue'],
+    description: 'Track energy levels and optimize scheduling',
+  },
+  {
+    id: 'retrospective',
+    name: 'Weekly Retrospective',
+    path: '/retrospective',
+    icon: '📊',
+    keywords: ['retrospective', 'weekly', 'review', 'insights', 'productivity', 'score', 'retro'],
+    description: 'Weekly productivity review with AI insights',
+  },
 ];
 
 /**

@@ -159,7 +159,10 @@ export default function WikiLinkTransformPlugin({ notes }: WikiLinkTransformPlug
               const targetNote = notesArray.find(
                 (note) =>
                   note.title.toLowerCase() === linkTitleLower ||
-                  note.title.toLowerCase().startsWith(linkTitleLower)
+                  note.title.toLowerCase().startsWith(linkTitleLower) ||
+                  (note.aliases?.some(
+                    (alias) => alias.toLowerCase() === linkTitleLower
+                  ) ?? false)
               );
 
               if (targetNote) {

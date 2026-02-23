@@ -15,13 +15,7 @@ import {
   type ShortcutDefinition,
   type ShortcutContext,
 } from '../../services/shortcuts';
-
-const CUSTOM_SHORTCUTS_KEY = 'custom-keyboard-shortcuts';
-
-interface CustomBinding {
-  shortcutId: string;
-  keys: string[];
-}
+import { useKeyboardShortcutsStore } from '../../stores/useKeyboardShortcutsStore';
 
 interface ShortcutGroup {
   context: ShortcutContext;
@@ -91,35 +85,25 @@ function groupShortcuts(shortcuts: ShortcutDefinition[]): ShortcutGroup[] {
 }
 
 export const KeyboardShortcutsSection: React.FC = () => {
-  const [customBindings, setCustomBindings] = useState<CustomBinding[]>([]);
+  const customBindings = useKeyboardShortcutsStore((s) => s.customBindings);
+  const setBinding = useKeyboardShortcutsStore((s) => s.setBinding);
+  const resetBinding = useKeyboardShortcutsStore((s) => s.resetBinding);
+  const resetAll = useKeyboardShortcutsStore((s) => s.resetAll);
+  const checkConflict = useKeyboardShortcutsStore((s) => s.checkConflict);
+  const getStoreBinding = useKeyboardShortcutsStore((s) => s.getBinding);
+
   const [rebindingId, setRebindingId] = useState<string | null>(null);
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const rebindRef = useRef<HTMLDivElement>(null);
 
-  // Load custom bindings
-  useEffect(() => {
-    const saved = localStorage.getItem(CUSTOM_SHORTCUTS_KEY);
-    if (saved) {
-      try {
-        setCustomBindings(JSON.parse(saved));
-      } catch {
-        // invalid stored data
-      }
-    }
-  }, []);
-
-  const saveBindings = useCallback((bindings: CustomBinding[]) => {
-    setCustomBindings(bindings);
-    localStorage.setItem(CUSTOM_SHORTCUTS_KEY, JSON.stringify(bindings));
-  }, []);
+  const hasCustomBindings = Object.keys(customBindings).length > 0;
 
   const getEffectiveKeys = useCallback(
     (shortcutId: string, defaultKeys: string[]): string[] => {
-      const custom = customBindings.find((b) => b.shortcutId === shortcutId);
-      return custom ? custom.keys : defaultKeys;
+      return getStoreBinding(shortcutId, defaultKeys);
     },
-    [customBindings]
+    [getStoreBinding]
   );
 
   const handleRebindStart = useCallback((shortcutId: string) => {
@@ -146,32 +130,21 @@ export const KeyboardShortcutsSection: React.FC = () => {
 
       const newKeys = parseKeyboardEvent(e);
 
-      // Check for conflicts
-      const conflict = ALL_SHORTCUTS.find((s) => {
-        if (s.id === rebindingId) return false;
-        const effectiveKeys = getEffectiveKeys(s.id, s.keys);
-        return (
-          effectiveKeys.length === newKeys.length &&
-          [...effectiveKeys].sort().every((k, i) => k === [...newKeys].sort()[i])
-        );
-      });
+      // Check for conflicts via the store
+      const conflictLabel = checkConflict(newKeys, rebindingId);
 
-      if (conflict) {
-        setConflictWarning(
-          `Conflicts with "${conflict.label}" (${CONTEXT_LABELS[conflict.context ?? 'global']})`
-        );
+      if (conflictLabel) {
+        setConflictWarning(`Conflicts with "${conflictLabel}"`);
         // Still allow the binding, just warn
       } else {
         setConflictWarning(null);
       }
 
-      // Save the new binding
-      const updated = customBindings.filter((b) => b.shortcutId !== rebindingId);
-      updated.push({ shortcutId: rebindingId, keys: newKeys });
-      saveBindings(updated);
+      // Save the new binding via the store
+      setBinding(rebindingId, newKeys);
       setRebindingId(null);
     },
-    [rebindingId, customBindings, getEffectiveKeys, saveBindings]
+    [rebindingId, checkConflict, setBinding]
   );
 
   // Listen for key capture when rebinding
@@ -184,16 +157,15 @@ export const KeyboardShortcutsSection: React.FC = () => {
 
   const handleResetShortcut = useCallback(
     (shortcutId: string) => {
-      const updated = customBindings.filter((b) => b.shortcutId !== shortcutId);
-      saveBindings(updated);
+      resetBinding(shortcutId);
     },
-    [customBindings, saveBindings]
+    [resetBinding]
   );
 
   const handleResetAll = useCallback(() => {
-    saveBindings([]);
+    resetAll();
     setConflictWarning(null);
-  }, [saveBindings]);
+  }, [resetAll]);
 
   // Filter shortcuts by search
   const groups = groupShortcuts(ALL_SHORTCUTS);
@@ -219,7 +191,7 @@ export const KeyboardShortcutsSection: React.FC = () => {
             Keyboard Shortcuts
           </h2>
         </div>
-        {customBindings.length > 0 && (
+        {hasCustomBindings && (
           <button
             onClick={handleResetAll}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-colors"
@@ -272,7 +244,7 @@ export const KeyboardShortcutsSection: React.FC = () => {
             <div className="space-y-1">
               {group.shortcuts.map((shortcut) => {
                 const effectiveKeys = getEffectiveKeys(shortcut.id, shortcut.keys);
-                const isCustom = customBindings.some((b) => b.shortcutId === shortcut.id);
+                const isCustom = shortcut.id in customBindings;
                 const isRebinding = rebindingId === shortcut.id;
 
                 return (

@@ -29,12 +29,14 @@ import {
   $getRoot,
   $getSelection,
   FORMAT_TEXT_COMMAND,
+  FORMAT_ELEMENT_COMMAND,
   $isRangeSelection,
   $createParagraphNode,
   UNDO_COMMAND,
   REDO_COMMAND,
   $isParagraphNode
 } from 'lexical';
+import type { ElementFormatType } from 'lexical';
 import type { EditorState } from 'lexical';
 import {
   registerRichText,
@@ -89,6 +91,7 @@ import type { CalloutType } from '../components/editor/nodes/CalloutNode';
 import { ToggleNode, $createToggleNode } from '../components/editor/nodes/ToggleNode';
 import { MathBlockNode, $createMathBlockNode } from '../components/editor/nodes/MathBlockNode';
 import { MermaidBlockNode, $createMermaidBlockNode } from '../components/editor/nodes/MermaidBlockNode';
+import { VideoEmbedNode, $createVideoEmbedNode } from '../components/editor/nodes/VideoEmbedNode';
 import { indexedDBService } from '../services/indexedDB';
 import { BacklinksPanel } from '../components/BacklinksPanel';
 import { LinkedEventsPanel } from '../components/notes/LinkedEventsPanel';
@@ -107,6 +110,7 @@ import { TableOfContentsNode, $createTableOfContentsNode } from '../components/e
 import TableOfContentsPlugin from '../components/editor/plugins/TableOfContentsPlugin';
 import FileAttachmentPlugin from '../components/editor/plugins/FileAttachmentPlugin';
 import { NoteAttachmentsList } from '../components/notes/NoteAttachmentsList';
+import { NoteAliasEditor } from '../components/notes/NoteAliasEditor';
 
 /**
  * Keyboard Shortcuts Plugin
@@ -387,6 +391,16 @@ const SlashCommandPlugin: React.FC = () => {
         }
       });
     }},
+    { label: 'Video', icon: '▶', action: () => {
+      clearSlashCommand();
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const videoNode = $createVideoEmbedNode({});
+          selection.insertNodes([videoNode]);
+        }
+      });
+    }},
   ];
 
   const filteredCommands = commands.filter(cmd =>
@@ -594,6 +608,10 @@ const EditorToolbar: React.FC<{
     editor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined);
   };
 
+  const formatAlignment = (alignment: ElementFormatType) => {
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, alignment);
+  };
+
   const undo = () => {
     editor.dispatchCommand(UNDO_COMMAND, undefined);
   };
@@ -741,6 +759,22 @@ const EditorToolbar: React.FC<{
       </button>
       <button onClick={formatQuote} className={btnClass} title="Quote">
         &ldquo;
+      </button>
+
+      <div className={dividerClass} />
+
+      {/* Text Alignment */}
+      <button onClick={() => formatAlignment('left')} className={btnClass} title="Align Left">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" /><rect x="1" y="6" width="10" height="2" /><rect x="1" y="10" width="14" height="2" /><rect x="1" y="14" width="8" height="2" /></svg>
+      </button>
+      <button onClick={() => formatAlignment('center')} className={btnClass} title="Align Center">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" /><rect x="3" y="6" width="10" height="2" /><rect x="1" y="10" width="14" height="2" /><rect x="4" y="14" width="8" height="2" /></svg>
+      </button>
+      <button onClick={() => formatAlignment('right')} className={btnClass} title="Align Right">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" /><rect x="5" y="6" width="10" height="2" /><rect x="1" y="10" width="14" height="2" /><rect x="7" y="14" width="8" height="2" /></svg>
+      </button>
+      <button onClick={() => formatAlignment('justify')} className={btnClass} title="Justify">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" /><rect x="1" y="6" width="14" height="2" /><rect x="1" y="10" width="14" height="2" /><rect x="1" y="14" width="14" height="2" /></svg>
       </button>
 
       <div className={dividerClass} />
@@ -1000,6 +1034,7 @@ const getEditorConfig = (initialContent?: string) => ({
     TableOfContentsNode,
     MathBlockNode,
     MermaidBlockNode,
+    VideoEmbedNode,
   ],
   onError: (error: Error) => {
     console.error('Lexical error:', error);
@@ -1153,6 +1188,7 @@ export const NotesEditor: React.FC<NotesEditorProps> = ({ noteId, blockId }) => 
           className="w-full text-3xl font-bold bg-transparent border-none outline-none text-text-light-primary dark:text-text-dark-primary placeholder-text-light-secondary dark:placeholder-text-dark-secondary"
         />
         <TagsInput noteId={noteId} tags={note.tags} />
+        <NoteAliasEditor noteId={noteId} aliases={note.aliases ?? []} />
 
         {/* Custom Fields (P2 #3) */}
         <NoteCustomFields noteId={noteId} note={note} />

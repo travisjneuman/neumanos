@@ -197,55 +197,56 @@ function escapeRegex(str: string): string {
 }
 
 // =============================================================================
-// SEARCH QUERY PARSING (tag: and date: modifiers)
+// SEARCH QUERY PARSING (tag:, in:, status:, date: modifiers)
 // =============================================================================
+
+import {
+  parseSearchQuery as parseFilterTokens,
+  getFiltersOfType,
+  type SearchFilter,
+  type ParsedSearchQuery as FilterParsedQuery,
+} from '../../utils/searchFilterParser';
 
 export interface ParsedSearchQuery {
   /** The text query without modifiers */
   text: string;
   /** Tags to filter by (from tag:xxx) */
   tags: string[];
-  /** Date filter (from date:today, date:this-week, date:this-month) */
-  dateFilter: DateFilterType | null;
+  /** Date filter (from date:today, date:thisweek, etc.) */
+  dateFilter: string | null;
+  /** Module filter (from in:notes, in:tasks, etc.) */
+  moduleFilter: string | null;
+  /** Status filter (from status:done, status:todo, etc.) */
+  statusFilter: string | null;
+  /** All raw filters for chip display */
+  filters: SearchFilter[];
 }
 
-export type DateFilterType = 'today' | 'yesterday' | 'this-week' | 'this-month' | 'last-7-days' | 'last-30-days';
-
-const DATE_FILTER_VALUES: DateFilterType[] = [
-  'today', 'yesterday', 'this-week', 'this-month', 'last-7-days', 'last-30-days',
-];
-
 /**
- * Parse a search query to extract tag: and date: modifiers.
+ * Parse a search query to extract all filter modifiers.
+ * Supports: tag:, in:, status:, date:
+ *
  * Examples:
- *   "meeting tag:work" -> { text: "meeting", tags: ["work"], dateFilter: null }
- *   "tag:personal date:today" -> { text: "", tags: ["personal"], dateFilter: "today" }
+ *   "meeting tag:work" -> { text: "meeting", tags: ["work"], ... }
+ *   "in:notes status:done" -> { text: "", moduleFilter: "notes", statusFilter: "done", ... }
+ *   "tag:personal date:today review" -> { text: "review", tags: ["personal"], dateFilter: "today", ... }
  */
 export function parseSearchQuery(query: string): ParsedSearchQuery {
-  const tags: string[] = [];
-  let dateFilter: DateFilterType | null = null;
+  const parsed: FilterParsedQuery = parseFilterTokens(query);
 
-  // Extract tag:xxx modifiers (manually to avoid regex exec)
-  const parts = query.split(/\s+/);
-  const textParts: string[] = [];
+  const tags = getFiltersOfType(parsed.filters, 'tag');
+  const dateFilters = getFiltersOfType(parsed.filters, 'date');
+  const moduleFilters = getFiltersOfType(parsed.filters, 'module');
+  const statusFilters = getFiltersOfType(parsed.filters, 'status');
 
-  for (const part of parts) {
-    const lowerPart = part.toLowerCase();
-    if (lowerPart.startsWith('tag:') && part.length > 4) {
-      tags.push(part.slice(4).toLowerCase());
-    } else if (lowerPart.startsWith('date:') && part.length > 5) {
-      const dateValue = part.slice(5).toLowerCase() as DateFilterType;
-      if (DATE_FILTER_VALUES.includes(dateValue)) {
-        dateFilter = dateValue;
-      } else {
-        textParts.push(part);
-      }
-    } else {
-      textParts.push(part);
-    }
-  }
-
-  return { text: textParts.join(' ').trim(), tags, dateFilter };
+  return {
+    text: parsed.text,
+    tags,
+    dateFilter: dateFilters[0] ?? null,
+    moduleFilter: moduleFilters[0] ?? null,
+    statusFilter: statusFilters[0] ?? null,
+    filters: parsed.filters,
+  };
 }
 
 /**
@@ -262,10 +263,36 @@ function matchesTagFilter(result: SearchResult, tags: string[]): boolean {
   );
 }
 
+/** Module-to-type mapping for in: filter */
+const MODULE_TYPE_MAP: Record<string, string[]> = {
+  notes: ['note'],
+  tasks: ['task', 'project', 'template'],
+  calendar: ['event', 'time-entry'],
+  docs: ['diagram', 'form', 'document'],
+};
+
+/**
+ * Check if a result matches a module filter (in:notes, in:tasks, etc.)
+ */
+function matchesModuleFilter(result: SearchResult, module: string): boolean {
+  const allowedTypes = MODULE_TYPE_MAP[module];
+  if (!allowedTypes) return true;
+  return allowedTypes.includes(result.type);
+}
+
+/**
+ * Check if a result matches a status filter (status:done, status:todo, status:inprogress)
+ */
+function matchesStatusFilter(result: SearchResult, status: string): boolean {
+  const resultStatus = result.metadata?.status as string | undefined;
+  if (!resultStatus) return true; // don't filter out items without status
+  return resultStatus === status;
+}
+
 /**
  * Check if a result matches a date filter
  */
-function matchesDateFilter(result: SearchResult, dateFilter: DateFilterType): boolean {
+function matchesDateFilter(result: SearchResult, dateFilter: string): boolean {
   const updatedAt = result.metadata?.updatedAt as string | undefined;
   const dateKey = result.metadata?.dateKey as string | undefined;
   const startTime = result.metadata?.startTime as string | undefined;
@@ -289,24 +316,30 @@ function matchesDateFilter(result: SearchResult, dateFilter: DateFilterType): bo
       yesterday.setDate(yesterday.getDate() - 1);
       return itemDate >= yesterday && itemDate < today;
     }
-    case 'this-week': {
+    case 'thisweek': {
       const weekStart = new Date(today);
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       return itemDate >= weekStart;
     }
-    case 'this-month': {
+    case 'thismonth': {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       return itemDate >= monthStart;
     }
-    case 'last-7-days': {
+    case 'last7days': {
       const sevenDaysAgo = new Date(today);
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       return itemDate >= sevenDaysAgo;
     }
-    case 'last-30-days': {
+    case 'last30days': {
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       return itemDate >= thirtyDaysAgo;
+    }
+    case 'overdue': {
+      // Items with a due date before today
+      if (!dueDate) return false;
+      const due = new Date(dueDate);
+      return due < today;
     }
     default:
       return true;
@@ -314,7 +347,7 @@ function matchesDateFilter(result: SearchResult, dateFilter: DateFilterType): bo
 }
 
 /**
- * Apply tag and date filters to search results
+ * Apply all filters (tag, module, status, date) to search results
  */
 export function applySearchFilters(
   results: SearchResult[],
@@ -324,6 +357,14 @@ export function applySearchFilters(
 
   if (parsed.tags.length > 0) {
     filtered = filtered.filter((r) => matchesTagFilter(r, parsed.tags));
+  }
+
+  if (parsed.moduleFilter) {
+    filtered = filtered.filter((r) => matchesModuleFilter(r, parsed.moduleFilter!));
+  }
+
+  if (parsed.statusFilter) {
+    filtered = filtered.filter((r) => matchesStatusFilter(r, parsed.statusFilter!));
   }
 
   if (parsed.dateFilter) {

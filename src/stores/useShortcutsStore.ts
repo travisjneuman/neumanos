@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import type { ShortcutContext, ShortcutDefinition } from '../services/shortcuts';
 import { keysMatch } from '../services/shortcuts';
+import { useKeyboardShortcutsStore } from './useKeyboardShortcutsStore';
 
 export interface RegisteredShortcut extends ShortcutDefinition {
   handler: () => void;
@@ -121,9 +122,14 @@ export const useShortcutsStore = create<ShortcutsState>((set, get) => {
 
   findByKeys: (keys) => {
     const activeShortcuts = get().getActiveShortcuts();
+    const { customBindings } = useKeyboardShortcutsStore.getState();
 
     // Find first matching shortcut (already sorted by priority)
-    return activeShortcuts.find((shortcut) => keysMatch(keys, shortcut.keys));
+    // Check custom bindings first, then fall back to default keys
+    return activeShortcuts.find((shortcut) => {
+      const effectiveKeys = customBindings[shortcut.id] ?? shortcut.keys;
+      return keysMatch(keys, effectiveKeys);
+    });
   },
 
   findConflicts: (keys, excludeId) => {

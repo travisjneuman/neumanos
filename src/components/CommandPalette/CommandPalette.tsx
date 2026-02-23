@@ -107,9 +107,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     [activeFilter]
   );
 
-  // Parse search query for tag: and date: modifiers
+  // Parse search query for tag:, in:, status:, date: modifiers
   const parsedQuery = useMemo(() => parseSearchQuery(query), [query]);
-  const hasActiveModifiers = parsedQuery.tags.length > 0 || parsedQuery.dateFilter !== null;
+  const hasActiveModifiers = parsedQuery.filters.length > 0;
 
   // Search results with filtering
   const results = useMemo(() => {
@@ -408,19 +408,33 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             {/* Active modifier badges */}
             {hasActiveModifiers && (
               <div className="flex items-center gap-1 ml-auto pl-2 border-l border-border-light dark:border-border-dark">
-                {parsedQuery.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-accent-primary/20 text-accent-primary"
-                  >
-                    tag:{tag}
-                  </span>
-                ))}
-                {parsedQuery.dateFilter && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-accent-blue/20 text-accent-blue">
-                    date:{parsedQuery.dateFilter}
-                  </span>
-                )}
+                {parsedQuery.filters.map((filter, idx) => {
+                  const label = filter.type === 'tag' ? `tag:${filter.value}`
+                    : filter.type === 'module' ? `in:${filter.value}`
+                    : filter.type === 'status' ? `status:${filter.value}`
+                    : `date:${filter.value}`;
+                  const colorClass = filter.type === 'tag' ? 'bg-accent-primary/20 text-accent-primary'
+                    : filter.type === 'module' ? 'bg-green-500/20 text-green-600 dark:text-green-400'
+                    : filter.type === 'status' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
+                    : 'bg-accent-blue/20 text-accent-blue';
+                  return (
+                    <button
+                      key={`${filter.type}-${filter.value}-${idx}`}
+                      onClick={() => {
+                        // Remove this filter token from the query
+                        const token = label;
+                        const newQuery = query.replace(new RegExp(`\\s*${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'i'), ' ').trim();
+                        setQuery(newQuery);
+                        setSelectedIndex(0);
+                      }}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer hover:opacity-70 transition-opacity ${colorClass}`}
+                      title="Click to remove filter"
+                    >
+                      {label}
+                      <X className="w-3 h-3" />
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -467,9 +481,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                     <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">/</kbd> navigate
                   </p>
                   <p className="text-xs mt-1 opacity-50">
-                    Filter: <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">tag:name</kbd>{' '}
-                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">date:today</kbd>{' '}
-                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">date:this-week</kbd>
+                    Tip: <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">tag:</kbd>{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">in:</kbd>{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">status:</kbd>{' '}
+                    <kbd className="px-1 py-0.5 rounded bg-surface-light-elevated dark:bg-surface-dark-elevated text-xs">date:</kbd>{' '}
+                    for advanced filtering
                   </p>
                 </>
               )}

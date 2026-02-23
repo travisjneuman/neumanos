@@ -178,11 +178,14 @@ export function isLinkBroken(linkTitle: string, allNotes: Record<string, Note>):
   const notesArray = Object.values(allNotes);
   const titleLower = linkTitle.toLowerCase();
 
-  // Link is NOT broken if we find an exact or partial match
+  // Link is NOT broken if we find an exact or partial match on title or aliases
   const noteExists = notesArray.some(
     (note) =>
       note.title.toLowerCase() === titleLower ||
-      note.title.toLowerCase().startsWith(titleLower)
+      note.title.toLowerCase().startsWith(titleLower) ||
+      (note.aliases?.some(
+        (alias) => alias.toLowerCase() === titleLower
+      ) ?? false)
   );
 
   return !noteExists;

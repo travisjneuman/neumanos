@@ -49,3 +49,6 @@ export type { NoteContextMenuProps } from './NoteContextMenu';
 
 export { FolderPickerModal } from './FolderPickerModal';
 export type { FolderPickerModalProps } from './FolderPickerModal';
+
+export { BulkNotesActionBar } from './BulkNotesActionBar';
+export type { BulkNotesActionBarProps } from './BulkNotesActionBar';

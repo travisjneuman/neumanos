@@ -192,6 +192,9 @@ interface NotesStore {
   // Calendar-Notes bidirectional linking (Wave 5D)
   linkEventToNote: (noteId: string, eventId: string) => void;
   unlinkEventFromNote: (noteId: string, eventId: string) => void;
+
+  // Wave 6A: Note aliases
+  updateAliases: (noteId: string, aliases: string[]) => void;
 }
 
 /**
@@ -1416,6 +1419,28 @@ export const useNotesStore = create<NotesStore>()(
           },
         }));
         log.debug('Unlinked event from note', { noteId, eventId });
+      },
+
+      // ==================== WAVE 6A: NOTE ALIASES ====================
+
+      updateAliases: (noteId: string, aliases: string[]) => {
+        const note = get().notes[noteId];
+        if (!note) {
+          log.warn('Note not found for updating aliases', { noteId });
+          return;
+        }
+
+        set((state) => ({
+          notes: {
+            ...state.notes,
+            [noteId]: {
+              ...note,
+              aliases: aliases.length > 0 ? aliases : undefined,
+              updatedAt: new Date(),
+            },
+          },
+        }));
+        log.debug('Updated note aliases', { noteId, aliasCount: aliases.length });
       },
     }),
     {

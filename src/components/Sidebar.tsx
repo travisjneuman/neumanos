@@ -64,6 +64,7 @@ const draggableNavigation: NavItem[] = [
     children: [
       { icon: '⏱️', label: 'Timer', path: '/schedule?tab=timer' },
       { icon: '🍅', label: 'Pomodoro', path: '/schedule?tab=pomodoro' },
+      { icon: '⚡', label: 'Energy', path: '/energy' },
     ],
   },
   {
@@ -89,6 +90,7 @@ const draggableNavigation: NavItem[] = [
       { icon: '📊', label: 'Timeline', path: '/tasks?tab=timeline' },
       { icon: '🎯', label: 'Habits', path: '/tasks?tab=habits' },
       { icon: '📈', label: 'PM Dashboard', path: '/pm' },
+      { icon: '📂', label: 'Portfolio', path: '/portfolio' },
     ],
   },
   {

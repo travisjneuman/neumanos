@@ -11,7 +11,8 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Sparkles, Calendar, CheckSquare, FileText, X, ArrowRight } from 'lucide-react';
+import { Sparkles, Calendar, CheckSquare, FileText, X, ArrowRight, Mic } from 'lucide-react';
+import { useVoiceInput } from '../hooks/useVoiceInput';
 import { useKanbanStore } from '../stores/useKanbanStore';
 import { useCalendarStore } from '../stores/useCalendarStore';
 import { useNotesStore } from '../stores/useNotesStore';
@@ -210,6 +211,13 @@ export const NaturalLanguageBar: React.FC<NaturalLanguageBarProps> = ({ isOpen, 
   const inputRef = useRef<HTMLInputElement>(null);
   const addToast = useToastStore((s) => s.addToast);
 
+  // Voice input
+  const voiceInput = useVoiceInput({
+    onResult: useCallback((text: string) => {
+      setInput((prev) => (prev ? prev + ' ' + text : text));
+    }, []),
+  });
+
   // Parse input on change
   useEffect(() => {
     if (input.trim().length > 2) {
@@ -344,10 +352,29 @@ export const NaturalLanguageBar: React.FC<NaturalLanguageBarProps> = ({ isOpen, 
                 handleSubmit();
               }
             }}
-            placeholder='Try: "meeting with team tomorrow at 3pm" or "buy milk #errands !high due friday"'
+            placeholder={
+              voiceInput.isListening
+                ? (voiceInput.interimTranscript || 'Listening...')
+                : 'Try: "meeting with team tomorrow at 3pm" or "buy milk #errands !high due friday"'
+            }
             className="flex-1 bg-transparent text-text-light-primary dark:text-text-dark-primary placeholder-text-light-secondary dark:placeholder-text-dark-tertiary outline-none text-sm"
             autoComplete="off"
           />
+          {voiceInput.isSupported && (
+            <button
+              type="button"
+              onClick={voiceInput.toggleListening}
+              className={`p-1 rounded transition-colors ${
+                voiceInput.isListening
+                  ? 'text-accent-red voice-pulse'
+                  : 'text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-red hover:bg-accent-red/10'
+              }`}
+              title={voiceInput.isListening ? 'Stop voice input' : 'Start voice input'}
+              aria-label={voiceInput.isListening ? 'Stop voice input' : 'Start voice input'}
+            >
+              <Mic size={16} />
+            </button>
+          )}
           <button
             onClick={onClose}
             className="p-1 hover:bg-surface-light-elevated dark:hover:bg-surface-dark rounded transition-colors text-text-light-secondary dark:text-text-dark-secondary"

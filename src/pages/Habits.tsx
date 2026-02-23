@@ -3,7 +3,7 @@ import {
   Plus, Target, Flame, Trophy, Archive, RotateCcw, Trash2, Edit2,
   Check, MoreVertical, ChevronDown, ChevronRight, BarChart3, BookTemplate,
   Grid3X3, Star, Lock, Bell, BellOff, Link2, Snowflake, Award,
-  TrendingUp, Search, MessageSquare, Brain,
+  TrendingUp, Search, MessageSquare, Brain, Play, Clock, Repeat, X,
 } from 'lucide-react';
 import { useHabitStore } from '../stores/useHabitStore';
 import { PageContent } from '../components/PageContent';
@@ -25,9 +25,13 @@ import {
   FlashcardReview,
   FlashcardCreator,
   DailyQuestsPanel,
+  RoutineBuilder,
+  RoutineRunner,
 } from '../components/habits';
 import type { HabitTemplate } from '../components/habits';
 import { useSpacedRepetitionStore } from '../stores/useSpacedRepetitionStore';
+import { useRoutineStore, type Routine } from '../stores/useRoutineStore';
+import { ROUTINE_TEMPLATES, type RoutineTemplate } from '../data/routineTemplates';
 import type { Habit, HabitFrequency, HabitCategory, HabitDifficulty } from '../types';
 
 // Helper to get date key in YYYY-M-D format
@@ -808,6 +812,20 @@ export function HabitsContent() {
   // Activate habit reminders
   useHabitReminders();
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'habits' | 'routines'>('habits');
+
+  // Routine state
+  const routines = useRoutineStore((s) => s.routines);
+  const createRoutine = useRoutineStore((s) => s.createRoutine);
+  const deleteRoutine = useRoutineStore((s) => s.deleteRoutine);
+  const getRoutineProgress = useRoutineStore((s) => s.getRoutineProgress);
+  const addHabitToStore = useHabitStore((s) => s.addHabit);
+  const [showRoutineBuilder, setShowRoutineBuilder] = useState(false);
+  const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
+  const [runningRoutine, setRunningRoutine] = useState<Routine | null>(null);
+  const [showRoutineTemplatePicker, setShowRoutineTemplatePicker] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -943,6 +961,34 @@ export function HabitsContent() {
     }
   };
 
+  const handleCreateFromRoutineTemplate = useCallback((template: RoutineTemplate) => {
+    // Create habits from template, then create the routine linking them
+    const createdHabitIds: string[] = [];
+    for (const h of template.habits) {
+      const id = addHabitToStore({
+        title: h.title,
+        description: h.description,
+        icon: h.icon,
+        color: h.color,
+        category: h.category,
+        frequency: h.frequency,
+        difficulty: 'easy',
+        freezesPerWeek: 1,
+        projectIds: [],
+      });
+      createdHabitIds.push(id);
+    }
+    createRoutine({
+      name: template.name,
+      description: template.description,
+      icon: template.icon,
+      habitIds: createdHabitIds,
+      timeOfDay: template.timeOfDay,
+      estimatedMinutes: template.estimatedMinutes,
+    });
+    setShowRoutineTemplatePicker(false);
+  }, [addHabitToStore, createRoutine]);
+
   const handleDeleteHabit = useCallback((id: string) => {
     setHabitToDelete(id);
   }, []);
@@ -1019,6 +1065,236 @@ export function HabitsContent() {
           </div>
         </div>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 mb-6 border-b border-border-light dark:border-border-dark">
+        <button
+          onClick={() => setActiveTab('habits')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'habits'
+              ? 'border-accent-primary text-accent-primary'
+              : 'border-transparent text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+          }`}
+        >
+          <Target className="w-4 h-4" />
+          Habits
+        </button>
+        <button
+          onClick={() => setActiveTab('routines')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'routines'
+              ? 'border-accent-primary text-accent-primary'
+              : 'border-transparent text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
+          }`}
+        >
+          <Repeat className="w-4 h-4" />
+          Routines
+          {routines.length > 0 && (
+            <span className="px-1.5 py-0.5 text-xs rounded-full bg-accent-primary/10 text-accent-primary">
+              {routines.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ─── Routines Tab ────────────────────────────────── */}
+      {activeTab === 'routines' && (
+        <div>
+          {/* Routine actions */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">
+              Your Routines ({routines.length})
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowRoutineTemplatePicker(true)}
+                className="flex items-center gap-2 px-3 py-2 text-text-light-secondary dark:text-text-dark-secondary hover:bg-surface-light-alt dark:hover:bg-surface-dark rounded-lg transition-colors border border-border-light dark:border-border-dark"
+              >
+                <BookTemplate className="w-4 h-4" />
+                Templates
+              </button>
+              <button
+                onClick={() => { setEditingRoutine(null); setShowRoutineBuilder(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Create Routine
+              </button>
+            </div>
+          </div>
+
+          {/* Routine cards */}
+          {routines.length === 0 ? (
+            <div className="text-center py-12 bg-surface-light dark:bg-surface-dark-elevated rounded-xl border border-border-light dark:border-border-dark">
+              <Repeat className="w-12 h-12 mx-auto text-text-light-tertiary dark:text-text-dark-tertiary mb-3" />
+              <p className="text-text-light-secondary dark:text-text-dark-secondary mb-1">
+                No routines yet
+              </p>
+              <p className="text-sm text-text-light-tertiary dark:text-text-dark-tertiary mb-4">
+                Chain habits together into daily routines for consistent execution.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setShowRoutineTemplatePicker(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-light-secondary dark:text-text-dark-secondary rounded-lg hover:bg-surface-light-alt dark:hover:bg-surface-dark transition-colors"
+                >
+                  <BookTemplate className="w-4 h-4" />
+                  Use Template
+                </button>
+                <button
+                  onClick={() => { setEditingRoutine(null); setShowRoutineBuilder(true); }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary/90 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Custom
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {routines.map((routine) => {
+                const progress = getRoutineProgress(routine.id);
+                const timeLabel = { morning: '🌅 Morning', afternoon: '☀️ Afternoon', evening: '🌙 Evening', anytime: '🕐 Anytime' }[routine.timeOfDay];
+                return (
+                  <div
+                    key={routine.id}
+                    className="bg-surface-light dark:bg-surface-dark-elevated rounded-xl p-4 border border-border-light dark:border-border-dark hover:border-accent-primary/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <span className="text-2xl shrink-0">{routine.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-text-light-primary dark:text-text-dark-primary">
+                            {routine.name}
+                          </h3>
+                          <div className="flex items-center gap-2 text-sm text-text-light-tertiary dark:text-text-dark-tertiary flex-wrap mt-0.5">
+                            <span>{timeLabel}</span>
+                            <span className="text-border-light dark:text-border-dark">|</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {routine.estimatedMinutes} min
+                            </span>
+                            <span className="text-border-light dark:text-border-dark">|</span>
+                            <span>{routine.habitIds.length} habits</span>
+                          </div>
+                          {routine.description && (
+                            <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mt-1">
+                              {routine.description}
+                            </p>
+                          )}
+                          {/* Progress bar */}
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-xs text-text-light-tertiary dark:text-text-dark-tertiary mb-1">
+                              <span>{progress.completed}/{progress.total} today</span>
+                              <span>{progress.percentage}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-surface-light-alt dark:bg-surface-dark rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${progress.percentage}%`,
+                                  backgroundColor: progress.percentage === 100 ? 'var(--color-status-success)' : 'var(--color-accent-primary)',
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => setRunningRoutine(routine)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-primary text-white rounded-lg text-sm font-medium hover:bg-accent-primary/90 transition-colors"
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                          Start
+                        </button>
+                        <button
+                          onClick={() => { setEditingRoutine(routine); setShowRoutineBuilder(true); }}
+                          className="p-1.5 rounded hover:bg-surface-light-alt dark:hover:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteRoutine(routine.id)}
+                          className="p-1.5 rounded hover:bg-status-error/10 text-text-light-tertiary dark:text-text-dark-tertiary hover:text-status-error"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Routine Template Picker Modal */}
+          {showRoutineTemplatePicker && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-surface-light dark:bg-surface-dark-elevated rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between p-6 pb-4">
+                  <h2 className="text-xl font-semibold text-text-light-primary dark:text-text-dark-primary">
+                    Routine Templates
+                  </h2>
+                  <button
+                    onClick={() => setShowRoutineTemplatePicker(false)}
+                    className="p-1 rounded hover:bg-surface-light-alt dark:hover:bg-surface-dark text-text-light-tertiary dark:text-text-dark-tertiary"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="px-6 pb-6 space-y-3">
+                  {ROUTINE_TEMPLATES.map((template) => (
+                    <button
+                      key={template.name}
+                      onClick={() => handleCreateFromRoutineTemplate(template)}
+                      className="w-full text-left p-4 rounded-xl border border-border-light dark:border-border-dark hover:border-accent-primary/30 hover:bg-surface-light-alt dark:hover:bg-surface-dark transition-all"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">{template.icon}</span>
+                        <div>
+                          <h3 className="font-medium text-text-light-primary dark:text-text-dark-primary">
+                            {template.name}
+                          </h3>
+                          <p className="text-sm text-text-light-tertiary dark:text-text-dark-tertiary">
+                            {template.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-text-light-tertiary dark:text-text-dark-tertiary">
+                        <span>{template.habits.length} habits</span>
+                        <span>{template.estimatedMinutes} min</span>
+                        <span className="flex items-center gap-1">
+                          {template.habits.map((h) => h.icon).join(' ')}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Routine Builder Modal */}
+          {showRoutineBuilder && (
+            <RoutineBuilder
+              routine={editingRoutine ?? undefined}
+              onClose={() => { setShowRoutineBuilder(false); setEditingRoutine(null); }}
+            />
+          )}
+
+          {/* Routine Runner Modal */}
+          {runningRoutine && (
+            <RoutineRunner
+              routine={runningRoutine}
+              onClose={() => setRunningRoutine(null)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* ─── Habits Tab ──────────────────────────────────── */}
+      {activeTab === 'habits' && <>
 
       {/* Daily Quests */}
       {activeHabits.length > 0 && <DailyQuestsPanel />}
@@ -1277,6 +1553,8 @@ export function HabitsContent() {
           )}
         </div>
       )}
+
+      </>}
 
       {/* Modals */}
       {showModal && (

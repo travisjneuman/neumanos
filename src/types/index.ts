@@ -374,6 +374,9 @@ export interface Task {
 
   // WAVE 4E: SNOOZE (for triage inbox)
   snoozedUntil?: string; // ISO date — hidden from triage until this time
+
+  // WAVE 6E: ENERGY-BASED SCHEDULING
+  energyCost?: 1 | 2 | 3 | 4 | 5; // Energy cost (1=Trivial, 5=Draining)
 }
 
 export interface KanbanState {
@@ -589,6 +592,10 @@ export interface Habit {
 
   // Dependencies
   requiredHabitIds?: string[];      // Must complete these today before this unlocks
+
+  // Routine linking
+  routineId?: string;               // ID of the routine this habit belongs to
+  routineOrder?: number;            // Position within the routine chain
 
   // Progress tracking
   currentStreak: number;

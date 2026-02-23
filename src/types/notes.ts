@@ -62,6 +62,9 @@ export interface Note {
   /** Quick Note - AI Terminal quick capture note (December 2025) */
   isQuickNote?: boolean;
 
+  /** Wave 6A: Alternative names for wiki-link resolution */
+  aliases?: string[];
+
   /** Phase 4: Backlinks - Notes that this note links TO (via [[Note Title]] syntax) */
   linkedNotes?: string[];
 

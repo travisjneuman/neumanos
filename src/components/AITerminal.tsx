@@ -38,7 +38,9 @@ import {
   ConversationSearchPanel,
 } from './terminal';
 import { getDefaultSystemPrompt } from '../services/systemPrompts';
-import { MessageSquare, Settings2, BookOpen, Search, Sparkles, X } from 'lucide-react';
+import { MessageSquare, Settings2, BookOpen, Search, Sparkles, X, Mic } from 'lucide-react';
+import { useVoiceInput } from '../hooks/useVoiceInput';
+import { useShortcut } from '../hooks/useShortcut';
 import {
   AI_TERMINAL_FOLDER_NAME,
   getOrCreateQuickNote,
@@ -335,6 +337,27 @@ export const AITerminal: React.FC = () => {
       setNotesSortOrder(field === 'title' ? 'asc' : 'desc');
     }
   }, [notesSortField, notesSortOrder, setNotesSortField, setNotesSortOrder]);
+
+  // Voice input
+  const voiceInput = useVoiceInput({
+    onResult: useCallback((text: string) => {
+      setInput((prev) => (prev ? prev + ' ' + text : text));
+    }, []),
+    onInterim: useCallback((text: string) => {
+      // Show interim transcript as a visual hint — stored in voiceInput.interimTranscript
+      void text; // handled via interimTranscript state
+    }, []),
+  });
+
+  // Voice input keyboard shortcut (Ctrl+Shift+V)
+  useShortcut({
+    id: 'toggle-voice-input',
+    keys: ['ctrl', 'shift', 'v'],
+    label: 'Toggle voice input',
+    context: 'global',
+    handler: voiceInput.toggleListening,
+    enabled: isOpen && voiceInput.isSupported && terminalMode === 'chat',
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -1089,7 +1112,9 @@ export const AITerminal: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={
-                  configuredProviderCount > 0
+                  voiceInput.isListening
+                    ? (voiceInput.interimTranscript || 'Listening...')
+                    : configuredProviderCount > 0
                     ? 'user@neumanos:~$ _'
                     : 'Configure providers first...'
                 }
@@ -1097,6 +1122,22 @@ export const AITerminal: React.FC = () => {
                 className="flex-1 px-3 py-2 rounded-button font-mono text-sm bg-white dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark text-text-light-primary dark:text-white placeholder-text-light-secondary dark:placeholder-text-dark-secondary focus:ring-2 focus:ring-accent-blue dark:focus:ring-accent-green focus:border-transparent resize-none"
                 rows={1}
               />
+              {voiceInput.isSupported && (
+                <button
+                  type="button"
+                  onClick={voiceInput.toggleListening}
+                  disabled={isStreaming}
+                  className={`px-3 py-2 rounded-button transition-all duration-standard ease-smooth ${
+                    voiceInput.isListening
+                      ? 'bg-accent-red text-white voice-pulse'
+                      : 'bg-surface-light-elevated dark:bg-surface-dark-elevated text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-red hover:bg-accent-red/10'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={voiceInput.isListening ? 'Stop voice input (Ctrl+Shift+V)' : 'Start voice input (Ctrl+Shift+V)'}
+                  aria-label={voiceInput.isListening ? 'Stop voice input' : 'Start voice input'}
+                >
+                  <Mic size={16} />
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={configuredProviderCount === 0 || !input.trim() || isStreaming}
