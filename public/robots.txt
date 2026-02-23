@@ -2,3 +2,5 @@
 # All content is client-side rendered, no sensitive crawlable paths
 User-agent: *
 Allow: /
+
+Sitemap: https://os.neuman.dev/sitemap.xml
