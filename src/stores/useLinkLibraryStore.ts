@@ -15,6 +15,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { normalizeUrl } from '../utils/urlNormalizer';
+import { useActivityStore } from './useActivityStore';
 
 // ============================================================================
 // Types
@@ -204,6 +205,12 @@ export const useLinkLibraryStore = create<LinkLibraryStore>()(
         set((state) => ({
           links: { ...state.links, [id]: link },
         }));
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'links',
+          entityId: id,
+          entityTitle: link.title || link.url,
+        });
 
         return link;
       },

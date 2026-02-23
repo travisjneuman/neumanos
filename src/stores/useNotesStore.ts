@@ -20,6 +20,7 @@ import type {
 import { NOTE_CONSTANTS } from '../types/notes';
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useUndoStore } from './useUndoStore';
+import { useActivityStore } from './useActivityStore';
 import { extractWikiLinks, resolveLinksToIds, getBacklinks as getBacklinksUtil } from '../utils/backlinks';
 import { fuzzySearch, type SearchResult } from '../utils/fuzzySearch';
 import { getDailyNote as getDailyNoteUtil, createDailyNote as createDailyNoteUtil } from '../services/dailyNotes';
@@ -292,6 +293,12 @@ export const useNotesStore = create<NotesStore>()(
           activeNoteId: newNote.id, // Auto-select new note
         }));
         log.debug('Note created', { id: newNote.id });
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'notes',
+          entityId: newNote.id,
+          entityTitle: newNote.title || 'Untitled Note',
+        });
         return newNote;
       },
 
@@ -324,6 +331,14 @@ export const useNotesStore = create<NotesStore>()(
           },
         }));
         log.debug('Note updated', { id, timestampUpdated: shouldUpdateTimestamp });
+        if (shouldUpdateTimestamp) {
+          useActivityStore.getState().logActivity({
+            type: 'updated',
+            module: 'notes',
+            entityId: id,
+            entityTitle: note.title || 'Untitled Note',
+          });
+        }
       },
 
       deleteNote: (id) => {
@@ -347,6 +362,12 @@ export const useNotesStore = create<NotesStore>()(
         });
 
         log.debug('Note deleted', { id });
+        useActivityStore.getState().logActivity({
+          type: 'deleted',
+          module: 'notes',
+          entityId: id,
+          entityTitle: noteToDelete.title || 'Untitled Note',
+        });
 
         // Delete associated images from IndexedDB (async, fire-and-forget)
         import('../services/indexedDB').then(({ indexedDBService }) => {

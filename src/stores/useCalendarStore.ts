@@ -4,6 +4,7 @@ import type { CalendarState, ViewMode, CalendarEvent, UserCalendar, ICSSubscript
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { scheduleEventReminders, cancelEventReminders } from '../services/eventReminders';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
+import { useActivityStore } from './useActivityStore';
 
 const DEFAULT_CALENDARS: UserCalendar[] = [
   { id: 'cal-work', name: 'Work', color: '#2563eb', visible: true },
@@ -56,15 +57,15 @@ export const useCalendarStore = create<CalendarStore>()(
 
       setCurrentDate: (date) => set({ currentDate: date }),
 
-      addEvent: (dateKey, title, description, timeData) =>
+      addEvent: (dateKey, title, description, timeData) => {
+        const newEvent: CalendarEvent = {
+          id: Date.now().toString(),
+          title,
+          description,
+          projectIds: [],
+          ...timeData,
+        };
         set((state) => {
-          const newEvent: CalendarEvent = {
-            id: Date.now().toString(),
-            title,
-            description,
-            projectIds: [],
-            ...timeData,
-          };
           const existingEvents = state.events[dateKey] || [];
 
           // Schedule reminders for the new event
@@ -76,9 +77,16 @@ export const useCalendarStore = create<CalendarStore>()(
               [dateKey]: [...existingEvents, newEvent],
             },
           };
-        }),
+        });
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'calendar',
+          entityId: newEvent.id,
+          entityTitle: title,
+        });
+      },
 
-      updateEvent: (dateKey, eventId, title, description, timeData) =>
+      updateEvent: (dateKey, eventId, title, description, timeData) => {
         set((state) => {
           const events = state.events[dateKey] || [];
 
@@ -102,7 +110,14 @@ export const useCalendarStore = create<CalendarStore>()(
               [dateKey]: updatedEvents,
             },
           };
-        }),
+        });
+        useActivityStore.getState().logActivity({
+          type: 'updated',
+          module: 'calendar',
+          entityId: eventId,
+          entityTitle: title,
+        });
+      },
 
       // Update only time (optimized for time blocking drag-drop)
       updateEventTime: (dateKey, eventId, startTime, endTime) =>
@@ -131,14 +146,16 @@ export const useCalendarStore = create<CalendarStore>()(
           };
         }),
 
-      deleteEvent: (dateKey, eventId) =>
+      deleteEvent: (dateKey, eventId) => {
+        const events = get().events[dateKey] || [];
+        const eventToDelete = events.find((e) => e.id === eventId);
         set((state) => {
-          const events = state.events[dateKey] || [];
+          const dateEvents = state.events[dateKey] || [];
 
           // Cancel reminders for the deleted event
           cancelEventReminders(eventId);
 
-          const filteredEvents = events.filter((event) => event.id !== eventId);
+          const filteredEvents = dateEvents.filter((event) => event.id !== eventId);
 
           if (filteredEvents.length === 0) {
             // Remove the date key if no events left
@@ -153,7 +170,14 @@ export const useCalendarStore = create<CalendarStore>()(
               [dateKey]: filteredEvents,
             },
           };
-        }),
+        });
+        useActivityStore.getState().logActivity({
+          type: 'deleted',
+          module: 'calendar',
+          entityId: eventId,
+          entityTitle: eventToDelete?.title || 'Calendar Event',
+        });
+      },
 
       removeAllEvents: (dateKey) =>
         set((state) => {

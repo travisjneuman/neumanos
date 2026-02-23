@@ -5,6 +5,7 @@ import type { Habit, HabitCompletion, HabitAchievement, HabitDifficulty, StreakF
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';
+import { useActivityStore } from './useActivityStore';
 
 // Achievement milestone definitions
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 90, 180, 365];
@@ -392,6 +393,13 @@ export const useHabitStore = create<HabitStore>()(
                   : h
               ),
             }));
+
+            useActivityStore.getState().logActivity({
+              type: 'completed',
+              module: 'habits',
+              entityId: habitId,
+              entityTitle: habit.title,
+            });
 
             // Toast XP earned
             if (xpEarned > 0) {

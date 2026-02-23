@@ -25,6 +25,7 @@ import { migrateDependenciesToTaskLevel, needsMigration } from '../services/depe
 // Phase 8.2: criticalPath and baseline utilities now used via useKanbanDependenciesStore
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';
+import { useActivityStore } from './useActivityStore';
 import { useKanbanArchiveStore } from './useKanbanArchiveStore';
 import { useKanbanDependenciesStore } from './useKanbanDependenciesStore';
 import { useKanbanCommentsStore } from './useKanbanCommentsStore';
@@ -248,6 +249,12 @@ export const useKanbanStore = create<KanbanStore>()(
         get().logActivity(newTask.id, {
           action: 'created',
         });
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'tasks',
+          entityId: newTask.id,
+          entityTitle: newTask.title,
+        });
 
         // P1: Trigger automation rules for 'task.created'
         setTimeout(async () => {
@@ -294,6 +301,12 @@ export const useKanbanStore = create<KanbanStore>()(
               newValue: String(updates[field as keyof Task] ?? ''),
             });
           }
+        });
+        useActivityStore.getState().logActivity({
+          type: 'updated',
+          module: 'tasks',
+          entityId: id,
+          entityTitle: oldTask.title,
         });
       },
 
@@ -371,6 +384,14 @@ export const useKanbanStore = create<KanbanStore>()(
           oldValue: oldTask.status,
           newValue: newStatus,
         });
+        if (newStatus === 'done') {
+          useActivityStore.getState().logActivity({
+            type: 'completed',
+            module: 'tasks',
+            entityId: id,
+            entityTitle: oldTask.title,
+          });
+        }
 
         // P1: Trigger automation rules for 'task.moved' and potentially 'task.completed'
         setTimeout(async () => {

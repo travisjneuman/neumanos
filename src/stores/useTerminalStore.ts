@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { encrypt, decrypt, type EncryptedData } from '../services/encryption';
 import { logger } from '../services/logger';
+import { useActivityStore } from './useActivityStore';
 
 const log = logger.module('TerminalStore');
 
@@ -101,7 +102,7 @@ export interface ProviderConfig {
  * AI Context for context-aware prompts
  */
 export interface AIContext {
-  type: 'note' | 'task';
+  type: 'note' | 'task' | 'cross-module';
   id: string;
   title: string;
   content: string;
@@ -176,6 +177,7 @@ interface TerminalState {
 
   // Context-Aware AI
   activeContext: AIContext | null;
+  enableCrossModuleContext: boolean;
 
   // UI Actions
   setOpen: (open: boolean) => void;
@@ -238,6 +240,7 @@ interface TerminalState {
 
   // Context-Aware AI Actions
   setActiveContext: (context: AIContext | null) => void;
+  setEnableCrossModuleContext: (enabled: boolean) => void;
 
   // Conversation Search
   searchConversations: (query: string) => ConversationSearchResult[];
@@ -316,6 +319,7 @@ export const useTerminalStore = create<TerminalState>()(
 
       // Context-Aware AI
       activeContext: null,
+      enableCrossModuleContext: false,
 
       // Legacy State (backward compatibility)
       model: 'gemini-1.5-flash',
@@ -477,6 +481,12 @@ export const useTerminalStore = create<TerminalState>()(
         }));
 
         log.info('Created conversation', { id, title: conversation.title });
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'ai',
+          entityId: id,
+          entityTitle: conversation.title,
+        });
         return id;
       },
 
@@ -688,6 +698,7 @@ export const useTerminalStore = create<TerminalState>()(
 
       // Context-Aware AI Actions
       setActiveContext: (context) => set({ activeContext: context }),
+      setEnableCrossModuleContext: (enabled) => set({ enableCrossModuleContext: enabled }),
 
       // Conversation Search
       searchConversations: (query) => {
@@ -781,6 +792,9 @@ export const useTerminalStore = create<TerminalState>()(
 
         // Persist saved messages tracking (for duplicate detection)
         savedMessagesByNote: state.savedMessagesByNote,
+
+        // Persist cross-module context setting
+        enableCrossModuleContext: state.enableCrossModuleContext,
 
         // Legacy compatibility
         model: state.model,

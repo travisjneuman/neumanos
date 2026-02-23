@@ -77,6 +77,7 @@ export interface AIMessageOptions {
   prompt: string; // User message
   conversationHistory?: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>; // Previous messages
   systemPrompt?: string; // System instruction
+  systemContext?: string; // Cross-module context appended to system prompt
   temperature?: number; // 0-1, creativity level
   maxTokens?: number; // Max response length
   stream?: boolean; // Enable streaming

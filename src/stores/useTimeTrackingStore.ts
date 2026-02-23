@@ -5,6 +5,7 @@ import { timeTrackingDb } from '../db/timeTrackingDb';
 import { logger } from '../services/logger';
 import { roundDuration } from '../utils/timeFormatters';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
+import { useActivityStore } from './useActivityStore';
 
 const log = logger.module('TimeTracking');
 
@@ -399,6 +400,12 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
         };
 
         set({ activeEntry: entry });
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'time-tracking',
+          entityId: entry.id,
+          entityTitle: description || 'Timer',
+        });
 
         // Save to localStorage for persistence (backup)
         localStorage.setItem('activeTimer', JSON.stringify(entry));
@@ -467,6 +474,12 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
         set({
           activeEntry: null,
           entries: [completedEntry, ...entries]
+        });
+        useActivityStore.getState().logActivity({
+          type: 'completed',
+          module: 'time-tracking',
+          entityId: completedEntry.id,
+          entityTitle: completedEntry.description || 'Timer',
         });
 
         // Clear localStorage backup

@@ -16,6 +16,7 @@ import type {
 import { createSyncedStorage } from '../lib/syncedStorage';
 import { useProjectContextStore, matchesProjectFilter } from './useProjectContextStore';
 import { toast } from './useToastStore';
+import { useActivityStore } from './useActivityStore';
 
 // Default slide theme
 const DEFAULT_THEME: SlideTheme = {
@@ -195,25 +196,40 @@ export const useDocsStore = create<DocsStoreState>()(
         toast.success(
           `Created ${type === 'doc' ? 'document' : type === 'sheet' ? 'spreadsheet' : 'presentation'}`
         );
+        useActivityStore.getState().logActivity({
+          type: 'created',
+          module: 'docs',
+          entityId: id,
+          entityTitle: newDoc.title,
+        });
 
         return id;
       },
 
       // Update a document
       updateDoc: (id, updates) => {
+        const doc = get().docs.find((d) => d.id === id);
         set((state) => ({
-          docs: state.docs.map((doc) => {
-            if (doc.id !== id) return doc;
+          docs: state.docs.map((d) => {
+            if (d.id !== id) return d;
             // Preserve the discriminated union type by casting
             const updatedDoc = {
-              ...doc,
+              ...d,
               ...updates,
               updatedAt: new Date().toISOString(),
-              version: doc.version + 1,
+              version: d.version + 1,
             } as Doc;
             return updatedDoc;
           }),
         }));
+        if (doc) {
+          useActivityStore.getState().logActivity({
+            type: 'updated',
+            module: 'docs',
+            entityId: id,
+            entityTitle: doc.title,
+          });
+        }
       },
 
       // Delete a document
