@@ -10,12 +10,14 @@ import { useCalendarStore } from '../stores/useCalendarStore';
 interface QuickEventCreateProps {
   dateKey: string;
   startTime: string; // "HH:MM" format
+  /** Optional explicit end time. If omitted, defaults to 1 hour after start. */
+  endTime?: string; // "HH:MM" format
   onClose: () => void;
   /** Optional: position style for absolute positioning within a time grid */
   style?: React.CSSProperties;
 }
 
-export function QuickEventCreate({ dateKey, startTime, onClose, style }: QuickEventCreateProps) {
+export function QuickEventCreate({ dateKey, startTime, endTime: endTimeProp, onClose, style }: QuickEventCreateProps) {
   const [title, setTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const { addEvent } = useCalendarStore();
@@ -32,10 +34,15 @@ export function QuickEventCreate({ dateKey, startTime, onClose, style }: QuickEv
       return;
     }
 
-    // Calculate end time (default 1 hour after start)
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const endHour = Math.min(hours + 1, 23);
-    const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    // Use explicit end time or default to 1 hour after start
+    let endTime: string;
+    if (endTimeProp) {
+      endTime = endTimeProp;
+    } else {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const endHour = Math.min(hours + 1, 23);
+      endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
 
     addEvent(dateKey, trimmed, undefined, {
       isAllDay: false,

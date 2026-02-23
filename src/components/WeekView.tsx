@@ -5,13 +5,24 @@
  * Features: time slots (hourly), timed events, all-day events, task bars
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { CalendarEvent, Task } from '../types';
 import { getLegacyDateKey, isToday, isDateBetween } from '../utils/dateUtils';
 import { getEventDisplayColor } from '../utils/calendarColors';
 import { calculateEventLayout } from '../utils/eventLayout';
 import { QuickEventCreate } from './QuickEventCreate';
+
+interface DragState {
+  isDragging: boolean;
+  startDayIndex: number;
+  startHour: number;
+  startMinute: number;
+  currentDayIndex: number;
+  currentHour: number;
+  currentMinute: number;
+  startY: number; // initial mouseY for threshold detection
+}
 
 interface WeekViewProps {
   currentDate: Date;
@@ -30,13 +41,166 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onEventClick,
   showTimeSlots = true,
 }) => {
-  const [quickCreate, setQuickCreate] = useState<{ dateKey: string; hour: number } | null>(null);
+  const [quickCreate, setQuickCreate] = useState<{
+    dateKey: string;
+    hour: number;
+    startTime?: string;
+    endTime?: string;
+  } | null>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
   });
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [isDraggingVisual, setIsDraggingVisual] = useState(false);
+  const dragThresholdMet = useRef(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = showTimeSlots ? Array.from({ length: 24 }, (_, i) => i) : [];
+
+  // Get start of week (Sunday) — must be before callbacks that reference weekDays
+  const startOfWeek = useMemo(() => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() - d.getDay());
+    return d;
+  }, [currentDate]);
+
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(startOfWeek);
+      day.setDate(day.getDate() + i);
+      return day;
+    });
+  }, [startOfWeek]);
+
+  /** Snap a minute value to the nearest 15-minute interval */
+  const snapTo15 = (minute: number): number => Math.round(minute / 15) * 15;
+
+  /** Format hour + minute to "HH:MM" */
+  const formatTime = (hour: number, minute: number): string => {
+    const clampedMinute = Math.min(minute, 59);
+    return `${hour.toString().padStart(2, '0')}:${clampedMinute.toString().padStart(2, '0')}`;
+  };
+
+  /** Format hour + minute for display (12h) */
+  const formatTimeDisplay = (hour: number, minute: number): string => {
+    const m = Math.min(minute, 59);
+    const mStr = m.toString().padStart(2, '0');
+    if (hour === 0) return `12:${mStr} AM`;
+    if (hour < 12) return `${hour}:${mStr} AM`;
+    if (hour === 12) return `12:${mStr} PM`;
+    return `${hour - 12}:${mStr} PM`;
+  };
+
+  /** Compute hour and snapped minute from a mouse Y relative to the grid */
+  const getTimeFromY = useCallback((clientY: number): { hour: number; minute: number } => {
+    if (!gridRef.current) return { hour: 0, minute: 0 };
+    const rect = gridRef.current.getBoundingClientRect();
+    const y = clientY - rect.top + gridRef.current.parentElement!.scrollTop;
+    const rawHour = Math.floor(Math.max(0, Math.min(y, 1439)) / 60);
+    const rawMinute = Math.max(0, Math.min(y, 1439)) % 60;
+    return { hour: Math.min(rawHour, 23), minute: snapTo15(rawMinute) };
+  }, []);
+
+  /** Compute day index from mouse X relative to the grid */
+  const getDayFromX = useCallback((clientX: number): number => {
+    if (!gridRef.current) return 0;
+    const rect = gridRef.current.getBoundingClientRect();
+    // First col is the time label column (1/8 of grid width)
+    const colWidth = rect.width / 8;
+    const dayIdx = Math.floor((clientX - rect.left - colWidth) / colWidth);
+    return Math.max(0, Math.min(dayIdx, 6));
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, dayIndex: number, hour: number) => {
+    // Only handle left click
+    if (e.button !== 0) return;
+    e.preventDefault(); // Prevent text selection
+
+    const slotEl = e.currentTarget as HTMLElement;
+    const rect = slotEl.getBoundingClientRect();
+    const yInSlot = e.clientY - rect.top;
+    const minuteInSlot = snapTo15(Math.floor((yInSlot / 60) * 60));
+
+    dragThresholdMet.current = false;
+    setIsDraggingVisual(false);
+    setDragState({
+      isDragging: true,
+      startDayIndex: dayIndex,
+      startHour: hour,
+      startMinute: minuteInSlot,
+      currentDayIndex: dayIndex,
+      currentHour: hour,
+      currentMinute: minuteInSlot,
+      startY: e.clientY,
+    });
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragState?.isDragging) return;
+
+    // Check threshold (5px)
+    if (!dragThresholdMet.current) {
+      if (Math.abs(e.clientY - dragState.startY) < 5) return;
+      dragThresholdMet.current = true;
+      setIsDraggingVisual(true);
+    }
+
+    const { hour, minute } = getTimeFromY(e.clientY);
+    const dayIdx = getDayFromX(e.clientX);
+
+    setDragState((prev) =>
+      prev ? { ...prev, currentHour: hour, currentMinute: minute, currentDayIndex: dayIdx } : null
+    );
+  }, [dragState, getTimeFromY, getDayFromX]);
+
+  const handleMouseUp = useCallback(() => {
+    if (!dragState?.isDragging) return;
+
+    if (dragThresholdMet.current) {
+      // Drag occurred -- open QuickEventCreate with computed times
+      // Determine start and end, ensuring start < end
+      const startTotal = dragState.startHour * 60 + dragState.startMinute;
+      const endTotal = dragState.currentHour * 60 + dragState.currentMinute;
+      const minT = Math.min(startTotal, endTotal);
+      const maxT = Math.max(startTotal, endTotal);
+      // Ensure at least 15 min duration
+      const finalEnd = maxT <= minT ? minT + 15 : maxT;
+
+      const startH = Math.floor(minT / 60);
+      const startM = minT % 60;
+      const endH = Math.min(Math.floor(finalEnd / 60), 23);
+      const endM = finalEnd >= 24 * 60 ? 45 : finalEnd % 60;
+
+      const dateKey = getLegacyDateKey(weekDays[dragState.startDayIndex]);
+      setQuickCreate({
+        dateKey,
+        hour: startH,
+        startTime: formatTime(startH, startM),
+        endTime: formatTime(endH, endM),
+      });
+    } else {
+      // No significant drag -- treat as click
+      const dateKey = getLegacyDateKey(weekDays[dragState.startDayIndex]);
+      setQuickCreate({ dateKey, hour: dragState.startHour });
+    }
+
+    setDragState(null);
+    setIsDraggingVisual(false);
+    dragThresholdMet.current = false;
+  }, [dragState, weekDays]);
+
+  // Clean up drag on mouse leave / window blur
+  useEffect(() => {
+    const handleGlobalUp = () => {
+      if (dragState?.isDragging) {
+        handleMouseUp();
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalUp);
+    return () => window.removeEventListener('mouseup', handleGlobalUp);
+  }, [dragState, handleMouseUp]);
 
   // Update current time every minute
   useEffect(() => {
@@ -46,18 +210,6 @@ export const WeekView: React.FC<WeekViewProps> = ({
     }, 60000);
     return () => clearInterval(interval);
   }, []);
-
-  // Get start of week (Sunday)
-  const startOfWeek = new Date(currentDate);
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-
-  const weekDays = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(startOfWeek);
-      day.setDate(day.getDate() + i);
-      return day;
-    });
-  }, [startOfWeek]);
 
   const tasksWithDates = useMemo(() => {
     return tasks.filter((task) => task.startDate && task.dueDate);
@@ -212,7 +364,13 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
       {/* Time slots grid */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-8 relative" style={{ minHeight: '1440px' /* 24 hours * 60px */ }}>
+        <div
+          ref={gridRef}
+          className="grid grid-cols-8 relative"
+          style={{ minHeight: '1440px' /* 24 hours * 60px */, userSelect: isDraggingVisual ? 'none' : undefined }}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
           {/* Time labels column */}
           <div className="border-r border-border-light dark:border-border-dark">
             {hours.map((hour) => (
@@ -249,12 +407,39 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     key={hour}
                     className="border-b border-border-light dark:border-border-dark hover:bg-surface-light-elevated dark:hover:bg-surface-dark-elevated transition-all duration-standard ease-smooth cursor-pointer"
                     style={{ height: '60px' }}
-                    onClick={() => setQuickCreate({ dateKey, hour })}
+                    onMouseDown={(e) => handleMouseDown(e, dayIndex, hour)}
                   >
                     {/* 30-minute half line */}
                     <div className="absolute top-1/2 left-0 right-0 h-px bg-border-light dark:bg-border-dark opacity-30" />
                   </div>
                 ))}
+
+                {/* Drag selection overlay */}
+                {dragState?.isDragging && isDraggingVisual && dragState.startDayIndex === dayIndex && (() => {
+                  const startTotal = dragState.startHour * 60 + dragState.startMinute;
+                  const currentTotal = dragState.currentHour * 60 + dragState.currentMinute;
+                  const minT = Math.min(startTotal, currentTotal);
+                  const maxT = Math.max(startTotal, currentTotal);
+                  const topPx = minT; // 1px per minute since grid is 1440px for 24h
+                  const heightPx = Math.max(maxT - minT, 15);
+                  const startH = Math.floor(minT / 60);
+                  const startM = minT % 60;
+                  const endH = Math.floor(maxT / 60);
+                  const endM = maxT % 60;
+                  return (
+                    <div
+                      className="absolute left-0 right-0 bg-accent-primary/30 border border-accent-primary/60 rounded z-20 pointer-events-none"
+                      style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+                    >
+                      <div className="absolute -top-4 left-1 text-[10px] font-medium text-accent-primary">
+                        {formatTimeDisplay(startH, startM)}
+                      </div>
+                      <div className="absolute -bottom-4 left-1 text-[10px] font-medium text-accent-primary">
+                        {formatTimeDisplay(endH, endM)}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Current time indicator */}
                 {dayIsToday && (
@@ -333,17 +518,30 @@ export const WeekView: React.FC<WeekViewProps> = ({
                 )}
 
                 {/* Quick event creation */}
-                {quickCreate?.dateKey === dateKey && (
-                  <QuickEventCreate
-                    dateKey={dateKey}
-                    startTime={`${quickCreate.hour.toString().padStart(2, '0')}:00`}
-                    onClose={() => setQuickCreate(null)}
-                    style={{
-                      top: `${(quickCreate.hour / 24) * 100}%`,
-                      height: `${(1 / 24) * 100}%`,
-                    }}
-                  />
-                )}
+                {quickCreate?.dateKey === dateKey && (() => {
+                  const st = quickCreate.startTime ?? `${quickCreate.hour.toString().padStart(2, '0')}:00`;
+                  const et = quickCreate.endTime;
+                  // Calculate position from startTime
+                  const [sH, sM] = st.split(':').map(Number);
+                  const startTotal = sH * 60 + sM;
+                  let durationMin = 60; // default 1 hour
+                  if (et) {
+                    const [eH, eM] = et.split(':').map(Number);
+                    durationMin = Math.max((eH * 60 + eM) - startTotal, 15);
+                  }
+                  return (
+                    <QuickEventCreate
+                      dateKey={dateKey}
+                      startTime={st}
+                      endTime={et}
+                      onClose={() => setQuickCreate(null)}
+                      style={{
+                        top: `${startTotal}px`,
+                        height: `${durationMin}px`,
+                      }}
+                    />
+                  );
+                })()}
               </div>
             );
           })}
