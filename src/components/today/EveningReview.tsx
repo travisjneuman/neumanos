@@ -313,7 +313,7 @@ const StepCompleted: React.FC<{
 
     {completedTasks.length === 0 ? (
       <div className="text-center py-6 text-text-light-tertiary dark:text-text-dark-tertiary">
-        <p className="text-sm">No tasks completed today — that's okay.</p>
+        <p className="text-sm">No tasks completed today. That's okay.</p>
         <p className="text-xs mt-1">Every day is a fresh start.</p>
       </div>
     ) : (
@@ -351,7 +351,7 @@ const StepIncomplete: React.FC<{
     </h3>
     <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-4">
       {tasks.length === 0
-        ? 'All tasks completed — nicely done!'
+        ? 'All tasks completed. Nicely done!'
         : `${tasks.length} task${tasks.length !== 1 ? 's' : ''} left. What should happen?`}
     </p>
 
@@ -475,7 +475,7 @@ const StepShutdown: React.FC = () => (
       Great work today
     </h3>
     <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary max-w-xs mx-auto">
-      You showed up and gave it your best. Rest well — tomorrow is a new opportunity.
+      You showed up and gave it your best. Rest well. Tomorrow is a new opportunity.
     </p>
   </div>
 );

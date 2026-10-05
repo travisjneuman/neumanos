@@ -59,7 +59,7 @@ export const MotivationalWidget: React.FC = () => {
             <p className="text-white font-semibold text-base mb-2 drop-shadow-lg">
               "{quote.content}"
             </p>
-            <p className="text-white/90 text-sm drop-shadow-lg">— {quote.author}</p>
+            <p className="text-white/90 text-sm drop-shadow-lg">{quote.author}</p>
           </div>
         </div>
       </div>

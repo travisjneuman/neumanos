@@ -240,7 +240,7 @@ export const Settings: React.FC = () => {
 
   // Load data on mount
   useEffect(() => {
-    document.title = 'Settings - NeumanOS';
+    document.title = 'Settings | NeumanOS';
     loadAllData();
   }, [loadAllData]);
 

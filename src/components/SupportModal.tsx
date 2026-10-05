@@ -60,7 +60,7 @@ const FAQS: FAQ[] = [
   },
   {
     question: 'Can I organize notes into folders?',
-    answer: 'Yes! Notes can be organized into folders. Click the folder icon in the Notes sidebar to create folders. You can also use tags for cross-cutting organization—add tags to any note and filter by them.',
+    answer: 'Yes! Notes can be organized into folders. Click the folder icon in the Notes sidebar to create folders. You can also use tags for cross-cutting organization: add tags to any note and filter by them.',
   },
   // Tasks
   {
@@ -73,7 +73,7 @@ const FAQS: FAQ[] = [
   },
   {
     question: 'How do task dependencies work?',
-    answer: 'When editing a task, you can add dependencies—tasks that must be completed before this one. The Critical Path feature (toggle in task view) highlights which tasks are blocking others.',
+    answer: 'When editing a task, you can add dependencies (tasks that must be completed before this one). The Critical Path feature (toggle in task view) highlights which tasks are blocking others.',
   },
   // Dashboard & Widgets
   {

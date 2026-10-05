@@ -89,9 +89,9 @@ export function BillableRateSettings() {
             Billable amounts are calculated using this priority:
           </p>
           <ol className="list-decimal list-inside mt-2 space-y-1 ml-2">
-            <li><strong>Entry rate</strong> — Rate set on individual time entry</li>
-            <li><strong>Project rate</strong> — Default rate for the project</li>
-            <li><strong>Default rate</strong> — Global fallback rate (below)</li>
+            <li><strong>Entry rate</strong>: rate set on individual time entry</li>
+            <li><strong>Project rate</strong>: default rate for the project</li>
+            <li><strong>Default rate</strong>: global fallback rate (below)</li>
           </ol>
         </div>
       </div>
@@ -111,7 +111,7 @@ export function BillableRateSettings() {
         >
           {CURRENCIES.map((curr) => (
             <option key={curr.code} value={curr.code}>
-              {curr.symbol} — {curr.name} ({curr.code})
+              {curr.symbol} {curr.name} ({curr.code})
             </option>
           ))}
         </select>

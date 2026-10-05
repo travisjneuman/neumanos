@@ -48,7 +48,7 @@ Browser tests run only through the repository's manual **Hosted browser tests** 
 
 ## Code Style
 
-- TypeScript strict mode — no `any` types
+- TypeScript strict mode, no `any` types
 - Tailwind CSS with semantic tokens (no hardcoded colors)
 - Zustand for state management
 - Zod for validation at I/O boundaries
@@ -59,9 +59,9 @@ Browser tests run only through the repository's manual **Hosted browser tests** 
 NeumanOS is a local-first application. All data stays on the user's device via IndexedDB (Dexie). There is no backend server.
 
 Key principles:
-- **Privacy first** — no PII collection, no server data exfiltration
-- **Local-first** — works offline, all data in IndexedDB
-- **Build, don't wrap** — we build features, we use utility libraries
+- **Privacy first**: no PII collection, no server data exfiltration
+- **Local-first**: works offline, all data in IndexedDB
+- **Build, don't wrap**: we build features, we use utility libraries
 
 The codebase uses React 19, TypeScript 5.9 (strict), Vite 7, and Zustand 5 for state management. Data persistence is handled by Dexie (IndexedDB wrapper).
 

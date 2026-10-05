@@ -304,7 +304,7 @@ const PrivacyContent: React.FC = () => (
           we've lost our way."
         </p>
         <p className="mt-1 text-[10px] text-text-light-secondary dark:text-text-dark-secondary">
-          — Travis Neuman, Creator of {renderContentWithLinks('NeumanOS')}
+          Travis Neuman, Creator of {renderContentWithLinks('NeumanOS')}
         </p>
       </div>
     </section>

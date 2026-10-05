@@ -26,9 +26,9 @@
 
 ## What is NeumanOS?
 
-NeumanOS is an all-in-one productivity platform that lives entirely on your device. Notes, tasks, time tracking, calendar, documents, diagrams, forms, bookmarks, and an AI terminal — unified in a single app, with no account required and no data leaving your machine unless you connect an AI provider or a live-data widget.
+NeumanOS is an all-in-one productivity platform that lives entirely on your device. Notes, tasks, time tracking, calendar, documents, diagrams, forms, bookmarks, and an AI terminal, all in one app, with no account required and no data leaving your machine unless you connect an AI provider or a live-data widget.
 
-Most productivity tools scatter your work across a stack of subscriptions you don't fully control. NeumanOS puts everything back in one place, under your ownership. Every note, task, and calendar event is stored in your browser's IndexedDB (50GB+ capacity) — readable only by you, exportable at any time, and never touched by a server.
+Most productivity tools scatter your work across a stack of subscriptions you don't fully control. NeumanOS puts everything back in one place, under your ownership. Every note, task, and calendar event is stored in your browser's IndexedDB (50GB+ capacity). Only you can read it, you can export it at any time, and no server ever touches it.
 
 It's free, open source, and built on the principle that software that organizes your life should respect it.
 
@@ -58,7 +58,7 @@ Month, week, day, and agenda views with drag-and-drop rescheduling. Recurring ev
 
 ### Dashboard & Widgets
 
-A fully customizable home screen with 60+ widgets spanning productivity, information, utilities, and finance. Weather, world clocks, calculators, countdown timers, stock tickers, news feeds, Pomodoro timer, and live summaries of your notes, tasks, and events — arranged exactly how you want them.
+A fully customizable home screen with 60+ widgets spanning productivity, information, utilities, and finance. Weather, world clocks, calculators, countdown timers, stock tickers, news feeds, Pomodoro timer, and live summaries of your notes, tasks, and events. Arrange them however you want.
 
 ### Activity Feed & Analytics
 
@@ -66,7 +66,7 @@ A cross-module activity stream that surfaces recent actions across notes, tasks,
 
 ### AI Terminal
 
-Connect to 9 AI providers — OpenRouter, OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, xAI Grok, DeepSeek, and HuggingFace — using your own API keys. Keys are stored with AES-256-GCM encryption and never leave your device. Voice input, cross-module context awareness, and a built-in browser terminal with AI command integration round out the developer experience.
+Connect to 9 AI providers (OpenRouter, OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, xAI Grok, DeepSeek, and HuggingFace) using your own API keys. Keys are stored with AES-256-GCM encryption and never leave your device. Voice input, cross-module context awareness, and a built-in browser terminal with AI command integration are also included.
 
 ### Office Suite
 
@@ -74,7 +74,7 @@ Create documents, spreadsheets, presentations, diagrams, and forms without leavi
 
 ### Focus & Daily Planning
 
-The Today page is your daily command center — a Sunsama-inspired planning view that brings today's schedule, tasks, habits, and time tracking into one focused layout. A distraction-free focus mode with a full-screen timer, current task display, and keyboard controls supports deep work sessions.
+The Today page is a Sunsama-inspired planning view that brings today's schedule, tasks, habits, and time tracking into one focused layout. A distraction-free focus mode with a full-screen timer, current task display, and keyboard controls supports deep work sessions.
 
 ### Smart Templates
 
@@ -96,12 +96,12 @@ A bookmark manager with nested folders, drag-and-drop import from browser bookma
 
 ## Your Privacy, Protected
 
-- **100% local storage.** Every note, task, event, and setting is stored in your browser's IndexedDB — up to 50GB, on your device, under your control.
+- **100% local storage.** Every note, task, event, and setting is stored in your browser's IndexedDB: up to 50GB, on your device, under your control.
 - **No account required.** Open the app and start working. Nothing to sign up for, nothing to verify.
-- **No cloud dependencies.** No Firebase, no AWS, no third-party database — the app is a static site with nothing to phone home to.
+- **No cloud dependencies.** No Firebase, no AWS, no third-party database. The app is a static site with nothing to phone home to.
 - **Encrypted API keys.** AI provider keys are stored with AES-256-GCM encryption and a session-based password. They are never logged or transmitted.
 - **Open source.** The code is MIT-licensed and publicly auditable. If you don't trust the hosted version, you can run it yourself.
-- **Anonymous analytics only.** The hosted site uses Cloudflare Web Analytics — no cookies, no fingerprinting, GDPR compliant. Your data is never part of it.
+- **Anonymous analytics only.** The hosted site uses Cloudflare Web Analytics: no cookies, no fingerprinting, GDPR compliant. Your data is never part of it.
 
 ---
 

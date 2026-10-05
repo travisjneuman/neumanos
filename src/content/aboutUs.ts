@@ -62,19 +62,19 @@ Instead of chasing surface features, almost all of the work so far has gone into
 
 A few core principles define that foundation:
 
-• Local-first mindset – Your information should live with you first, not be locked away behind someone else's subscription or infrastructure.
+• Local-first mindset: your information should live with you first, not be locked away behind someone else's subscription or infrastructure.
 
-• Ownership and respect – Your thoughts, plans, and records are not fuel for engagement metrics or growth strategies. They are treated as personal property, not product.
+• Ownership and respect: your thoughts, plans, and records are not fuel for engagement metrics or growth strategies. They are treated as personal property, not product.
 
-• Honest communication – The platform is described as it truly is: early, foundation-heavy, and far from complete. No marketing fiction.
+• Honest communication: the platform is described as it truly is (early, foundation-heavy, and far from complete). No marketing fiction.
 
-• Calm by design – No artificial urgency, attention traps, or manipulative flows. The tool should quietly support your focus instead of competing with it.
+• Calm by design: no artificial urgency, attention traps, or manipulative flows. The tool should quietly support your focus instead of competing with it.
 
-• Built for many kinds of lives – The same core should feel natural whether you are running a household, a team, a business, or all three at once.
+• Built for many kinds of lives: the same core should feel natural whether you are running a household, a team, a business, or all three at once.
 
 NeumanOS is a long-term effort to prove that an organizing system can be principled, stable, and genuinely respectful of the people who rely on it. It is not a reaction against any single workplace or product, but against the broader pattern of subscription bloat and half-finished tools that demand trust without earning it.
 
-For anyone who is tired of feeling spread thin across tools—and tired of renting access to their own information—NeumanOS is being shaped as a place where everything important can live together, on your terms.`,
+For anyone who is tired of feeling spread thin across tools, and tired of renting access to their own information, NeumanOS is being shaped as a place where everything important can live together, on your terms.`,
     },
     founder: {
       title: 'Values & Background',
@@ -83,7 +83,7 @@ For anyone who is tired of feeling spread thin across tools—and tired of renti
 
 I've spent my career in information technology and operations. I've supported a multi-location hospitality group as an IT manager and senior systems administrator. I currently work as a technical project manager in managed services for a global industrial technology environment. I've looked after servers, networks, point-of-sale systems, cloud services, monitoring platforms, and the many tools that keep businesses running.
 
-I genuinely enjoyed that work and still do. I've been fortunate to work with teams and organizations I respect. NeumanOS is not a protest against any employer—past or present. It is a response to something larger: the way we, as individuals and professionals, are increasingly bound to sprawling subscription stacks and unfinished products, both inside and outside the office.
+I genuinely enjoyed that work and still do. I've been fortunate to work with teams and organizations I respect. NeumanOS is not a protest against any employer, past or present. It is a response to something larger: the way we, as individuals and professionals, are increasingly bound to sprawling subscription stacks and unfinished products, both inside and outside the office.
 
 Over the years, I've also run a homelab, built personal websites, and experimented with almost every category of "productivity" tool you can imagine. Some were excellent in specific areas. Very few felt like they were engineered and ethically grounded to be a long-term home for the things that actually matter in a person's life.
 
@@ -120,7 +120,7 @@ NeumanOS is the ongoing expression of those beliefs in code, design, and practic
 
 We juggle multiple apps and subscriptions just to keep a normal life and career on track. Each one tries to solve a slice of the puzzle, but together they scatter our attention and leave our information stored on systems we don't really control.
 
-This platform is being built from the foundation up, not as a feature checklist. The work so far has been about local-first thinking, clear privacy boundaries, honest communication, and calm design—so that when people choose to trust it with their work and lives, that trust is earned.
+This platform is being built from the foundation up, not as a feature checklist. The work so far has been about local-first thinking, clear privacy boundaries, honest communication, and calm design, so that when people choose to trust it with their work and lives, that trust is earned.
 
 NeumanOS is for anyone who wants a single, principled place to organize their world without feeling like they're renting access to their own data.`,
     },
@@ -133,18 +133,18 @@ I've seen how much we rely on software to hold our responsibilities together, an
 
 NeumanOS is my decision to build something different. I treat it like critical infrastructure: local-first by design, explicit about privacy and risk, and held to a higher bar of honesty in how it's described and used.
 
-It's the platform I want for myself—and I'm building it for anyone who's tired of compromising on how their tools treat them.`,
+It's the platform I want for myself, and I'm building it for anyone who's tired of compromising on how their tools treat them.`,
     },
   },
-  foundation: `NeumanOS is intentionally at the 1% mark—most of the work so far has gone into building a durable foundation and ethical guardrails, so every future layer rests on something you can actually trust.`,
+  foundation: `NeumanOS is intentionally at the 1% mark. Most of the work so far has gone into building a durable foundation and ethical guardrails, so every future layer rests on something you can actually trust.`,
   philosophy: {
-    full: `We believe the tools that hold our lives together should respect us. NeumanOS is built local-first, subscription-skeptical, and ruthlessly honest about what it can and cannot do—so you stay in control of your information, not the other way around.`,
+    full: `We believe the tools that hold our lives together should respect us. NeumanOS is built local-first, subscription-skeptical, and ruthlessly honest about what it can and cannot do, so you stay in control of your information, not the other way around.`,
     short: `NeumanOS is built on a simple idea: organizing your life and work should never require giving up ownership of your data or your attention.`,
   },
   taglines: [
     'NeumanOS is a local-first, ethics-driven platform for organizing your life and work without surrendering your data.',
-    'Built like critical infrastructure, designed for real lives—NeumanOS puts your information and attention back under your control.',
-    'A calm, principled way to keep everything that matters in one place—without being owned by your tools.',
+    'Built like critical infrastructure, designed for real lives. NeumanOS puts your information and attention back under your control.',
+    'A calm, principled way to keep everything that matters in one place, without being owned by your tools.',
   ],
 };
 

@@ -265,13 +265,13 @@ const StepCalendar: React.FC<{ events: CalendarEvent[]; today: Date }> = ({ even
       Today's Calendar
     </h3>
     <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-4">
-      {format(today, 'EEEE, MMMM d')} — review what's on your schedule.
+      {format(today, 'EEEE, MMMM d')}: review what's on your schedule.
     </p>
     {events.length === 0 ? (
       <div className="text-center py-8 text-text-light-tertiary dark:text-text-dark-tertiary">
         <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No events scheduled today</p>
-        <p className="text-xs mt-1">Your calendar is clear — more time for deep work.</p>
+        <p className="text-xs mt-1">Your calendar is clear. More time for deep work.</p>
       </div>
     ) : (
       <div className="space-y-2 max-h-[220px] overflow-y-auto">

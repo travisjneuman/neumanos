@@ -8,7 +8,7 @@ import type { ThemeDefinition } from './types';
 export const matrixTheme: ThemeDefinition = {
   id: 'matrix',
   name: 'Matrix',
-  description: 'Terminal green on black — digital rain aesthetic',
+  description: 'Terminal green on black, digital rain style',
   category: 'tech',
   preview: {
     primary: '#00FF41',

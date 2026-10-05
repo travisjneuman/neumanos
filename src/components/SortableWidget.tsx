@@ -75,7 +75,7 @@ export const SortableWidget: React.FC<SortableWidgetProps> = ({ id, children, cl
           <button
             onClick={cycleSize}
             className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-1.5 py-0.5 text-[10px] font-semibold rounded bg-surface-light-elevated dark:bg-surface-dark-elevated border border-border-light dark:border-border-dark text-text-light-secondary dark:text-text-dark-secondary hover:text-accent-blue hover:border-accent-blue/50 shadow-sm z-10"
-            title={`Current: ${SIZE_LABELS[currentSize]} — Click to resize`}
+            title={`Current: ${SIZE_LABELS[currentSize]}. Click to resize`}
             aria-label={`Resize widget from ${SIZE_LABELS[currentSize]}`}
           >
             {SIZE_LABELS[currentSize]}

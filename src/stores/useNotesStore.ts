@@ -83,7 +83,7 @@ const DEFAULT_NOTE_TEMPLATES: NoteTemplate[] = [
   {
     id: 'decision-record',
     name: 'Decision Record',
-    description: '## Decision: {title}\n\n**Date:** {date}\n**Status:** Proposed | Accepted | Deprecated | Superseded\n\n### Context\nWhat is the issue or problem we need to solve?\n\n\n### Options Considered\n1. **Option A** — \n2. **Option B** — \n3. **Option C** — \n\n### Decision\nWhat was decided?\n\n\n### Rationale\nWhy was this option chosen over the alternatives?\n\n\n### Consequences\n**Positive:**\n- \n\n**Negative:**\n- \n\n**Risks:**\n- \n\n### Related\n- \n',
+    description: '## Decision: {title}\n\n**Date:** {date}\n**Status:** Proposed | Accepted | Deprecated | Superseded\n\n### Context\nWhat is the issue or problem we need to solve?\n\n\n### Options Considered\n1. **Option A**: \n2. **Option B**: \n3. **Option C**: \n\n### Decision\nWhat was decided?\n\n\n### Rationale\nWhy was this option chosen over the alternatives?\n\n\n### Consequences\n**Positive:**\n- \n\n**Negative:**\n- \n\n**Risks:**\n- \n\n### Related\n- \n',
     icon: '⚖️',
     category: 'Work',
     defaultTags: ['decision', 'adr'],

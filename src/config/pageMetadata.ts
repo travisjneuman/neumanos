@@ -46,7 +46,7 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
   },
   '/schedule': {
     title: 'Time & Planning',
-    subtitle: 'Track your time, plan your events, and manage your schedule—all in one place.',
+    subtitle: 'Track your time, plan your events, and manage your schedule, all in one place.',
   },
   '/settings': {
     title: 'Settings',

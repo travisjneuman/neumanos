@@ -49,7 +49,7 @@ const sharedVariables = {
 export const defaultTheme: ThemeDefinition = {
   id: 'default',
   name: 'Default',
-  description: 'The original NeumanOS palette — magenta and cyan accents',
+  description: 'The original NeumanOS palette with magenta and cyan accents',
   category: null,
   preview: {
     primary: '#E91E8C',

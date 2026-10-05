@@ -119,7 +119,7 @@ function TableOfContentsComponent({ nodeKey }: { nodeKey: NodeKey }) {
           X
         </button>
         <div className="text-sm text-text-light-secondary dark:text-text-dark-secondary italic">
-          Table of Contents — Add headings to your note to see them here.
+          Table of Contents: add headings to your note to see them here.
         </div>
       </div>
     );

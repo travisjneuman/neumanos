@@ -96,7 +96,7 @@ export function generateTemplateInsights(data: RetroData): WeeklyInsights {
         ? `Task completion dropped by ${Math.abs(comparison.tasks.completedDelta)} compared to last week.`
         : 'Consider setting more specific daily goals to maintain momentum.',
     habits.worstHabit
-      ? `"${habits.worstHabit}" needs attention — it had the lowest completion rate this week.`
+      ? `"${habits.worstHabit}" needs attention. It had the lowest completion rate this week.`
       : comparison && comparison.habits.rateDelta < 0
         ? `Habit consistency dropped ${Math.abs(comparison.habits.rateDelta)}% from last week.`
         : 'Try adding time blocks for deep work to maximize productivity.',

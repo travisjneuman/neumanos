@@ -62,7 +62,7 @@ const BUILT_IN_TEMPLATES: SmartTemplate[] = [
         id: 'wr-note',
         type: 'create-note',
         data: {
-          title: 'Weekly Review — {{date}}',
+          title: 'Weekly Review: {{date}}',
           content:
             '## Weekly Review\n\n**Week of:** {{date}}\n\n### Accomplishments\n- \n\n### Challenges\n- \n\n### Lessons Learned\n- \n\n### Next Week Goals\n- [ ] \n\n### Notes\n',
           tags: ['review', 'weekly'],
@@ -214,7 +214,7 @@ const BUILT_IN_TEMPLATES: SmartTemplate[] = [
         id: 'mn-note',
         type: 'create-note',
         data: {
-          title: '{{meetingTitle}} — Meeting Notes',
+          title: '{{meetingTitle}}: Meeting Notes',
           content:
             '## {{meetingTitle}}\n\n**Date:** {{date}}\n**Attendees:** {{attendees}}\n\n### Agenda\n1. \n\n### Discussion Points\n- \n\n### Action Items\n- [ ] \n\n### Next Steps\n',
           tags: ['meeting'],
@@ -265,9 +265,9 @@ const BUILT_IN_TEMPLATES: SmartTemplate[] = [
         id: 'ds-note',
         type: 'create-note',
         data: {
-          title: 'Standup — {{date}}',
+          title: 'Standup: {{date}}',
           content:
-            '## Daily Standup — {{date}}\n\n### Yesterday\n- \n\n### Today\n- \n\n### Blockers\n- \n',
+            '## Daily Standup: {{date}}\n\n### Yesterday\n- \n\n### Today\n- \n\n### Blockers\n- \n',
           tags: ['standup', 'daily'],
         },
       },

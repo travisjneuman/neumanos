@@ -339,8 +339,8 @@ export function PMDashboard() {
                     <p className="text-xs text-text-light-primary dark:text-text-dark-primary">
                       <span className="font-medium">{activity.taskTitle}</span>
                       <span className="text-text-light-tertiary dark:text-text-dark-tertiary">
-                        {' '}
-                        – {activity.action}
+                        {': '}
+                        {activity.action}
                         {activity.field && ` (${activity.field})`}
                       </span>
                     </p>

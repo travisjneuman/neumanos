@@ -27,11 +27,11 @@ You will receive an acknowledgment within 48 hours. We aim to provide a fix or m
 
 NeumanOS is a local-first application with a zero-data-host architecture:
 
-- **No backend server** — all data stored locally in IndexedDB
-- **No accounts or authentication** — nothing to breach
-- **BYOK (Bring Your Own Key)** — AI provider API keys are encrypted with AES-256-GCM using PBKDF2 (600k iterations) before storage
-- **Encryption passwords are never persisted** — they exist only in memory during the session
-- **Content Security Policy** — strict CSP headers enforced via Cloudflare Pages `_headers` file
+- **No backend server**: all data stored locally in IndexedDB
+- **No accounts or authentication**: nothing to breach
+- **BYOK (Bring Your Own Key)**: AI provider API keys are encrypted with AES-256-GCM using PBKDF2 (600k iterations) before storage
+- **Encryption passwords are never persisted**: they exist only in memory during the session
+- **Content Security Policy**: strict CSP headers enforced via Cloudflare Pages `_headers` file
 
 ## Known Limitations
 

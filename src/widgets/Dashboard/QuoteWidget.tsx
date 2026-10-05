@@ -64,7 +64,7 @@ export const QuoteWidget: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">
-              — {quote.author}
+              {quote.author}
             </p>
 
             {quote.tags.length > 0 && (

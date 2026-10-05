@@ -193,7 +193,7 @@ export const Notes: React.FC = () => {
 
   // Page setup and keyboard shortcuts
   useEffect(() => {
-    document.title = 'Notes - NeumanOS';
+    document.title = 'Notes | NeumanOS';
     log.debug('Notes page loaded');
 
     // Keyboard shortcut for export (Cmd/Ctrl+Shift+E)

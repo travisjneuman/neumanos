@@ -310,7 +310,7 @@ export function exportInvoicePdf(
   doc.setDrawColor(...PDF_COLORS.divider);
   doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
   doc.text(
-    `${settings.companyName || 'Your Company'} — Thank you for your business`,
+    `${settings.companyName || 'Your Company'} | Thank you for your business`,
     pageWidth / 2,
     pageHeight - 10,
     { align: 'center' }
