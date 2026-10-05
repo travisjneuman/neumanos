@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/travisjneuman/travisjneuman/main/showcase/schema/showcase-v1.json",
+  "id": "neumanos",
+  "name": "NeumanOS",
+  "status": "live",
+  "statusNote": null,
+  "summary": "Notes, tasks, calendar, an office suite, and AI in one local-first browser app. No account; data stays on your device.",
+  "visibility": "public",
+  "links": {
+    "live": "https://os.neuman.dev",
+    "repo": "https://github.com/travisjneuman/neumanos"
+  },
+  "stack": [
+    "React 19",
+    "TypeScript",
+    "IndexedDB",
+    "PWA",
+    "Zustand"
+  ],
+  "metrics": [
+    {
+      "value": "0",
+      "label": "Accounts",
+      "source": "manual: local-first app with no sign-up or server-side account system (see README Privacy)",
+      "round": "exact",
+      "asOf": "2026-10-05"
+    },
+    {
+      "value": "60+",
+      "label": "Widgets",
+      "source": "grep -cE \"^\\s+id: '\" src/widgets/Dashboard/WidgetRegistry.ts",
+      "round": "floor-2sig",
+      "asOf": "2026-10-05"
+    },
+    {
+      "value": "390+",
+      "label": "Formulas",
+      "source": "node -e \"console.log(Object.keys(require('@formulajs/formulajs')).filter(k=>/^[A-Z][A-Z0-9._]*$/.test(k)).length)\" (after npm ci; 398 on 2026-10-05)",
+      "round": "floor-2sig",
+      "asOf": "2026-10-05"
+    }
+  ],
+  "updated": "2026-10-05"
+}

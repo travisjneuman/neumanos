@@ -58,3 +58,18 @@ Current unit-test baseline after the April 29, 2026 maintenance pass: `npm test 
 - Local-first privacy is a core constraint: do not add server dependency, account requirement, or cloud sync without explicit approval.
 - Preserve IndexedDB/local-storage data compatibility, `.brain` backup/restore behavior, and export/import paths.
 - Treat API-provider keys as local user secrets. Never print, commit, or invent credentials, tokens, cookies, private keys, OAuth secrets, API keys, personal data, or production-only configuration. Use placeholders in docs/examples.
+
+## Showcase facts contract
+
+This repo is showcased on travisjneuman.com and github.com/travisjneuman.
+`showcase.json` is the only source for public facts about this project
+(schema: travisjneuman/travisjneuman `showcase/schema/showcase-v1.json`).
+
+- If a change affects anything in it (counts, version, status, stack, links,
+  summary), update `showcase.json` in the same commit. Re-run each metric's
+  `source` command; never guess. `floor-2sig` metrics round down to two
+  significant digits plus "+" (398 -> "390+").
+- Set `updated` (and the touched metric's `asOf`) to today's date.
+- Never put private URLs, hostnames, user data, or private names in it.
+- The profile repo's `scripts/showcase/sync-showcase.mjs` regenerates the GitHub
+  cards, README table, and portfolio data from these files.
