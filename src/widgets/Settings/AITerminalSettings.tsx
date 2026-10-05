@@ -17,7 +17,7 @@ export const AITerminalSettings: React.FC = () => {
       </div>
 
       <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-4">
-        Multi-provider AI assistant with 8 providers including free options. Automatic fallback ensures reliability.
+        Multi-provider AI assistant with 9 providers including free options. Automatic fallback ensures reliability.
       </p>
 
       {/* Quick Info */}
@@ -26,7 +26,7 @@ export const AITerminalSettings: React.FC = () => {
           <strong>🎯 New Multi-Provider System</strong>
         </p>
         <ul className="text-xs text-status-info-text dark:text-status-info-text-dark space-y-1">
-          <li>• Choose from 8 AI providers (OpenRouter, Groq, HuggingFace, Mistral, Gemini, OpenAI, Claude, Grok)</li>
+          <li>• Choose from 9 AI providers (OpenRouter, Groq, HuggingFace, Mistral, Gemini, OpenAI, Claude, Grok, DeepSeek)</li>
           <li>• Free models available (OpenRouter, Groq, HuggingFace, Mistral)</li>
           <li>• Automatic fallback if primary provider fails</li>
           <li>• Encrypted API key storage with password protection</li>

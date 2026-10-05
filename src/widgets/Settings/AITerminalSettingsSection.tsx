@@ -104,7 +104,7 @@ export const AITerminalSettingsSection: React.FC = () => {
               AI Terminal
             </h2>
             <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary">
-              Multi-provider AI assistant with 8 providers
+              Multi-provider AI assistant with 9 providers
             </p>
           </div>
         </div>
@@ -149,7 +149,7 @@ export const AITerminalSettingsSection: React.FC = () => {
           <strong>🎯 Multi-Provider System</strong>
         </p>
         <ul className="text-xs text-status-info-text dark:text-status-info-text-dark space-y-1">
-          <li>• 8 AI providers (OpenRouter, Groq, HuggingFace, Mistral, Gemini, OpenAI, Claude, Grok)</li>
+          <li>• 9 AI providers (OpenRouter, Groq, HuggingFace, Mistral, Gemini, OpenAI, Claude, Grok, DeepSeek)</li>
           <li>• Free models available on most providers</li>
           <li>• Automatic fallback if primary provider fails</li>
           <li>• Encrypted API key storage with password protection</li>

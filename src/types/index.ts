@@ -949,7 +949,7 @@ export interface ProfessionalDoc extends BaseDoc {
 
 /**
  * Spreadsheet document with multiple sheets.
- * Uses HyperFormula engine for Excel-compatible formulas.
+ * Uses the formula.js + hot-formula-parser engine (src/services/formulaEngine.ts) for Excel-compatible formulas.
  */
 export interface SpreadsheetDoc extends BaseDoc {
   type: 'sheet';

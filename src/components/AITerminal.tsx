@@ -909,7 +909,7 @@ export const AITerminal: React.FC = () => {
               <div className="text-center py-12 text-text-light-secondary dark:text-text-dark-secondary">
                 <p className="text-lg font-semibold mb-2">Welcome to AI Terminal!</p>
                 <p className="text-sm mb-4">
-                  Configure AI providers to get started. Choose from 8 providers including free options!
+                  Configure AI providers to get started. Choose from 9 providers including free options!
                 </p>
                 <button
                   onClick={() => setShowProviderSettings(true)}

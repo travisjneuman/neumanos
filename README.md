@@ -26,7 +26,7 @@
 
 ## What is NeumanOS?
 
-NeumanOS is an all-in-one productivity platform that lives entirely on your device. Notes, tasks, time tracking, calendar, documents, diagrams, forms, bookmarks, and an AI terminal — unified in a single app, with no account required and no data leaving your machine.
+NeumanOS is an all-in-one productivity platform that lives entirely on your device. Notes, tasks, time tracking, calendar, documents, diagrams, forms, bookmarks, and an AI terminal — unified in a single app, with no account required and no data leaving your machine unless you connect an AI provider or a live-data widget.
 
 Most productivity tools scatter your work across a stack of subscriptions you don't fully control. NeumanOS puts everything back in one place, under your ownership. Every note, task, and calendar event is stored in your browser's IndexedDB (50GB+ capacity) — readable only by you, exportable at any time, and never touched by a server.
 
@@ -66,11 +66,11 @@ A cross-module activity stream that surfaces recent actions across notes, tasks,
 
 ### AI Terminal
 
-Connect to 9 AI providers — OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, xAI Grok, DeepSeek, HuggingFace, and Ollama (local models) — using your own API keys. Keys are stored with AES-256-GCM encryption and never leave your device. Voice input, cross-module context awareness, and a built-in browser terminal with AI command integration round out the developer experience.
+Connect to 9 AI providers — OpenRouter, OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, xAI Grok, DeepSeek, and HuggingFace — using your own API keys. Keys are stored with AES-256-GCM encryption and never leave your device. Voice input, cross-module context awareness, and a built-in browser terminal with AI command integration round out the developer experience.
 
 ### Office Suite
 
-Create documents, spreadsheets, presentations, diagrams, and forms without leaving the platform. The spreadsheet engine supports 400+ Excel-compatible formulas with sort, filter, conditional formatting, and pivot tables. Presentations include a full canvas editor, 8 slide templates, animations, and presenter mode. Export to PDF, HTML, Markdown, CSV, or PPTX.
+Create documents, spreadsheets, presentations, diagrams, and forms without leaving the platform. The spreadsheet engine supports 390+ Excel-compatible formulas with sort, filter, conditional formatting, and pivot tables. Presentations include a full canvas editor, 8 slide templates, animations, and presenter mode. Export to PDF, HTML, Markdown, CSV, or PPTX.
 
 ### Focus & Daily Planning
 
@@ -128,7 +128,7 @@ In-app documentation is available directly inside NeumanOS. Open the app and nav
 | State | Zustand 5 (persisted to IndexedDB via Dexie 4) |
 | Notes Editor | Lexical |
 | Documents | TipTap / ProseMirror |
-| Spreadsheets | HyperFormula (400+ formulas) |
+| Spreadsheets | formula.js + hot-formula-parser (390+ formulas) |
 | Presentations | Konva canvas engine |
 | Charts | Recharts |
 | Knowledge Graph | D3 force-directed |

@@ -3,7 +3,7 @@
  * Configure AI provider API keys with encryption
  *
  * Features:
- * - Configure all 8 AI providers (OpenRouter, Groq, HuggingFace, Mistral, Gemini, OpenAI, Anthropic, xAI)
+ * - Configure all 9 AI providers (OpenRouter, Groq, HuggingFace, Mistral, Gemini, OpenAI, Anthropic, xAI, DeepSeek)
  * - Encrypted API key storage
  * - Visual provider status (configured/unconfigured)
  * - Test API key validation
