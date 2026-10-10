@@ -19,26 +19,29 @@
   ],
   "metrics": [
     {
+      "key": "accounts",
       "value": "0",
       "label": "Accounts",
-      "source": "manual: local-first app with no sign-up or server-side account system (see README Privacy)",
+      "source": "manual: github.com/travisjneuman/neumanos at 96bc86ac155803778967852c56d151acaec23518; reviewed README.md lines 29-31 and 100, SHA256 2fabf32867680126206efbdea799b9fa8750aa9bfb1ca3a0f5771ef11267b18b; no account required, local browser IndexedDB storage; static product policy, not runtime verification",
       "round": "exact",
-      "asOf": "2026-10-05"
+      "asOf": "2026-10-10"
     },
     {
-      "value": "60+",
+      "key": "widgets",
+      "value": "60",
       "label": "Widgets",
-      "source": "grep -cE \"^\\s+id: '\" src/widgets/Dashboard/WidgetRegistry.ts",
-      "round": "floor-2sig",
-      "asOf": "2026-10-05"
+      "source": "manual: github.com/travisjneuman/neumanos at 96bc86ac155803778967852c56d151acaec23518; enumerated 60 distinct top-level entries in WIDGET_REGISTRY in src/widgets/Dashboard/WidgetRegistry.ts, SHA256 62d6503db5f50328a5d9ced35cbef98301e110eca61c575d5eb6ae1dc0e97243; built-in widgets only, excludes runtime custom widgets",
+      "round": "exact",
+      "asOf": "2026-10-10"
     },
     {
+      "key": "formula-exports",
       "value": "390+",
-      "label": "Formulas",
-      "source": "node -e \"console.log(Object.keys(require('@formulajs/formulajs')).filter(k=>/^[A-Z][A-Z0-9._]*$/.test(k)).length)\" (after npm ci; 398 on 2026-10-05)",
+      "label": "Formula exports",
+      "source": "historical: node -e \"console.log(Object.keys(require('@formulajs/formulajs')).filter(k=>/^[A-Z][A-Z0-9._]*$/.test(k)).length)\" (after npm ci; 398 on 2026-10-05); uppercase package export names, NOT a supported-app formula total; not remeasured. Current source context only: github.com/travisjneuman/neumanos at 96bc86ac155803778967852c56d151acaec23518, src/services/formulaEngine.ts SHA256 f11c0dfd6224bf97feceababea73675e591474226af996f8e1e6444ba49636ca",
       "round": "floor-2sig",
       "asOf": "2026-10-05"
     }
   ],
-  "updated": "2026-10-05"
+  "updated": "2026-10-10"
 }
